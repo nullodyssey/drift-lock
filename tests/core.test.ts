@@ -23,6 +23,15 @@ describe('drift v1 core', () => {
     expect(result.contracts[0]?.contentHash).toMatch(/^sha256:[a-f0-9]{64}$/);
   });
 
+  it('extracts contracts with CRLF opening markers', () => {
+    const source = validActionsSource().replaceAll('\n', '\r\n');
+    const result = extractContractsFromSource('src/features/billing/actions.ts', source);
+
+    expect(result.errors).toEqual([]);
+    expect(result.contracts).toHaveLength(1);
+    expect(result.contracts[0]?.id).toBe('billing.create-checkout-session');
+  });
+
   it('returns schema errors for unknown fields and missing required fields', () => {
     const result = extractContractsFromSource(
       'src/example.ts',
@@ -79,6 +88,17 @@ if (true) {}
     expect(result.errors.map((error) => error.code)).toContain('DRIFT010_SSOT_NOT_USED');
   });
 
+  it('accepts NodeNext .js imports for .ts ssot paths', async () => {
+    const root = await createProject({
+      'src/actions.ts': validActionsSource()
+        .replace("ssot:\n  pricing: \"@/features/billing/pricing.ts\"", "ssot:\n  pricing: \"./pricing.ts\"")
+        .replace("import { PRO_PRICE_ID } from '@/features/billing/pricing';", "import { PRO_PRICE_ID } from './pricing.js';"),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
   it('detects locked contract changes against the committed index', async () => {
     const root = await createProject({ 'src/actions.ts': validActionsSource() });
     const extracted = await extractContracts({ root });
@@ -87,6 +107,35 @@ if (true) {}
     await writeFile(
       path.join(root, 'src/actions.ts'),
       validActionsSource().replace("l'abonnement Pro.", "l'abonnement Premium."),
+      'utf8',
+    );
+
+    const result = await checkContracts({ root });
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT011_LOCKED_CONTRACT_CHANGED');
+  });
+
+  it('detects locked contract downgrades against the committed index', async () => {
+    const root = await createProject({ 'src/actions.ts': validActionsSource() });
+    const extracted = await extractContracts({ root });
+    await writeIndex(root, undefined, toIndex(extracted.contracts));
+
+    await writeFile(path.join(root, 'src/actions.ts'), validActionsSource().replace('stability: locked', 'stability: draft'), 'utf8');
+
+    const result = await checkContracts({ root });
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT011_LOCKED_CONTRACT_CHANGED');
+  });
+
+  it('detects locked contract removals against the committed index', async () => {
+    const root = await createProject({ 'src/actions.ts': validActionsSource() });
+    const extracted = await extractContracts({ root });
+    await writeIndex(root, undefined, toIndex(extracted.contracts));
+
+    await writeFile(
+      path.join(root, 'src/actions.ts'),
+      `export async function createCheckoutSession(input: unknown) {
+  return { payload: input, price: 'price_pro' };
+}
+`,
       'utf8',
     );
 

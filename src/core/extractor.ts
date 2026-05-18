@@ -103,8 +103,8 @@ export function extractContractsFromSource(
 function findContractBlocks(text: string): ContractBlock[] {
   const blocks: ContractBlock[] = [];
   // The strict opening marker avoids accidentally treating generic comments or
-  // JSDoc as contracts. V1 only accepts "/* @drift" followed by a newline.
-  const pattern = /\/\* @drift\n([\s\S]*?)\*\//g;
+  // JSDoc as contracts. CRLF is accepted so Windows checkouts do not hide them.
+  const pattern = /\/\* @drift\r?\n([\s\S]*?)\*\//g;
   let match: RegExpExecArray | null;
 
   while ((match = pattern.exec(text))) {

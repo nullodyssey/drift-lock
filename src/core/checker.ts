@@ -61,7 +61,8 @@ function checkSsotUsage(contract: DriftExtractedContract, text: string): DriftEr
 
 function usesSsot(text: string, contract: DriftExtractedContract, ssotPath: string): boolean {
   const anchoredText = text.slice(contract.bodyStart, contract.bodyEnd);
-  if (anchoredText.includes(ssotPath) || anchoredText.includes(stripTsExtension(ssotPath))) return true;
+  const ssotCandidates = moduleSpecifierCandidates(ssotPath);
+  if (ssotCandidates.some((candidate) => anchoredText.includes(candidate))) return true;
 
   // V1 treats imports as sufficient SSOT usage. This is intentionally shallow:
   // the goal is catching obvious local replacements, not proving data flow.
@@ -69,12 +70,21 @@ function usesSsot(text: string, contract: DriftExtractedContract, ssotPath: stri
   return sourceFile.statements.some((statement) => {
     if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) return false;
     const importedPath = statement.moduleSpecifier.text;
-    return importedPath === ssotPath || importedPath === stripTsExtension(ssotPath);
+    return ssotCandidates.includes(importedPath);
   });
 }
 
-function stripTsExtension(modulePath: string): string {
-  return modulePath.replace(/\.(tsx|ts)$/, '');
+function moduleSpecifierCandidates(modulePath: string): string[] {
+  const candidates = new Set([modulePath]);
+  const extensionless = modulePath.replace(/\.(tsx|ts|jsx|js)$/, '');
+  candidates.add(extensionless);
+
+  if (modulePath.endsWith('.ts')) candidates.add(`${extensionless}.js`);
+  if (modulePath.endsWith('.tsx')) candidates.add(`${extensionless}.jsx`);
+  if (modulePath.endsWith('.js')) candidates.add(`${extensionless}.ts`);
+  if (modulePath.endsWith('.jsx')) candidates.add(`${extensionless}.tsx`);
+
+  return [...candidates];
 }
 
 function checkLockedChanges(
@@ -83,22 +93,23 @@ function checkLockedChanges(
   index: DriftContractsIndex,
 ): DriftError[] {
   const errors: DriftError[] = [];
-  const previousById = new Map(index.contracts.map((contract) => [contract.id, contract]));
+  const currentById = new Map(contracts.map((contract) => [contract.id, contract]));
 
   // Locked contracts are compared by canonical content hash, not raw text, so
   // whitespace and YAML comments do not force acceptance files.
-  for (const contract of contracts) {
-    if (contract.stability !== 'locked') continue;
-    const previous = previousById.get(contract.id);
-    if (!previous || previous.contentHash === contract.contentHash) continue;
-    const acceptance = readAcceptanceSync(root, contract.id);
+  for (const previous of index.contracts) {
+    if (previous.stability !== 'locked') continue;
+    const current = currentById.get(previous.id);
+    if (current && current.contentHash === previous.contentHash) continue;
+    const acceptance = readAcceptanceSync(root, previous.id);
     if (acceptance.valid) continue;
+    const currentLocation = current ? { file: current.file, line: current.line, column: current.column } : undefined;
     errors.push(
       driftError(
         acceptance.exists ? 'DRIFT012_INVALID_ACCEPTANCE_FILE' : 'DRIFT011_LOCKED_CONTRACT_CHANGED',
-        contract.file,
-        { id: contract.id },
-        { line: contract.line, column: contract.column },
+        currentLocation?.file ?? previous.file,
+        { id: previous.id },
+        { line: currentLocation?.line, column: currentLocation?.column },
       ),
     );
   }
