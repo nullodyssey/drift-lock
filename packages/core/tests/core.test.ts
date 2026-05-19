@@ -2,10 +2,10 @@ import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { checkContracts } from '../src/core/checker.js';
-import { renderContext } from '../src/core/context.js';
-import { extractContracts, extractContractsFromSource } from '../src/core/extractor.js';
-import { toIndex, writeIndex } from '../src/core/index-file.js';
+import { checkContracts } from '@drift/core';
+import { renderContext } from '@drift/core';
+import { extractContracts, extractContractsFromSource } from '@drift/core';
+import { toIndex, writeIndex } from '@drift/core';
 
 describe('drift v1 core', () => {
   it('extracts a valid declaration contract with a stable hash', () => {
@@ -114,6 +114,41 @@ if (true) {}
   it('detects unsupported ssot flow helper calls', async () => {
     const root = await createProject({
       'src/actions.ts': validFlowSource().replace('const price = BILLING_PRICES[payload.plan];', 'const price = resolvePrice(payload.plan);'),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT014_UNSUPPORTED_FLOW_PATTERN');
+  });
+
+  it('rejects ssot flow expressions that can discard the trusted value', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource()
+        .replace('priceId: price.priceId,', "priceId: (price.priceId, 'price_local_hotfix'),")
+        .replace('currency: price.currency,', "currency: price.currency ?? 'USD',"),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT014_UNSUPPORTED_FLOW_PATTERN');
+  });
+
+  it('treats parameters that shadow trusted imports as untrusted', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource()
+        .replace('export async function createCheckoutSession(input: unknown) {', 'export async function createCheckoutSession(BILLING_PRICES: any) {')
+        .replace('const payload = parseCheckoutInput(input);', 'const payload = parseCheckoutInput({ plan: "pro", seats: 1 });'),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT013_SSOT_FLOW_NOT_PROVEN');
+  });
+
+  it('rejects delete mutations in ssot flow bodies', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource().replace(
+        'const price = BILLING_PRICES[payload.plan];',
+        `const price = BILLING_PRICES[payload.plan];
+  delete price.priceId;`,
+      ),
     });
 
     const result = await checkContracts({ root });

@@ -32,7 +32,7 @@ export function checkSsotFlow(contract: DriftExtractedContract, text: string): D
       continue;
     }
 
-    errors.push(...checkFunctionFlow(sourceFile, contract, functionNode.body, invariant, ssotPath));
+    errors.push(...checkFunctionFlow(sourceFile, contract, functionNode, invariant, ssotPath));
   }
 
   return errors;
@@ -41,12 +41,14 @@ export function checkSsotFlow(contract: DriftExtractedContract, text: string): D
 function checkFunctionFlow(
   sourceFile: ts.SourceFile,
   contract: DriftExtractedContract,
-  body: ts.Block,
+  functionNode: ts.FunctionDeclaration,
   invariant: DriftInvariant,
   ssotPath: string,
 ): DriftError[] {
   const errors: DriftError[] = [];
   const sinks = invariant.sinks ?? [];
+  const body = functionNode.body;
+  if (!body) return unsupportedForSinks(contract, invariant, sinks);
   const trustedImports = findTrustedImports(sourceFile, ssotPath);
 
   if (trustedImports.size === 0) {
@@ -63,6 +65,9 @@ function checkFunctionFlow(
 
   const env = new Map<string, FlowValue>();
   for (const name of trustedImports) env.set(name, trusted);
+  for (const parameter of functionNode.parameters) {
+    for (const name of bindingNames(parameter.name)) env.set(name, untrusted);
+  }
 
   let sawReturn = false;
   for (const statement of body.statements) {
@@ -191,6 +196,7 @@ function expressionFlow(expression: ts.Expression, env: Map<string, FlowValue>):
   }
 
   if (ts.isBinaryExpression(expression)) {
+    if (!isDerivedBinaryOperator(expression.operatorToken.kind)) return unsupported;
     return combineDerived([expressionFlow(expression.left, env), expressionFlow(expression.right, env)]);
   }
 
@@ -270,6 +276,10 @@ function hasUnsupportedMutation(body: ts.Block): boolean {
       found = true;
       return;
     }
+    if (node.kind === ts.SyntaxKind.DeleteExpression) {
+      found = true;
+      return;
+    }
     if (ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) {
       if (node.operator === ts.SyntaxKind.PlusPlusToken || node.operator === ts.SyntaxKind.MinusMinusToken) {
         found = true;
@@ -302,6 +312,17 @@ function hasNestedReturn(body: ts.Block): boolean {
 
 function isAssignmentOperator(kind: ts.SyntaxKind): boolean {
   return kind >= ts.SyntaxKind.FirstAssignment && kind <= ts.SyntaxKind.LastAssignment;
+}
+
+function isDerivedBinaryOperator(kind: ts.SyntaxKind): boolean {
+  return (
+    kind === ts.SyntaxKind.AsteriskToken ||
+    kind === ts.SyntaxKind.AsteriskAsteriskToken ||
+    kind === ts.SyntaxKind.SlashToken ||
+    kind === ts.SyntaxKind.PercentToken ||
+    kind === ts.SyntaxKind.PlusToken ||
+    kind === ts.SyntaxKind.MinusToken
+  );
 }
 
 function bindingNames(name: ts.BindingName): string[] {
