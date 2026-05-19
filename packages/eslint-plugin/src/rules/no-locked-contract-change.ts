@@ -3,7 +3,12 @@ import path from 'node:path';
 import { checkLockedChangesForFile, type DriftContractsIndex, extractContractsFromSource } from '@drift/core';
 import { getRuleOptions, relativeFilename, reportDriftError } from '../utils.js';
 
-const indexCache = new Map<string, DriftContractsIndex | undefined>();
+type IndexReadResult =
+  | { status: 'missing' }
+  | { status: 'loaded'; index: DriftContractsIndex }
+  | { status: 'invalid'; message: string };
+
+const indexCache = new Map<string, IndexReadResult>();
 
 export const noLockedContractChangeRule = {
   meta: {
@@ -26,13 +31,20 @@ export const noLockedContractChangeRule = {
     return {
       Program() {
         const options = getRuleOptions(context);
-        const index = readIndexSync(options.root, options.indexPath);
-        if (!index) return;
+        const indexResult = readIndexSync(options.root, options.indexPath);
+        if (indexResult.status === 'missing') return;
+        if (indexResult.status === 'invalid') {
+          context.report({
+            loc: { line: 1, column: 0 },
+            message: indexResult.message,
+          });
+          return;
+        }
 
         const file = relativeFilename(options.root, context.getFilename());
         const text = context.sourceCode.getText();
         const result = extractContractsFromSource(file, text);
-        const errors = checkLockedChangesForFile(options.root, file, result.contracts, index);
+        const errors = checkLockedChangesForFile(options.root, file, result.contracts, indexResult.index);
 
         for (const error of errors) {
           reportDriftError(context, error);
@@ -42,16 +54,32 @@ export const noLockedContractChangeRule = {
   },
 };
 
-function readIndexSync(root: string, indexPath: string): DriftContractsIndex | undefined {
+function readIndexSync(root: string, indexPath: string): IndexReadResult {
   const absoluteIndexPath = path.resolve(root, indexPath);
-  if (indexCache.has(absoluteIndexPath)) return indexCache.get(absoluteIndexPath);
+  const cached = indexCache.get(absoluteIndexPath);
+  if (cached) return cached;
 
   try {
     const index = JSON.parse(readFileSync(absoluteIndexPath, 'utf8')) as DriftContractsIndex;
-    indexCache.set(absoluteIndexPath, index);
-    return index;
-  } catch {
-    indexCache.set(absoluteIndexPath, undefined);
-    return undefined;
+    const result: IndexReadResult = { status: 'loaded', index };
+    indexCache.set(absoluteIndexPath, result);
+    return result;
+  } catch (error) {
+    if (isMissingFileError(error)) {
+      const result: IndexReadResult = { status: 'missing' };
+      indexCache.set(absoluteIndexPath, result);
+      return result;
+    }
+
+    const result: IndexReadResult = {
+      status: 'invalid',
+      message: `DRIFT_INDEX_INVALID: Invalid Drift contracts index at "${indexPath}".`,
+    };
+    indexCache.set(absoluteIndexPath, result);
+    return result;
   }
+}
+
+function isMissingFileError(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error && (error as NodeJS.ErrnoException).code === 'ENOENT';
 }

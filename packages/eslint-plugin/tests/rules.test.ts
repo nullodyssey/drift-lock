@@ -90,6 +90,7 @@ ruleTester.run('ssot-usage', rules['ssot-usage'] as any, {
   const changed = createIndexedProject(validActionsSource());
   const removed = createIndexedProject(validActionsSource());
   const accepted = createIndexedProject(validActionsSource());
+  const invalidIndex = createProjectWithIndex('{<<<<<<< HEAD');
   mkdirSync(path.join(accepted.root, '.drift/accepted-contract-changes'), { recursive: true });
   writeFileSync(
     path.join(accepted.root, '.drift/accepted-contract-changes/billing.create-checkout-session.md'),
@@ -115,6 +116,12 @@ ruleTester.run('ssot-usage', rules['ssot-usage'] as any, {
     ],
     invalid: [
       {
+        filename: invalidIndex.filename,
+        code: validActionsSource(),
+        options: [{ root: invalidIndex.root }],
+        errors: [{ message: /DRIFT_INDEX_INVALID/ }],
+      },
+      {
         filename: changed.filename,
         code: validActionsSource().replace("l'abonnement Pro.", "l'abonnement Premium."),
         options: [{ root: changed.root }],
@@ -134,15 +141,26 @@ ruleTester.run('ssot-usage', rules['ssot-usage'] as any, {
 }
 
 function createIndexedProject(code: string): { root: string; filename: string } {
+  const project = createProject();
+  writeFileSync(project.filename, code);
+
+  const extracted = extractContractsFromSource('src/actions.ts', code);
+  writeFileSync(path.join(project.root, '.drift/contracts.generated.json'), `${JSON.stringify(toIndex(extracted.contracts), null, 2)}\n`);
+
+  return project;
+}
+
+function createProjectWithIndex(index: string): { root: string; filename: string } {
+  const project = createProject();
+  writeFileSync(path.join(project.root, '.drift/contracts.generated.json'), index);
+  return project;
+}
+
+function createProject(): { root: string; filename: string } {
   const root = mkdtempSync(path.join(os.tmpdir(), 'drift-eslint-test-'));
   const filename = path.join(root, 'src/actions.ts');
   mkdirSync(path.dirname(filename), { recursive: true });
-  writeFileSync(filename, code);
-
-  const extracted = extractContractsFromSource('src/actions.ts', code);
   mkdirSync(path.join(root, '.drift'), { recursive: true });
-  writeFileSync(path.join(root, '.drift/contracts.generated.json'), `${JSON.stringify(toIndex(extracted.contracts), null, 2)}\n`);
-
   return { root, filename };
 }
 
