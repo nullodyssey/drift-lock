@@ -40,6 +40,9 @@ jobs:
       - name: Build workspace
         run: pnpm build
 
+      - name: Check Drift CLI binary
+        run: pnpm --filter next-v1 exec drift --help
+
       - name: Typecheck workspace
         run: pnpm check
 
