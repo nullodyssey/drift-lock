@@ -35,7 +35,7 @@ export async function checkContracts(options: CheckOptions): Promise<{
   return { contracts: extracted.contracts, errors };
 }
 
-function checkSsotUsage(contract: DriftExtractedContract, text: string): DriftError[] {
+export function checkSsotUsage(contract: DriftExtractedContract, text: string): DriftError[] {
   const errors: DriftError[] = [];
   const invariants = contract.invariants ?? [];
   const ssot = contract.ssot ?? {};
@@ -87,7 +87,7 @@ function moduleSpecifierCandidates(modulePath: string): string[] {
   return [...candidates];
 }
 
-function checkLockedChanges(
+export function checkLockedChanges(
   root: string,
   contracts: DriftExtractedContract[],
   index: DriftContractsIndex,
@@ -115,6 +115,22 @@ function checkLockedChanges(
   }
 
   return errors;
+}
+
+export function checkLockedChangesForFile(
+  root: string,
+  file: string,
+  contracts: DriftExtractedContract[],
+  index: DriftContractsIndex,
+): DriftError[] {
+  return checkLockedChanges(
+    root,
+    contracts,
+    {
+      ...index,
+      contracts: index.contracts.filter((contract) => contract.file === file),
+    },
+  );
 }
 
 function readAcceptanceSync(root: string, id: string): { exists: boolean; valid: boolean } {

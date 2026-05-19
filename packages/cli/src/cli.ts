@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import path from 'node:path';
-import { checkContracts } from './core/checker.js';
-import { formatErrors } from './core/errors.js';
-import { extractContracts } from './core/extractor.js';
-import { defaultIndexPath, toIndex, writeIndex } from './core/index-file.js';
-import { renderContext } from './core/context.js';
+import {
+  checkContracts,
+  defaultIndexPath,
+  extractContracts,
+  formatErrors,
+  renderContext,
+  toIndex,
+  writeIndex,
+} from '@drift/core';
 
 const program = new Command();
 

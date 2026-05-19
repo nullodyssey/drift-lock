@@ -1,0 +1,185 @@
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { RuleTester } from 'eslint';
+import * as parser from '@typescript-eslint/parser';
+import { extractContractsFromSource, toIndex } from '@drift/core';
+import plugin from '../src/index.js';
+import { describe, it } from 'vitest';
+
+RuleTester.describe = describe;
+RuleTester.it = it;
+RuleTester.itOnly = it.only;
+
+const ruleTester = new RuleTester({
+  languageOptions: {
+    parser,
+    parserOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+    },
+  },
+});
+
+const rules = plugin.rules;
+
+ruleTester.run('valid-contract', rules['valid-contract'] as any, {
+  valid: [
+    {
+      filename: 'src/actions.ts',
+      code: validActionsSource(),
+    },
+    {
+      filename: 'src/actions.ts',
+      code: validActionsSource().replaceAll('\n', '\r\n'),
+    },
+  ],
+  invalid: [
+    {
+      filename: 'src/actions.ts',
+      code: `/* @drift
+version: 1
+id: billing.create-checkout-session
+scope: declaration
+kind: command
+*/
+export function createCheckoutSession() {}
+`,
+      errors: [{ message: /DRIFT002/ }, { message: /DRIFT003/ }, { message: /DRIFT003/ }],
+    },
+    {
+      filename: 'src/actions.ts',
+      code: `/* @drift
+version: 1
+id: billing.create-checkout-session
+scope: declaration
+stability: locked
+intent: Cree une session Checkout Stripe pour l'abonnement Pro.
+*/
+if (true) {}
+`,
+      errors: [{ message: /DRIFT006/ }],
+    },
+  ],
+});
+
+ruleTester.run('ssot-usage', rules['ssot-usage'] as any, {
+  valid: [
+    {
+      filename: 'src/actions.ts',
+      code: validActionsSource(),
+    },
+    {
+      filename: 'src/actions.ts',
+      code: validActionsSource()
+        .replace("ssot:\n  pricing: \"@/features/billing/pricing.ts\"", "ssot:\n  pricing: \"./pricing.ts\"")
+        .replace("import { PRO_PRICE_ID } from '@/features/billing/pricing';", "import { PRO_PRICE_ID } from './pricing.js';"),
+    },
+  ],
+  invalid: [
+    {
+      filename: 'src/actions.ts',
+      code: validActionsSource().replace("import { PRO_PRICE_ID } from '@/features/billing/pricing';\n", ''),
+      errors: [{ message: /DRIFT010/ }],
+    },
+  ],
+});
+
+{
+  const unchanged = createIndexedProject(validActionsSource());
+  const changed = createIndexedProject(validActionsSource());
+  const removed = createIndexedProject(validActionsSource());
+  const accepted = createIndexedProject(validActionsSource());
+  mkdirSync(path.join(accepted.root, '.drift/accepted-contract-changes'), { recursive: true });
+  writeFileSync(
+    path.join(accepted.root, '.drift/accepted-contract-changes/billing.create-checkout-session.md'),
+    'contract: billing.create-checkout-session\nreason: Product terminology changed intentionally.\n',
+  );
+
+  ruleTester.run('no-locked-contract-change', rules['no-locked-contract-change'] as any, {
+    valid: [
+      {
+        filename: unchanged.filename,
+        code: validActionsSource(),
+        options: [{ root: unchanged.root }],
+      },
+      {
+        filename: accepted.filename,
+        code: validActionsSource().replace("l'abonnement Pro.", "l'abonnement Premium."),
+        options: [{ root: accepted.root }],
+      },
+      {
+        filename: 'src/actions.ts',
+        code: validActionsSource().replace("l'abonnement Pro.", "l'abonnement Premium."),
+      },
+    ],
+    invalid: [
+      {
+        filename: changed.filename,
+        code: validActionsSource().replace("l'abonnement Pro.", "l'abonnement Premium."),
+        options: [{ root: changed.root }],
+        errors: [{ message: /DRIFT011/ }],
+      },
+      {
+        filename: removed.filename,
+        code: `export async function createCheckoutSession(input: unknown) {
+  return { payload: input, price: 'price_pro' };
+}
+`,
+        options: [{ root: removed.root }],
+        errors: [{ message: /DRIFT011/ }],
+      },
+    ],
+  });
+}
+
+function createIndexedProject(code: string): { root: string; filename: string } {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'drift-eslint-test-'));
+  const filename = path.join(root, 'src/actions.ts');
+  mkdirSync(path.dirname(filename), { recursive: true });
+  writeFileSync(filename, code);
+
+  const extracted = extractContractsFromSource('src/actions.ts', code);
+  mkdirSync(path.join(root, '.drift'), { recursive: true });
+  writeFileSync(path.join(root, '.drift/contracts.generated.json'), `${JSON.stringify(toIndex(extracted.contracts), null, 2)}\n`);
+
+  return { root, filename };
+}
+
+function validActionsSource(id = 'billing.create-checkout-session'): string {
+  return `import { billingSchema } from '@/features/billing/billing.schema';
+import { PRO_PRICE_ID } from '@/features/billing/pricing';
+
+/* @drift
+version: 1
+id: ${id}
+scope: declaration
+stability: locked
+
+intent: >
+  Cree une session Checkout Stripe pour l'abonnement Pro.
+
+ssot:
+  pricing: "@/features/billing/pricing.ts"
+  schema: "@/features/billing/billing.schema.ts"
+
+invariants:
+  - id: uses-pricing-ssot
+    enforce: drift/ssot-usage
+    ssot: pricing
+  - id: validates-input
+    enforce: drift/ssot-usage
+    ssot: schema
+
+llm:
+  must_not_change:
+    - pricing source
+    - accepted input shape
+    - checkout flow
+*/
+export async function createCheckoutSession(input: unknown) {
+  const payload = billingSchema.parse(input);
+  return { payload, price: PRO_PRICE_ID };
+}
+`;
+}

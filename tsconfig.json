@@ -9,7 +9,11 @@
     "skipLibCheck": true,
     "declaration": true,
     "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "@drift/core": ["packages/core/src/index.ts"]
+    },
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts"]
+  "include": ["packages/**/*.ts"]
 }
