@@ -1,0 +1,255 @@
+:root {
+  color-scheme: light;
+  --ink: oklch(18% 0.045 245);
+  --muted: oklch(43% 0.045 245);
+  --paper: oklch(97% 0.018 92);
+  --line: oklch(84% 0.035 92);
+  --blue: oklch(47% 0.13 250);
+  --green: oklch(48% 0.12 155);
+  --red: oklch(53% 0.18 28);
+  --amber: oklch(61% 0.14 72);
+  --panel: oklch(99% 0.012 92);
+  --code: oklch(21% 0.035 248);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background:
+    linear-gradient(90deg, color-mix(in oklch, var(--line), transparent 58%) 1px, transparent 1px),
+    linear-gradient(180deg, color-mix(in oklch, var(--line), transparent 65%) 1px, transparent 1px),
+    var(--paper);
+  background-size: 42px 42px;
+  font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+}
+
+pre,
+code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+.shell {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 42px 0 72px;
+}
+
+.hero {
+  min-height: 520px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  align-items: end;
+  gap: clamp(28px, 5vw, 80px);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: clamp(32px, 6vw, 72px);
+}
+
+.heroCopy {
+  max-width: 830px;
+}
+
+.eyebrow {
+  margin: 0 0 18px;
+  color: var(--blue);
+  font: 700 12px/1.2 "SFMono-Regular", Consolas, monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  max-width: 900px;
+  margin-bottom: 24px;
+  font-size: clamp(54px, 8vw, 106px);
+  line-height: 0.92;
+  letter-spacing: 0;
+}
+
+.lede {
+  max-width: 680px;
+  color: var(--muted);
+  font-size: clamp(19px, 2.2vw, 27px);
+  line-height: 1.28;
+}
+
+.verdictPanel {
+  min-height: 148px;
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  align-items: start;
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid var(--ink);
+  background: var(--panel);
+  box-shadow: 9px 9px 0 var(--ink);
+}
+
+.statusDot {
+  width: 14px;
+  height: 14px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 5px color-mix(in oklch, var(--green), transparent 80%);
+}
+
+.panelLabel {
+  margin-bottom: 8px;
+  color: var(--muted);
+  font: 700 12px/1.2 "SFMono-Regular", Consolas, monospace;
+  text-transform: uppercase;
+}
+
+.verdictPanel strong {
+  font-size: 30px;
+  line-height: 1;
+}
+
+.sequence {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  margin: 28px 0;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+
+.step {
+  min-height: 190px;
+  padding: 24px;
+  background: color-mix(in oklch, var(--paper), white 35%);
+}
+
+.step span {
+  display: block;
+  margin-bottom: 28px;
+  color: var(--blue);
+  font: 700 13px/1 "SFMono-Regular", Consolas, monospace;
+}
+
+.step h2 {
+  margin-bottom: 10px;
+  font-size: 25px;
+}
+
+.step p {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.demoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.codePanel {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.codePanel header {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.codePanel h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.codePanel pre,
+.contextBand pre {
+  margin: 0;
+  padding: 18px;
+  overflow: auto;
+  color: oklch(91% 0.018 248);
+  background: var(--code);
+  font-size: 12px;
+  line-height: 1.62;
+}
+
+.codePanel.green header {
+  border-top: 5px solid var(--green);
+}
+
+.codePanel.red header {
+  border-top: 5px solid var(--red);
+}
+
+.codePanel.amber header {
+  border-top: 5px solid var(--amber);
+}
+
+.codePanel.blue header {
+  border-top: 5px solid var(--blue);
+}
+
+.contextBand {
+  display: grid;
+  grid-template-columns: 0.75fr 1.25fr;
+  gap: 32px;
+  align-items: start;
+  margin: 34px 0;
+  padding: clamp(24px, 4vw, 44px);
+  border: 1px solid var(--ink);
+  background: oklch(93% 0.04 101);
+}
+
+.contextBand h2,
+.commands h2 {
+  margin: 0;
+  font-size: clamp(32px, 4.8vw, 56px);
+  line-height: 0.98;
+}
+
+.commands {
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.commandList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.commandList code {
+  display: block;
+  padding: 15px 16px;
+  color: var(--code);
+  background: color-mix(in oklch, var(--panel), var(--blue) 5%);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 860px) {
+  .hero,
+  .contextBand,
+  .demoGrid,
+  .commandList {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    min-height: auto;
+    padding-top: 42px;
+  }
+
+  .sequence {
+    grid-template-columns: 1fr;
+  }
+}
