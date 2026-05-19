@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Build, Check, Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build workspace
+        run: pnpm build
+
+      - name: Typecheck workspace
+        run: pnpm check
+
+      - name: Test workspace
+        run: pnpm test
+
+      - name: Check Next demo lint
+        run: pnpm --filter next-v1 lint
+
+      - name: Check Next demo Drift contracts
+        run: pnpm --filter next-v1 drift:check
+
+      - name: Verify generated Drift index is current
+        run: |
+          pnpm --filter next-v1 drift:extract
+          git diff --exit-code -- apps/next-v1/.drift/contracts.generated.json
