@@ -26,17 +26,29 @@ pnpm --filter next-v1 lint
 ## Scénario de preuve
 
 1. Ouvre `src/features/billing/actions.ts`.
-2. Supprime l'import de `BILLING_PRICES`.
-3. Remplace `price.priceId` par un prix local comme `'price_local_hotfix'`.
+2. Garde l'import de `BILLING_PRICES`.
+3. Remplace la ligne `const price = BILLING_PRICES[payload.plan];` par un objet local :
+
+```ts
+const price = {
+  priceId: 'test',
+  monthlyAmount: 10,
+  currency: 'USD',
+};
+```
+
 4. Lance :
 
 ```bash
 pnpm --filter next-v1 drift:check
 ```
 
-Résultat attendu : Drift échoue avec `DRIFT010_SSOT_NOT_USED`.
+Résultat attendu : Drift échoue avec `DRIFT013_SSOT_FLOW_NOT_PROVEN`.
+
+La règle `drift/ssot-flow` vérifie que les sorties déclarées (`return.priceId`,
+`return.amount`, `return.currency`) dérivent réellement de la SSOT `pricing`.
+Contrairement à `drift/ssot-usage`, la simple présence de l'import ne suffit pas.
 
 Pour prouver la protection des contrats locked, modifie ensuite `stability: locked` en `stability: draft`.
 
 Résultat attendu : Drift échoue avec `DRIFT011_LOCKED_CONTRACT_CHANGED`.
-

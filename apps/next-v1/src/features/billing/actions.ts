@@ -17,9 +17,13 @@ ssot:
   schema: "@/features/billing/billing.schema.ts"
 
 invariants:
-  - id: uses-pricing-ssot
-    enforce: drift/ssot-usage
+  - id: checkout-price-from-pricing
+    enforce: drift/ssot-flow
     ssot: pricing
+    sinks:
+      - return.priceId
+      - return.amount
+      - return.currency
   - id: validates-input
     enforce: drift/ssot-usage
     ssot: schema

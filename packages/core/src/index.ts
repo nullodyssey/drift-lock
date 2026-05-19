@@ -6,4 +6,6 @@ export * from './core/extractor.js';
 export * from './core/files.js';
 export * from './core/hash.js';
 export * from './core/index-file.js';
+export * from './core/module-specifier.js';
+export * from './core/ssot-flow.js';
 export * from './core/validator.js';

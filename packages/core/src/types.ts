@@ -8,8 +8,9 @@ export type DriftSsotMap = Record<string, string>;
 
 export type DriftInvariant = {
   id: string;
-  enforce: 'drift/ssot-usage';
+  enforce: 'drift/ssot-usage' | 'drift/ssot-flow';
   ssot?: string;
+  sinks?: string[];
 };
 
 export type DriftLlm = {
@@ -60,7 +61,9 @@ export type DriftErrorCode =
   | 'DRIFT009_UNKNOWN_SSOT_REFERENCE'
   | 'DRIFT010_SSOT_NOT_USED'
   | 'DRIFT011_LOCKED_CONTRACT_CHANGED'
-  | 'DRIFT012_INVALID_ACCEPTANCE_FILE';
+  | 'DRIFT012_INVALID_ACCEPTANCE_FILE'
+  | 'DRIFT013_SSOT_FLOW_NOT_PROVEN'
+  | 'DRIFT014_UNSUPPORTED_FLOW_PATTERN';
 
 export type DriftError = {
   code: DriftErrorCode;

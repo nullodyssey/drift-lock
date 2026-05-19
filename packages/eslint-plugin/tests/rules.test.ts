@@ -85,6 +85,34 @@ ruleTester.run('ssot-usage', rules['ssot-usage'] as any, {
   ],
 });
 
+ruleTester.run('ssot-flow', rules['ssot-flow'] as any, {
+  valid: [
+    {
+      filename: 'src/actions.ts',
+      code: validFlowSource(),
+    },
+  ],
+  invalid: [
+    {
+      filename: 'src/actions.ts',
+      code: validFlowSource().replace(
+        "const price = BILLING_PRICES[payload.plan];",
+        `const price = {
+    priceId: 'test',
+    monthlyAmount: 10,
+    currency: 'USD',
+  };`,
+      ),
+      errors: [{ message: /DRIFT013/ }, { message: /DRIFT013/ }, { message: /DRIFT013/ }],
+    },
+    {
+      filename: 'src/actions.ts',
+      code: validFlowSource().replace('const price = BILLING_PRICES[payload.plan];', 'const price = resolvePrice(payload.plan);'),
+      errors: [{ message: /DRIFT014/ }, { message: /DRIFT014/ }, { message: /DRIFT014/ }],
+    },
+  ],
+});
+
 {
   const unchanged = createIndexedProject(validActionsSource());
   const changed = createIndexedProject(validActionsSource());
@@ -198,6 +226,52 @@ llm:
 export async function createCheckoutSession(input: unknown) {
   const payload = billingSchema.parse(input);
   return { payload, price: PRO_PRICE_ID };
+}
+`;
+}
+
+function validFlowSource(id = 'billing.create-checkout-session'): string {
+  return `import { parseCheckoutInput } from '@/features/billing/billing.schema';
+import { BILLING_PRICES } from '@/features/billing/pricing';
+
+/* @drift
+version: 1
+id: ${id}
+scope: declaration
+stability: locked
+
+intent: >
+  Cree une session Checkout Stripe pour l'abonnement Pro.
+
+ssot:
+  pricing: "@/features/billing/pricing.ts"
+  schema: "@/features/billing/billing.schema.ts"
+
+invariants:
+  - id: checkout-price-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.priceId
+      - return.amount
+      - return.currency
+
+llm:
+  must_not_change:
+    - pricing source
+    - accepted input shape
+    - checkout flow
+*/
+export async function createCheckoutSession(input: unknown) {
+  const payload = parseCheckoutInput(input);
+  const price = BILLING_PRICES[payload.plan];
+
+  return {
+    checkoutUrl: \`https://checkout.example.test/\${price.priceId}?seats=\${payload.seats}\`,
+    priceId: price.priceId,
+    amount: price.monthlyAmount * payload.seats,
+    currency: price.currency,
+  };
 }
 `;
 }

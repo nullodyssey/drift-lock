@@ -14,9 +14,13 @@ ssot:
   schema: "@/features/billing/billing.schema.ts"
 
 invariants:
-  - id: uses-pricing-ssot
-    enforce: drift/ssot-usage
+  - id: checkout-price-from-pricing
+    enforce: drift/ssot-flow
     ssot: pricing
+    sinks:
+      - return.priceId
+      - return.amount
+      - return.currency
   - id: validates-input
     enforce: drift/ssot-usage
     ssot: schema
@@ -38,19 +42,25 @@ export async function createCheckoutSession(input: unknown) {
 }`;
 
 export const driftedAction = `import { parseCheckoutInput } from '@/features/billing/billing.schema';
+import { BILLING_PRICES } from '@/features/billing/pricing';
 
 export async function createCheckoutSession(input: unknown) {
   const payload = parseCheckoutInput(input);
+  const price = {
+    priceId: 'test',
+    monthlyAmount: 10,
+    currency: 'USD',
+  };
 
   return {
-    checkoutUrl: \`https://checkout.example.test/price_local_hotfix?seats=\${payload.seats}\`,
-    priceId: 'price_local_hotfix',
-    amount: 3900 * payload.seats,
-    currency: 'eur',
+    checkoutUrl: \`https://checkout.example.test/\${price.priceId}?seats=\${payload.seats}\`,
+    priceId: price.priceId,
+    amount: price.monthlyAmount * payload.seats,
+    currency: price.currency,
   };
 }`;
 
-export const driftOutput = `DRIFT010: Contract "billing.create-checkout-session" requires ssot "pricing" but the anchored code does not reference "@/features/billing/pricing.ts".
+export const driftOutput = `DRIFT013: Contract "billing.create-checkout-session" requires sink "return.priceId" to derive from ssot "pricing".
 
 DRIFT011: Locked @drift contract "billing.create-checkout-session" changed without explicit acceptance.`;
 

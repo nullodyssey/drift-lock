@@ -5,6 +5,8 @@ import type { DriftContractsIndex, DriftError, DriftExtractedContract } from '..
 import { driftError } from './errors.js';
 import { extractContracts, type ExtractOptions } from './extractor.js';
 import { readIndex } from './index-file.js';
+import { moduleSpecifierCandidates } from './module-specifier.js';
+import { checkSsotFlow } from './ssot-flow.js';
 
 export type CheckOptions = ExtractOptions & {
   indexPath?: string;
@@ -24,6 +26,7 @@ export async function checkContracts(options: CheckOptions): Promise<{
   for (const contract of extracted.contracts) {
     const text = await readFile(path.resolve(root, contract.file), 'utf8');
     errors.push(...checkSsotUsage(contract, text));
+    errors.push(...checkSsotFlow(contract, text));
   }
 
   // Without a committed index there is no trustworthy baseline for locked
@@ -72,19 +75,6 @@ function usesSsot(text: string, contract: DriftExtractedContract, ssotPath: stri
     const importedPath = statement.moduleSpecifier.text;
     return ssotCandidates.includes(importedPath);
   });
-}
-
-function moduleSpecifierCandidates(modulePath: string): string[] {
-  const candidates = new Set([modulePath]);
-  const extensionless = modulePath.replace(/\.(tsx|ts|jsx|js)$/, '');
-  candidates.add(extensionless);
-
-  if (modulePath.endsWith('.ts')) candidates.add(`${extensionless}.js`);
-  if (modulePath.endsWith('.tsx')) candidates.add(`${extensionless}.jsx`);
-  if (modulePath.endsWith('.js')) candidates.add(`${extensionless}.ts`);
-  if (modulePath.endsWith('.jsx')) candidates.add(`${extensionless}.tsx`);
-
-  return [...candidates];
 }
 
 export function checkLockedChanges(

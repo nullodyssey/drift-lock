@@ -3,7 +3,7 @@ import { driftError } from './errors.js';
 
 const rootFields = new Set(['version', 'id', 'scope', 'stability', 'intent', 'ssot', 'invariants', 'llm']);
 const requiredRootFields = ['version', 'id', 'scope', 'stability', 'intent'];
-const invariantFields = new Set(['id', 'enforce', 'ssot']);
+const invariantFields = new Set(['id', 'enforce', 'ssot', 'sinks']);
 const llmFields = new Set(['must_not_change']);
 
 const contractIdPattern = /^[a-z][a-z0-9]*(\.[a-z][a-z0-9-]*)+$/;
@@ -147,11 +147,11 @@ function validateInvariants(
 
     if (!('enforce' in invariant)) {
       errors.push(driftError('DRIFT003_MISSING_REQUIRED_FIELD', file, { field: `${fieldPrefix}.enforce` }, position));
-    } else if (invariant.enforce !== 'drift/ssot-usage') {
+    } else if (invariant.enforce !== 'drift/ssot-usage' && invariant.enforce !== 'drift/ssot-flow') {
       errors.push(driftError('DRIFT008_UNSUPPORTED_INVARIANT', file, { enforce: invariant.enforce }, position));
     }
 
-    if (invariant.enforce === 'drift/ssot-usage') {
+    if (invariant.enforce === 'drift/ssot-usage' || invariant.enforce === 'drift/ssot-flow') {
       if (!isString(invariant.ssot) || invariant.ssot.trim().length === 0) {
         errors.push(driftError('DRIFT004_INVALID_FIELD_VALUE', file, { field: `${fieldPrefix}.ssot` }, position));
       } else if (!ssotKeys.has(invariant.ssot)) {
@@ -164,6 +164,23 @@ function validateInvariants(
           ),
         );
       }
+    }
+
+    if (invariant.enforce === 'drift/ssot-flow') {
+      if (!Array.isArray(invariant.sinks) || invariant.sinks.length === 0 || invariant.sinks.length > 20) {
+        errors.push(driftError('DRIFT004_INVALID_FIELD_VALUE', file, { field: `${fieldPrefix}.sinks` }, position));
+      } else {
+        const seen = new Set<string>();
+        for (const sink of invariant.sinks) {
+          if (!isString(sink) || !/^return\.[A-Za-z_$][\w$]*$/.test(sink.trim()) || seen.has(sink.trim())) {
+            errors.push(driftError('DRIFT004_INVALID_FIELD_VALUE', file, { field: `${fieldPrefix}.sinks` }, position));
+            break;
+          }
+          seen.add(sink.trim());
+        }
+      }
+    } else if ('sinks' in invariant) {
+      errors.push(driftError('DRIFT002_UNKNOWN_FIELD', file, { field: `${fieldPrefix}.sinks` }, position));
     }
   }
 
@@ -221,6 +238,7 @@ function normalizeContract(contract: DriftContract): DriftContract {
       id: invariant.id.trim(),
       enforce: invariant.enforce,
       ssot: invariant.ssot?.trim(),
+      sinks: invariant.sinks?.map((sink) => sink.trim()),
     }));
   }
   if (contract.llm) {

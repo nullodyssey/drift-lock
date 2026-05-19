@@ -23,6 +23,10 @@ const messages: Record<DriftErrorCode, (details: Record<string, unknown>) => str
     `DRIFT011: Locked @drift contract "${String(id)}" changed without explicit acceptance.`,
   DRIFT012_INVALID_ACCEPTANCE_FILE: ({ id }) =>
     `DRIFT012: Invalid acceptance file for locked @drift contract "${String(id)}".`,
+  DRIFT013_SSOT_FLOW_NOT_PROVEN: ({ id, sink, ssotKey }) =>
+    `DRIFT013: Contract "${String(id)}" requires sink "${String(sink)}" to derive from ssot "${String(ssotKey)}".`,
+  DRIFT014_UNSUPPORTED_FLOW_PATTERN: ({ id, sink }) =>
+    `DRIFT014: Contract "${String(id)}" uses an unsupported ssot-flow pattern${sink ? ` for sink "${String(sink)}"` : ''}.`,
 };
 
 export function driftError(

@@ -88,6 +88,60 @@ if (true) {}
     expect(result.errors.map((error) => error.code)).toContain('DRIFT010_SSOT_NOT_USED');
   });
 
+  it('proves ssot flow for return sinks', async () => {
+    const root = await createProject({ 'src/actions.ts': validFlowSource() });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('detects local values that bypass ssot flow', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource().replace(
+        "const price = BILLING_PRICES[payload.plan];",
+        `const price = {
+    priceId: 'test',
+    monthlyAmount: 10,
+    currency: 'USD',
+  };`,
+      ),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT013_SSOT_FLOW_NOT_PROVEN');
+  });
+
+  it('detects unsupported ssot flow helper calls', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource().replace('const price = BILLING_PRICES[payload.plan];', 'const price = resolvePrice(payload.plan);'),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT014_UNSUPPORTED_FLOW_PATTERN');
+  });
+
+  it('rejects invalid ssot flow sinks', () => {
+    const result = extractContractsFromSource(
+      'src/actions.ts',
+      validFlowSource().replace('      - return.priceId', '      - checkout.priceId'),
+    );
+
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT004_INVALID_FIELD_VALUE');
+  });
+
+  it('requires sinks for ssot flow invariants', () => {
+    const result = extractContractsFromSource(
+      'src/actions.ts',
+      validFlowSource().replace(`    sinks:
+      - return.priceId
+      - return.amount
+      - return.currency
+`, ''),
+    );
+
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT004_INVALID_FIELD_VALUE');
+  });
+
   it('accepts NodeNext .js imports for .ts ssot paths', async () => {
     const root = await createProject({
       'src/actions.ts': validActionsSource()
@@ -229,6 +283,52 @@ llm:
 export async function createCheckoutSession(input: unknown) {
   const payload = billingSchema.parse(input);
   return { payload, price: PRO_PRICE_ID };
+}
+`;
+}
+
+function validFlowSource(id = 'billing.create-checkout-session'): string {
+  return `import { parseCheckoutInput } from '@/features/billing/billing.schema';
+import { BILLING_PRICES } from '@/features/billing/pricing';
+
+/* @drift
+version: 1
+id: ${id}
+scope: declaration
+stability: locked
+
+intent: >
+  Cree une session Checkout Stripe pour l'abonnement Pro.
+
+ssot:
+  pricing: "@/features/billing/pricing.ts"
+  schema: "@/features/billing/billing.schema.ts"
+
+invariants:
+  - id: checkout-price-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.priceId
+      - return.amount
+      - return.currency
+
+llm:
+  must_not_change:
+    - pricing source
+    - accepted input shape
+    - checkout flow
+*/
+export async function createCheckoutSession(input: unknown) {
+  const payload = parseCheckoutInput(input);
+  const price = BILLING_PRICES[payload.plan];
+
+  return {
+    checkoutUrl: \`https://checkout.example.test/\${price.priceId}?seats=\${payload.seats}\`,
+    priceId: price.priceId,
+    amount: price.monthlyAmount * payload.seats,
+    currency: price.currency,
+  };
 }
 `;
 }

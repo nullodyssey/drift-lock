@@ -13,9 +13,14 @@
       },
       "invariants": [
         {
-          "id": "uses-pricing-ssot",
-          "enforce": "drift/ssot-usage",
-          "ssot": "pricing"
+          "id": "checkout-price-from-pricing",
+          "enforce": "drift/ssot-flow",
+          "ssot": "pricing",
+          "sinks": [
+            "return.priceId",
+            "return.amount",
+            "return.currency"
+          ]
         },
         {
           "id": "validates-input",
@@ -35,7 +40,7 @@
         "type": "function",
         "name": "createCheckoutSession"
       },
-      "contentHash": "sha256:95ad2212aeda177e80412dc9c21f9958a82cbde8c6f4dd3b8e5430c546f1a82d"
+      "contentHash": "sha256:341435355793df7821cfc43f7623160c6848fc571b4f16c0a68cba9368e464ec"
     }
   ]
 }
