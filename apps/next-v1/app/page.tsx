@@ -11,14 +11,14 @@ export default function Home() {
     <main className="shell">
       <section className="hero">
         <div className="heroCopy">
-          <p className="eyebrow">Drift V1 / Next.js App Router</p>
+          <p className="eyebrow">DriftLock V1 / Next.js App Router</p>
           <h1>AI can edit the code. It cannot silently rewrite the contract.</h1>
           <p className="lede">
-            This mini app demonstrates the core idea behind Drift: local code contracts become executable guardrails for
+            This mini app demonstrates the core idea behind DriftLock: local code contracts become executable guardrails for
             AI-assisted development.
           </p>
         </div>
-        <div className="verdictPanel" aria-label="Drift check summary">
+        <div className="verdictPanel" aria-label="DriftLock check summary">
           <span className="statusDot" />
           <div>
             <p className="panelLabel">CI signal</p>
@@ -27,7 +27,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="sequence" aria-label="Drift workflow">
+      <section className="sequence" aria-label="DriftLock workflow">
         {checks.map(([title, body], index) => (
           <article className="step" key={title}>
             <span>{String(index + 1).padStart(2, '0')}</span>
@@ -41,7 +41,7 @@ export default function Home() {
         <CodePanel title="1. Contract near the server action" code={demoContract} />
         <CodePanel title="2. Healthy implementation" code={healthyAction} tone="green" />
         <CodePanel title="3. Typical LLM drift" code={driftedAction} tone="red" />
-        <CodePanel title="4. Drift response" code={driftOutput} tone="amber" />
+        <CodePanel title="4. DriftLock response" code={driftOutput} tone="amber" />
       </section>
 
       <section className="contextBand">
@@ -55,9 +55,9 @@ export default function Home() {
       <section className="commands">
         <h2>Run the proof locally</h2>
         <div className="commandList">
-          <code>pnpm --filter next-v1 drift:extract</code>
-          <code>pnpm --filter next-v1 drift:context</code>
-          <code>pnpm --filter next-v1 drift:check</code>
+          <code>pnpm --filter next-v1 drift-lock:extract</code>
+          <code>pnpm --filter next-v1 drift-lock:context</code>
+          <code>pnpm --filter next-v1 drift-lock:check</code>
           <code>pnpm --filter next-v1 lint</code>
         </div>
       </section>

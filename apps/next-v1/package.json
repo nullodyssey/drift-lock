@@ -8,13 +8,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "drift:extract": "drift extract --root .",
-    "drift:check": "drift check --root .",
-    "drift:context": "drift context src/features/billing/actions.ts --root ."
+    "drift-lock:extract": "drift-lock extract",
+    "drift-lock:check": "drift-lock check",
+    "drift-lock:context": "drift-lock context src/features/billing/actions.ts"
   },
   "dependencies": {
-    "drift": "workspace:*",
-    "eslint-plugin-drift": "workspace:*",
+    "drift-lock": "workspace:*",
+    "eslint-plugin-drift-lock": "workspace:*",
     "next": "16.2.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

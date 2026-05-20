@@ -1,4 +1,4 @@
-# Drift Next V1 Demo
+# DriftLock Next V1 Demo
 
 Mini projet Next.js qui démontre la promesse V1 :
 
@@ -12,14 +12,14 @@ Mini projet Next.js qui démontre la promesse V1 :
   - `src/features/billing/pricing.ts`
   - `src/features/billing/billing.schema.ts`
 - Un index commité : `.drift/contracts.generated.json`
-- Une config ESLint qui active `eslint-plugin-drift`
+- Une config ESLint qui active `eslint-plugin-drift-lock`
 
 ## Commandes utiles
 
 ```bash
 pnpm --filter next-v1 dev
-pnpm --filter next-v1 drift:context
-pnpm --filter next-v1 drift:check
+pnpm --filter next-v1 drift-lock:context
+pnpm --filter next-v1 drift-lock:check
 pnpm --filter next-v1 lint
 ```
 
@@ -40,10 +40,10 @@ const price = {
 4. Lance :
 
 ```bash
-pnpm --filter next-v1 drift:check
+pnpm --filter next-v1 drift-lock:check
 ```
 
-Résultat attendu : Drift échoue avec `DRIFT013_SSOT_FLOW_NOT_PROVEN`.
+Résultat attendu : DriftLock échoue avec `DRIFT013_SSOT_FLOW_NOT_PROVEN`.
 
 La règle `drift/ssot-flow` vérifie que les sorties déclarées (`return.priceId`,
 `return.amount`, `return.currency`) dérivent réellement de la SSOT `pricing`.
@@ -51,4 +51,4 @@ Contrairement à `drift/ssot-usage`, la simple présence de l'import ne suffit p
 
 Pour prouver la protection des contrats locked, modifie ensuite `stability: locked` en `stability: draft`.
 
-Résultat attendu : Drift échoue avec `DRIFT011_LOCKED_CONTRACT_CHANGED`.
+Résultat attendu : DriftLock échoue avec `DRIFT011_LOCKED_CONTRACT_CHANGED`.

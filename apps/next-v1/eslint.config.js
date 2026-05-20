@@ -1,5 +1,5 @@
 import tsParser from '@typescript-eslint/parser';
-import drift from 'eslint-plugin-drift';
+import driftLock from 'eslint-plugin-drift-lock';
 
 export default [
   {
@@ -17,6 +17,6 @@ export default [
         },
       },
     },
-    ...drift.configs.recommended,
+    ...driftLock.configs.recommended,
   },
 ];
