@@ -1,4 +1,4 @@
-import { checkSsotFlow, extractContractsFromSource } from '@drift/core';
+import { checkSsotFlow, extractContractsFromSource } from '@drift-lock/core';
 import { getRuleOptions, relativeFilename, reportDriftError } from '../utils.js';
 
 export const ssotFlowRule = {

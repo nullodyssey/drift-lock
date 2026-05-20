@@ -3,9 +3,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { RuleTester } from 'eslint';
 import * as parser from '@typescript-eslint/parser';
-import { extractContractsFromSource, toIndex } from '@drift/core';
+import { extractContractsFromSource, toIndex } from '@drift-lock/core';
 import plugin from '../src/index.js';
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 RuleTester.describe = describe;
 RuleTester.it = it;
@@ -22,6 +22,16 @@ const ruleTester = new RuleTester({
 });
 
 const rules = plugin.rules;
+
+it('exposes recommended rules under the drift-lock namespace', () => {
+  expect(plugin.configs.recommended.plugins).toHaveProperty('drift-lock');
+  expect(plugin.configs.recommended.rules).toMatchObject({
+    'drift-lock/valid-contract': 'error',
+    'drift-lock/ssot-usage': 'error',
+    'drift-lock/ssot-flow': 'error',
+    'drift-lock/no-locked-contract-change': 'error',
+  });
+});
 
 ruleTester.run('valid-contract', rules['valid-contract'] as any, {
   valid: [

@@ -1,5 +1,6 @@
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import type { DriftError } from '@drift/core';
+import type { DriftError } from '@drift-lock/core';
 
 export type RuleOptions = {
   root?: string;
@@ -8,9 +9,11 @@ export type RuleOptions = {
 
 export function getRuleOptions(context: any): Required<RuleOptions> {
   const options = (context.options?.[0] ?? {}) as RuleOptions;
+  const root = path.resolve(options.root ?? process.cwd());
+  const config = readConfigSync(root);
   return {
-    root: path.resolve(options.root ?? process.cwd()),
-    indexPath: options.indexPath ?? '.drift/contracts.generated.json',
+    root,
+    indexPath: options.indexPath ?? config.index,
   };
 }
 
@@ -28,4 +31,14 @@ export function reportDriftError(context: any, error: DriftError): void {
     },
     message: error.message,
   });
+}
+
+function readConfigSync(root: string): { index: string } {
+  try {
+    const parsed = JSON.parse(readFileSync(path.join(root, '.drift/config.json'), 'utf8')) as { index?: unknown };
+    if (typeof parsed.index === 'string' && parsed.index.trim()) return { index: parsed.index };
+  } catch {
+    // ESLint rules should keep the historical default when config is absent.
+  }
+  return { index: '.drift/contracts.generated.json' };
 }

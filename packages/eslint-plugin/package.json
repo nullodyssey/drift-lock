@@ -1,8 +1,10 @@
 {
-  "name": "eslint-plugin-drift",
+  "name": "eslint-plugin-drift-lock",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -12,10 +14,10 @@
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean --out-dir dist",
     "check": "tsc --noEmit",
-    "test": "pnpm --filter @drift/core run build && vitest run"
+    "test": "pnpm --filter @drift-lock/core run build && vitest run"
   },
   "dependencies": {
-    "@drift/core": "workspace:*"
+    "@drift-lock/core": "workspace:*"
   },
   "peerDependencies": {
     "eslint": ">=9"

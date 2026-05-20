@@ -13,13 +13,13 @@ type DriftPlugin = {
   configs: {
     recommended: {
       plugins: {
-        drift: DriftPlugin;
+        'drift-lock': DriftPlugin;
       };
       rules: {
-        'drift/valid-contract': 'error';
-        'drift/ssot-usage': 'error';
-        'drift/ssot-flow': 'error';
-        'drift/no-locked-contract-change': 'error';
+        'drift-lock/valid-contract': 'error';
+        'drift-lock/ssot-usage': 'error';
+        'drift-lock/ssot-flow': 'error';
+        'drift-lock/no-locked-contract-change': 'error';
       };
     };
   };
@@ -39,13 +39,13 @@ const plugin = {
 
 plugin.configs.recommended = {
   plugins: {
-    drift: plugin,
+    'drift-lock': plugin,
   },
   rules: {
-    'drift/valid-contract': 'error',
-    'drift/ssot-usage': 'error',
-    'drift/ssot-flow': 'error',
-    'drift/no-locked-contract-change': 'error',
+    'drift-lock/valid-contract': 'error',
+    'drift-lock/ssot-usage': 'error',
+    'drift-lock/ssot-flow': 'error',
+    'drift-lock/no-locked-contract-change': 'error',
   },
 };
 

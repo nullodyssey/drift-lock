@@ -11,7 +11,7 @@
     "outDir": "dist",
     "baseUrl": ".",
     "paths": {
-      "@drift/core": ["packages/core/src/index.ts"]
+      "@drift-lock/core": ["packages/core/src/index.ts"]
     },
     "types": ["node", "vitest/globals"]
   },

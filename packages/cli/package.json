@@ -1,18 +1,22 @@
 {
-  "name": "drift",
+  "name": "drift-lock",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "bin": {
-    "drift": "./bin/drift.js"
+    "drift-lock": "./bin/drift-lock.js"
   },
+  "files": [
+    "bin",
+    "dist",
+    "skills"
+  ],
   "scripts": {
     "build": "tsup src/cli.ts --format esm --dts --clean --out-dir dist",
     "check": "tsc --noEmit",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@drift/core": "workspace:*",
+    "@drift-lock/core": "workspace:*",
     "commander": "^14.0.2"
   }
 }
