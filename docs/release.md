@@ -91,11 +91,14 @@ Expected dependency:
 ### 4. Publish in dependency order
 
 For an alpha release, publish with the `alpha` npm dist-tag.
+Local publishes must explicitly disable provenance because automatic npm
+provenance generation only works from supported CI providers such as GitHub
+Actions. The CI release workflow enables provenance explicitly.
 
 ```bash
-npm publish /tmp/drift-core-packs/drift-core-core-0.1.1-alpha.tgz --access public --tag alpha
-npm publish /tmp/drift-core-packs/drift-core-cli-0.1.1-alpha.tgz --access public --tag alpha
-npm publish /tmp/drift-core-packs/drift-core-eslint-plugin-0.1.1-alpha.tgz --access public --tag alpha
+npm publish /tmp/drift-core-packs/drift-core-core-0.1.1-alpha.tgz --access public --tag alpha --provenance=false
+npm publish /tmp/drift-core-packs/drift-core-cli-0.1.1-alpha.tgz --access public --tag alpha --provenance=false
+npm publish /tmp/drift-core-packs/drift-core-eslint-plugin-0.1.1-alpha.tgz --access public --tag alpha --provenance=false
 ```
 
 ### 5. Verify npm
@@ -213,4 +216,6 @@ npx --yes @drift-core/cli skills list
 - Use SemVer prerelease syntax: `0.1.1-alpha`, not `0.1.1.alpha`.
 - Use the `alpha` npm dist-tag for prereleases.
 - Publish order matters: core first, then CLI and ESLint plugin.
+- Keep provenance explicit in the release path: disabled for local P1 publishes,
+  enabled with `--provenance` in the CI workflow.
 - Do not configure a long-lived `NPM_TOKEN` if Trusted Publishing is enabled.
