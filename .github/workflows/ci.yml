@@ -40,8 +40,8 @@ jobs:
       - name: Build workspace
         run: pnpm build
 
-      - name: Check Drift CLI binary
-        run: pnpm --filter next-v1 exec drift --help
+      - name: Check DriftLock CLI binary
+        run: pnpm --filter next-v1 exec drift-lock --help
 
       - name: Typecheck workspace
         run: pnpm check
@@ -52,10 +52,10 @@ jobs:
       - name: Check Next demo lint
         run: pnpm --filter next-v1 lint
 
-      - name: Check Next demo Drift contracts
-        run: pnpm --filter next-v1 drift:check
+      - name: Check Next demo DriftLock contracts
+        run: pnpm --filter next-v1 drift-lock:check
 
-      - name: Verify generated Drift index is current
+      - name: Verify generated DriftLock index is current
         run: |
-          pnpm --filter next-v1 drift:extract
+          pnpm --filter next-v1 drift-lock:extract
           git diff --exit-code -- apps/next-v1/.drift/contracts.generated.json
