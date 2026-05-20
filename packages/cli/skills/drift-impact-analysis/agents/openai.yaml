@@ -1,0 +1,4 @@
+interface:
+  display_name: "Drift Impact Analysis"
+  short_description: "Assess contract drift impact"
+  default_prompt: "Use $drift-impact-analysis to assess what contracts and checks are affected by this change."

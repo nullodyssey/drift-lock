@@ -10,6 +10,7 @@ import {
   toIndex,
   writeIndex,
 } from '@drift/core';
+import { installSkills, listBundledSkills, type SkillProvider } from './skills.js';
 
 const program = new Command();
 
@@ -58,6 +59,38 @@ program
     console.log(`Checked ${result.contracts.length} @drift contract(s).`);
   });
 
+const skills = program.command('skills').description('Manage Drift agent skills');
+
+skills
+  .command('list')
+  .description('List bundled Drift skills')
+  .action(async () => {
+    const bundled = await listBundledSkills();
+    for (const skill of bundled) console.log(skill);
+  });
+
+skills
+  .command('install')
+  .description('Install bundled Drift skills into the current project')
+  .argument('[skills...]', 'skill names to install; defaults to all bundled skills')
+  .option('--provider <provider>', 'target provider: openai, claude, or cursor', 'openai')
+  .option('--root <dir>', 'project root', process.cwd())
+  .option('--drift-command <command>', 'Drift command prefix embedded in installed skills', 'npx --yes drift')
+  .option('--force', 'overwrite existing installed skills', false)
+  .action(async (selected: string[], options: { provider: string; root: string; driftCommand: string; force: boolean }) => {
+    const provider = parseProvider(options.provider);
+    const installed = await installSkills({
+      provider,
+      root: path.resolve(options.root),
+      driftCommand: options.driftCommand,
+      force: options.force,
+      skills: selected,
+    });
+    for (const skill of installed) {
+      console.log(`Installed ${skill.name} -> ${skill.path}`);
+    }
+  });
+
 // Commander already validates command shape. This catch is only for unexpected
 // runtime failures so user-facing Drift validation errors stay formatted by fail().
 program.parseAsync().catch((error: unknown) => {
@@ -70,4 +103,9 @@ program.parseAsync().catch((error: unknown) => {
 function fail(errors: Parameters<typeof formatErrors>[0]): never {
   console.error(formatErrors(errors));
   process.exit(1);
+}
+
+function parseProvider(value: string): SkillProvider {
+  if (value === 'openai' || value === 'claude' || value === 'cursor') return value;
+  throw new Error(`Unsupported skills provider "${value}". Expected openai, claude, or cursor.`);
 }
