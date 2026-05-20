@@ -2,10 +2,11 @@ import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { checkContracts } from '@drift/core';
-import { renderContext } from '@drift/core';
-import { extractContracts, extractContractsFromSource } from '@drift/core';
-import { toIndex, writeIndex } from '@drift/core';
+import { checkContracts } from '@drift-lock/core';
+import { renderContext } from '@drift-lock/core';
+import { extractContracts, extractContractsFromSource } from '@drift-lock/core';
+import { readDriftConfig, writeDriftConfig } from '@drift-lock/core';
+import { toIndex, writeIndex } from '@drift-lock/core';
 
 describe('drift v1 core', () => {
   it('extracts a valid declaration contract with a stable hash', () => {
@@ -74,6 +75,28 @@ if (true) {}
 
     const result = await extractContracts({ root });
     expect(result.errors.map((error) => error.code)).toContain('DRIFT005_DUPLICATE_CONTRACT_ID');
+  });
+
+  it('reads DriftLock config with defaults and explicit values', async () => {
+    const root = await createProject({});
+
+    await expect(readDriftConfig(root)).resolves.toEqual({
+      version: 1,
+      source: 'src',
+      index: '.drift/contracts.generated.json',
+    });
+
+    await writeDriftConfig(root, {
+      version: 1,
+      source: 'app',
+      index: '.drift/custom.generated.json',
+    });
+
+    await expect(readDriftConfig(root)).resolves.toEqual({
+      version: 1,
+      source: 'app',
+      index: '.drift/custom.generated.json',
+    });
   });
 
   it('detects missing ssot usage', async () => {
