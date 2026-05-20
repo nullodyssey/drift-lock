@@ -1,74 +1,223 @@
 # DriftLock
 
-DriftLock explores a simple idea: AI agents should not only receive prompts, they should receive local, executable intent from the codebase itself.
+DriftLock turns local engineering intent into agent context, ESLint feedback,
+and CI checks so AI-assisted TypeScript changes cannot silently drift away from
+critical sources of truth.
 
-The long-term goal is to make critical product and engineering intent explicit enough that an agent can understand what must stay stable, and deterministic checks can fail when the implementation drifts away from that intent.
+## Why DriftLock
 
-V1 deliberately keeps the scope small. It focuses on colocated `@drift` contracts, committed contract indexes, targeted agent context, locked invariants, and SSOT checks. This narrow surface is the proof that the final objective is possible: code can carry enforceable intent, and AI-assisted changes can be checked against it.
+AI coding agents are fast, but they do not naturally know which local rules are
+critical. A small refactor can hardcode a price, bypass an input schema, weaken
+a checkout flow, or keep an import around while the returned value no longer
+comes from the intended source.
 
-## Why
-
-AI coding agents are fast, but they do not naturally know which local rules must not change. A small refactor can inline a price, bypass a schema, weaken a checkout flow, or keep an import around while the actual returned value no longer comes from the intended source.
-
-DriftLock makes those constraints explicit in the codebase:
+DriftLock makes those rules explicit and checkable:
 
 - `@drift` contracts describe local intent and sources of truth.
 - `drift-lock context` gives agents the relevant contract before they edit.
 - `drift-lock check` validates supported invariants in CI.
-- ESLint rules bring DriftLock feedback into the normal developer loop.
-- `drift/ssot-flow` verifies that declared return fields actually derive from the expected SSOT, not just that an import exists.
-- Agent skills can install workflow guidance for OpenAI Codex, Claude, and Cursor.
+- `eslint-plugin-drift-lock` brings the same feedback into the developer loop.
 
-The goal is not to replace tests or code review. The goal is to make critical intent machine-readable enough that AI-assisted changes cannot silently bypass it.
+DriftLock does not replace tests or code review. It adds a deterministic layer
+for the local product and engineering intent that agents often miss.
 
-## Goal
+## Install
 
-The final goal is for an AI agent to enter a codebase and immediately understand the local rules that matter: what a feature is supposed to preserve, which sources of truth are authoritative, which outputs are critical, and which changes require explicit product or engineering approval.
-
-The "wow" moment is simple: ask an agent to change critical code, and before it edits, it can explain the relevant contracts, identify the risk, use the right source of truth, and prove afterward that the implementation still respects the declared intent.
-
-In future versions, this could become a task-level workflow:
+Install DriftLock into a TypeScript project:
 
 ```bash
-drift-lock task "add X feature"
+npx drift-lock install
 ```
 
-Instead of sending a raw prompt directly to an agent, DriftLock would translate the request into contract-aware context: impacted contracts, authoritative sources of truth, locked constraints, likely drift risks, safe implementation boundaries, and required checks.
+Useful install options:
 
-DriftLock should make the codebase feel self-defending. Not because the agent is trusted to remember every rule, but because the rules live next to the code and can be extracted, shared, and checked.
+```bash
+npx drift-lock install --source src
+npx drift-lock install --ci github
+npx drift-lock install --agent openai
+npx drift-lock install --dry-run
+```
 
-## DriftLock and LLM Rule Files
+The installer adds DriftLock scripts, creates `.drift/config.json`, generates a
+contract index, and can configure ESLint and GitHub Actions when requested.
 
-DriftLock is complementary to LLM rule files such as `AGENTS.md`, `CLAUDE.md`, Cursor rules, or provider-specific instructions.
+## First Contract
 
-Those files are useful to describe global team preferences, coding style, workflows, and agent behavior. DriftLock targets a different layer: local product and engineering intent attached to the code that carries the risk.
+Add a `@drift` contract next to code that must preserve a local source of truth:
 
-The difference is enforcement. A rule file can tell an agent what to do. A DriftLock contract can be extracted into context and then checked deterministically, so the codebase can fail when a critical invariant is silently bypassed.
+```ts
+import { parseCheckoutInput } from '@/features/billing/billing.schema';
+import { BILLING_PRICES } from '@/features/billing/pricing';
 
-## What's Next
+/* @drift
+version: 1
+id: billing.create-checkout-session
+scope: declaration
+stability: locked
 
-DriftLock V1 proves the primitive:
+intent: >
+  Create a Checkout session for the Pro subscription while respecting the billing sources of truth.
+
+ssot:
+  pricing: "@/features/billing/pricing.ts"
+  schema: "@/features/billing/billing.schema.ts"
+
+invariants:
+  - id: checkout-price-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.priceId
+      - return.amount
+      - return.currency
+  - id: validates-input
+    enforce: drift/ssot-usage
+    ssot: schema
+
+llm:
+  must_not_change:
+    - pricing source
+    - accepted input shape
+    - checkout flow
+*/
+export async function createCheckoutSession(input: unknown) {
+  const payload = parseCheckoutInput(input);
+  const price = BILLING_PRICES[payload.plan];
+
+  return {
+    priceId: price.priceId,
+    amount: price.monthlyAmount * payload.seats,
+    currency: price.currency,
+  };
+}
+```
+
+Then extract the committed baseline:
+
+```bash
+drift-lock extract
+```
+
+Commit `.drift/contracts.generated.json` so locked contract changes can be
+detected in CI.
+
+## Commands
+
+```bash
+drift-lock context <file>
+drift-lock extract
+drift-lock check
+drift-lock skills list
+drift-lock skills install --provider openai
+```
+
+`context` renders contract-aware context for agents. `extract` updates the
+committed contract index. `check` validates contracts, locked baselines, and
+supported invariants.
+
+## ESLint
+
+DriftLock ships an ESLint 9 flat config plugin:
+
+```js
+import driftLock from 'eslint-plugin-drift-lock';
+
+export default [
+  {
+    plugins: { 'drift-lock': driftLock },
+    rules: {
+      ...driftLock.configs.recommended.rules,
+    },
+  },
+];
+```
+
+The recommended config enables:
 
 ```txt
-@drift contract
-  -> extract
-  -> committed index
-  -> agent context
-  -> static drift checks
-  -> CI failure on supported drift
+drift-lock/valid-contract
+drift-lock/no-locked-contract-change
+drift-lock/ssot-usage
+drift-lock/ssot-flow
 ```
 
-The next direction is stronger flow analysis and better agent workflows:
+## CI
 
-- deeper object and collection paths for `drift/ssot-flow`
-- branch-aware and union-aware sink checks
-- safer handling of destructuring, spreads, and helper calls
-- broader ESLint rules for fast editor and CI feedback
-- richer installable skills for AI development workflows
-- task-level context generation with commands like `drift-lock task "add X feature"`
-- a clearer path from local demo to published CLI usage
+Generate a GitHub Actions workflow during install:
 
-## Quick start
+```bash
+npx drift-lock install --ci github
+```
+
+Or add the checks manually:
+
+```bash
+drift-lock check
+eslint .
+```
+
+## What DriftLock Catches
+
+DriftLock V1 catches supported forms of:
+
+- invalid `@drift` contract syntax or schema
+- locked contract changes without explicit acceptance
+- missing usage of declared sources of truth
+- return fields that no longer derive from a declared source of truth
+
+The practical failure mode is simple: if an agent replaces a declared pricing
+source with a hardcoded local object, `drift-lock check` can fail before that
+change merges.
+
+## V1 Limits
+
+V1 is intentionally narrow:
+
+- TypeScript and TSX files
+- contracts written as `/* @drift */` block comments
+- `scope: file` and `scope: declaration`
+- `stability: draft` and `stability: locked`
+- `drift/ssot-usage`
+- `drift/ssot-flow` for simple local return-object flows
+
+`drift/ssot-flow` does not try to prove arbitrary program correctness. Complex
+helpers, mutations, spreads, deep object paths, collections, and branch-heavy
+flows may be unsupported in V1 and should fail clearly rather than create a
+false sense of safety.
+
+## Packages
+
+```txt
+drift-lock                 CLI and installer
+@drift-lock/core           Parser, extractor, context, and checks
+eslint-plugin-drift-lock   ESLint 9 flat config plugin
+```
+
+## Demo
+
+This repo includes a small Next.js demo that shows the main V1 proof:
+
+```bash
+pnpm --filter next-v1 drift-lock:context
+pnpm --filter next-v1 drift-lock:check
+pnpm --filter next-v1 lint
+```
+
+See [apps/next-v1/README.md](./apps/next-v1/README.md) for the full scenario.
+
+## Philosophy
+
+DriftLock is complementary to rule files such as `AGENTS.md`, `CLAUDE.md`,
+Cursor rules, or provider-specific instructions. Those files describe global
+team preferences and workflows. DriftLock targets a different layer: local
+product and engineering intent attached to code that carries risk.
+
+The difference is enforcement. A rule file can tell an agent what to do. A
+DriftLock contract can be extracted into context and then checked
+deterministically, so the codebase can fail when a critical invariant is
+silently bypassed.
+
+## Local Development
 
 Install dependencies:
 
@@ -76,36 +225,18 @@ Install dependencies:
 pnpm install
 ```
 
-Build the workspace:
+Build and verify the workspace:
 
 ```bash
 pnpm build
-```
-
-Inspect the DriftLock context for the demo action:
-
-```bash
-pnpm --filter next-v1 drift-lock:context
-```
-
-Run the drift-lock check:
-
-```bash
-pnpm --filter next-v1 drift-lock:check
-```
-
-Run the full verification suite:
-
-```bash
 pnpm check
 pnpm test
 ```
 
-Install agent skills for local development:
+Run the demo checks:
 
 ```bash
-pnpm --filter next-v1 exec drift-lock skills list
-pnpm --filter next-v1 exec drift-lock skills install --provider openai --drift-command "pnpm --filter next-v1 exec drift-lock"
+pnpm --filter next-v1 drift-lock:context
+pnpm --filter next-v1 drift-lock:check
+pnpm --filter next-v1 lint
 ```
-
-To see the full proof scenario, follow the [Next.js demo README](./apps/next-v1/README.md).
