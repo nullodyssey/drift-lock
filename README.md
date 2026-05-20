@@ -175,15 +175,16 @@ V1 is intentionally narrow:
 
 - TypeScript and TSX files
 - contracts written as `/* @drift */` block comments
-- `scope: file` and `scope: declaration`
+- `scope: file` for context, locked baselines, and `drift/ssot-usage`
+- `scope: declaration` for function-level flow checks
 - `stability: draft` and `stability: locked`
 - `drift/ssot-usage`
-- `drift/ssot-flow` for simple local return-object flows
+- `drift/ssot-flow` for simple declaration-scoped function return-object flows
 
 `drift/ssot-flow` does not try to prove arbitrary program correctness. Complex
 helpers, mutations, spreads, deep object paths, collections, and branch-heavy
 flows may be unsupported in V1 and should fail clearly rather than create a
-false sense of safety.
+false sense of safety. `drift/ssot-flow` is rejected on `scope: file` contracts.
 
 ## Packages
 

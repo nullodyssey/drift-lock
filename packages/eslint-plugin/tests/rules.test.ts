@@ -70,6 +70,11 @@ if (true) {}
 `,
       errors: [{ message: /DRIFT006/ }],
     },
+    {
+      filename: 'src/actions.ts',
+      code: fileScopedFlowSource(),
+      errors: [{ message: /DRIFT008/ }],
+    },
   ],
 });
 
@@ -237,6 +242,32 @@ export async function createCheckoutSession(input: unknown) {
   const payload = billingSchema.parse(input);
   return { payload, price: PRO_PRICE_ID };
 }
+`;
+}
+
+function fileScopedFlowSource(): string {
+  return `import { PRO_PRICE_ID } from '@/features/billing/pricing';
+
+/* @drift
+version: 1
+id: billing.module-boundary
+scope: file
+stability: locked
+
+intent: >
+  Keep this billing module wired to the declared pricing source of truth.
+
+ssot:
+  pricing: "@/features/billing/pricing.ts"
+
+invariants:
+  - id: checkout-price-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.priceId
+*/
+export const price = PRO_PRICE_ID;
 `;
 }
 

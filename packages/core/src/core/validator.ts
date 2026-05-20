@@ -68,7 +68,7 @@ export function validateContractObject(
   const ssotErrors = validateSsot(parsed.ssot, file, position);
   errors.push(...ssotErrors);
 
-  const invariantErrors = validateInvariants(parsed.invariants, parsed.ssot, file, position);
+  const invariantErrors = validateInvariants(parsed.invariants, parsed.ssot, parsed.scope, file, position);
   errors.push(...invariantErrors);
 
   const llmErrors = validateLlm(parsed.llm, file, position);
@@ -110,6 +110,7 @@ function validateSsot(value: unknown, file: string, position: { line: number; co
 function validateInvariants(
   value: unknown,
   ssot: unknown,
+  scope: unknown,
   file: string,
   position: { line: number; column: number },
 ): DriftError[] {
@@ -167,6 +168,10 @@ function validateInvariants(
     }
 
     if (invariant.enforce === 'drift/ssot-flow') {
+      if (scope === 'file') {
+        errors.push(driftError('DRIFT008_UNSUPPORTED_INVARIANT', file, { enforce: invariant.enforce }, position));
+        continue;
+      }
       if (!Array.isArray(invariant.sinks) || invariant.sinks.length === 0 || invariant.sinks.length > 20) {
         errors.push(driftError('DRIFT004_INVALID_FIELD_VALUE', file, { field: `${fieldPrefix}.sinks` }, position));
       } else {

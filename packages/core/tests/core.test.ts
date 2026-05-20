@@ -111,6 +111,28 @@ if (true) {}
     expect(result.errors.map((error) => error.code)).toContain('DRIFT010_SSOT_NOT_USED');
   });
 
+  it('accepts ssot usage on file-scoped contracts', () => {
+    const result = extractContractsFromSource('src/actions.ts', fileScopedUsageSource());
+
+    expect(result.errors).toEqual([]);
+    expect(result.contracts[0]).toMatchObject({
+      id: 'billing.module-boundary',
+      scope: 'file',
+      anchor: { type: 'file' },
+    });
+  });
+
+  it('rejects ssot flow on file-scoped contracts', () => {
+    const result = extractContractsFromSource(
+      'src/actions.ts',
+      fileScopedUsageSource().replace('enforce: drift/ssot-usage', `enforce: drift/ssot-flow
+    sinks:
+      - return.priceId`),
+    );
+
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT008_UNSUPPORTED_INVARIANT');
+  });
+
   it('proves ssot flow for return sinks', async () => {
     const root = await createProject({ 'src/actions.ts': validFlowSource() });
 
@@ -342,6 +364,30 @@ export async function createCheckoutSession(input: unknown) {
   const payload = billingSchema.parse(input);
   return { payload, price: PRO_PRICE_ID };
 }
+`;
+}
+
+function fileScopedUsageSource(): string {
+  return `import { PRO_PRICE_ID } from '@/features/billing/pricing';
+
+/* @drift
+version: 1
+id: billing.module-boundary
+scope: file
+stability: locked
+
+intent: >
+  Keep this billing module wired to the declared pricing source of truth.
+
+ssot:
+  pricing: "@/features/billing/pricing.ts"
+
+invariants:
+  - id: uses-pricing-ssot
+    enforce: drift/ssot-usage
+    ssot: pricing
+*/
+export const price = PRO_PRICE_ID;
 `;
 }
 
