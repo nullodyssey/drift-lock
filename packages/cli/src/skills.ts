@@ -96,11 +96,30 @@ async function installCursorRule(
   const skillText = renderTemplate(await readFile(path.join(source, 'SKILL.md'), 'utf8'), template);
   const metadata = parseSkillFrontmatter(skillText);
   const body = stripFrontmatter(skillText);
-  const rule = `---\ndescription: "${escapeYamlString(metadata.description)}"\nglobs: []\nalwaysApply: false\n---\n\n${body.trim()}\n`;
+  const references = await renderCursorReferences(source, template);
+  const content = [body.trim(), references].filter(Boolean).join('\n\n');
+  const rule = `---\ndescription: "${escapeYamlString(metadata.description)}"\nglobs: []\nalwaysApply: false\n---\n\n${content}\n`;
 
   await mkdir(path.dirname(destination), { recursive: true });
   await writeFile(destination, rule, 'utf8');
   return { name: skill, path: destination };
+}
+
+async function renderCursorReferences(source: string, template: SkillTemplate): Promise<string> {
+  const referencesRoot = path.join(source, 'references');
+  if (!(await exists(referencesRoot))) return '';
+
+  const files = await listFiles(referencesRoot);
+  if (files.length === 0) return '';
+
+  const rendered: string[] = ['## Bundled References'];
+  for (const file of files) {
+    const relativePath = toPosixPath(path.relative(source, file));
+    const content = isTemplateTextFile(file) ? renderTemplate(await readFile(file, 'utf8'), template) : await readFile(file, 'utf8');
+    rendered.push(`### ${relativePath}\n\n${content.trim()}`);
+  }
+
+  return rendered.join('\n\n');
 }
 
 async function copyRecursive(
@@ -142,6 +161,20 @@ async function exists(file: string): Promise<boolean> {
   }
 }
 
+async function listFiles(directory: string): Promise<string[]> {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const files: string[] = [];
+  for (const entry of entries) {
+    const file = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...(await listFiles(file)));
+      continue;
+    }
+    if (entry.isFile()) files.push(file);
+  }
+  return files.sort();
+}
+
 function parseSkillFrontmatter(text: string): { name: string; description: string } {
   const match = text.match(/^---\n([\s\S]*?)\n---/);
   if (!match) throw new Error('Invalid skill frontmatter.');
@@ -172,4 +205,8 @@ function normalizeCommand(command: string): string {
   const trimmed = command.trim();
   if (!trimmed) throw new Error('Drift command cannot be empty.');
   return trimmed;
+}
+
+function toPosixPath(file: string): string {
+  return file.split(path.sep).join('/');
 }

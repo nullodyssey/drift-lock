@@ -61,6 +61,10 @@ describe('drift skills installer', () => {
     expect(rule).toContain('Analyze the drift impact');
     expect(rule).toContain('# Drift Impact Analysis');
     expect(rule).toContain('pnpm --filter next-v1 exec drift check');
+    expect(rule).toContain('## Bundled References');
+    expect(rule).toContain('### references/output-format.md');
+    expect(rule).toContain('### references/risk-matrix.md');
+    expect(rule).toContain('CRITICAL -> ask for product/contract confirmation before implementation');
     expect(rule).not.toContain('{{DRIFT_COMMAND}}');
   });
 
