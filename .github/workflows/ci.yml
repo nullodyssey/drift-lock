@@ -31,7 +31,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - name: Install dependencies
@@ -39,6 +39,12 @@ jobs:
 
       - name: Build workspace
         run: pnpm build
+
+      - name: Check publish packages
+        run: |
+          pnpm --filter @drift-core/core pack --dry-run
+          pnpm --filter @drift-core/cli pack --dry-run
+          pnpm --filter @drift-core/eslint-plugin pack --dry-run
 
       - name: Check DriftLock CLI binary
         run: pnpm --filter next-v1 exec drift-lock --help

@@ -1,4 +1,4 @@
-import { checkSsotUsage, extractContractsFromSource } from '@drift-lock/core';
+import { checkSsotUsage, extractContractsFromSource } from '@drift-core/core';
 import { getRuleOptions, relativeFilename, reportDriftError } from '../utils.js';
 
 export const ssotUsageRule = {

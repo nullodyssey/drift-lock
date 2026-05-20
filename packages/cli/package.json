@@ -1,9 +1,35 @@
 {
-  "name": "drift-lock",
+  "name": "@drift-core/cli",
   "version": "0.1.0",
+  "description": "CLI and installer for DriftLock contract-aware agent context and checks.",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "drift-lock": "./bin/drift-lock.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nullodyssey/drift-lock.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/nullodyssey/drift-lock/issues"
+  },
+  "homepage": "https://github.com/nullodyssey/drift-lock#readme",
+  "keywords": [
+    "cli",
+    "ai",
+    "agents",
+    "drift",
+    "contracts",
+    "typescript"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "files": [
     "bin",
@@ -16,7 +42,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@drift-lock/core": "workspace:*",
+    "@drift-core/core": "workspace:*",
     "commander": "^14.0.2"
   }
 }

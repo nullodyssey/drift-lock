@@ -1,7 +1,33 @@
 {
-  "name": "eslint-plugin-drift-lock",
+  "name": "@drift-core/eslint-plugin",
   "version": "0.1.0",
+  "description": "ESLint 9 flat config plugin for DriftLock contracts and invariants.",
+  "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nullodyssey/drift-lock.git",
+    "directory": "packages/eslint-plugin"
+  },
+  "bugs": {
+    "url": "https://github.com/nullodyssey/drift-lock/issues"
+  },
+  "homepage": "https://github.com/nullodyssey/drift-lock#readme",
+  "keywords": [
+    "eslint",
+    "eslint-plugin",
+    "ai",
+    "agents",
+    "drift",
+    "contracts"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "files": [
     "dist"
   ],
@@ -14,10 +40,10 @@
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean --out-dir dist",
     "check": "tsc --noEmit",
-    "test": "pnpm --filter @drift-lock/core run build && vitest run"
+    "test": "pnpm --filter @drift-core/core run build && vitest run"
   },
   "dependencies": {
-    "@drift-lock/core": "workspace:*"
+    "@drift-core/core": "workspace:*"
   },
   "peerDependencies": {
     "eslint": ">=9"

@@ -16,7 +16,7 @@ DriftLock makes those rules explicit and checkable:
 - `@drift` contracts describe local intent and sources of truth.
 - `drift-lock context` gives agents the relevant contract before they edit.
 - `drift-lock check` validates supported invariants in CI.
-- `eslint-plugin-drift-lock` brings the same feedback into the developer loop.
+- `@drift-core/eslint-plugin` brings the same feedback into the developer loop.
 
 DriftLock does not replace tests or code review. It adds a deterministic layer
 for the local product and engineering intent that agents often miss.
@@ -26,16 +26,16 @@ for the local product and engineering intent that agents often miss.
 Install DriftLock into a TypeScript project:
 
 ```bash
-npx drift-lock install
+npx --yes @drift-core/cli install
 ```
 
 Useful install options:
 
 ```bash
-npx drift-lock install --source src
-npx drift-lock install --ci github
-npx drift-lock install --agent openai
-npx drift-lock install --dry-run
+npx --yes @drift-core/cli install --source src
+npx --yes @drift-core/cli install --ci github
+npx --yes @drift-core/cli install --agent openai
+npx --yes @drift-core/cli install --dry-run
 ```
 
 The installer adds DriftLock scripts, creates `.drift/config.json`, generates a
@@ -120,7 +120,7 @@ supported invariants.
 DriftLock ships an ESLint 9 flat config plugin:
 
 ```js
-import driftLock from 'eslint-plugin-drift-lock';
+import driftLock from '@drift-core/eslint-plugin';
 
 export default [
   {
@@ -146,7 +146,7 @@ drift-lock/ssot-flow
 Generate a GitHub Actions workflow during install:
 
 ```bash
-npx drift-lock install --ci github
+npx --yes @drift-core/cli install --ci github
 ```
 
 Or add the checks manually:
@@ -189,9 +189,9 @@ false sense of safety. `drift/ssot-flow` is rejected on `scope: file` contracts.
 ## Packages
 
 ```txt
-drift-lock                 CLI and installer
-@drift-lock/core           Parser, extractor, context, and checks
-eslint-plugin-drift-lock   ESLint 9 flat config plugin
+@drift-core/cli            CLI and installer
+@drift-core/core           Parser, extractor, context, and checks
+@drift-core/eslint-plugin  ESLint 9 flat config plugin
 ```
 
 ## Demo

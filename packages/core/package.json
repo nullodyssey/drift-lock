@@ -1,7 +1,32 @@
 {
-  "name": "@drift-lock/core",
+  "name": "@drift-core/core",
   "version": "0.1.0",
+  "description": "Core parser, extractor, context renderer, and deterministic checks for DriftLock.",
+  "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nullodyssey/drift-lock.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/nullodyssey/drift-lock/issues"
+  },
+  "homepage": "https://github.com/nullodyssey/drift-lock#readme",
+  "keywords": [
+    "ai",
+    "agents",
+    "drift",
+    "contracts",
+    "typescript"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "files": [
     "dist"
   ],

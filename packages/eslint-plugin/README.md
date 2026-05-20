@@ -1,9 +1,9 @@
-# eslint-plugin-drift-lock
+# @drift-core/eslint-plugin
 
 ESLint 9 flat config plugin for DriftLock.
 
 ```js
-import driftLock from 'eslint-plugin-drift-lock';
+import driftLock from '@drift-core/eslint-plugin';
 
 export default [
   {

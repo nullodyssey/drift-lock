@@ -19,7 +19,7 @@ export type InstalledSkill = {
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const bundledSkillsDir = path.resolve(currentDir, '../skills');
-const defaultDriftCommand = 'npx --yes drift-lock';
+const defaultDriftCommand = 'npx --yes @drift-core/cli';
 const templateTextExtensions = new Set(['.md', '.mdc', '.txt', '.yaml', '.yml']);
 
 export async function listBundledSkills(skillsDir = bundledSkillsDir): Promise<string[]> {

@@ -12,7 +12,7 @@ Mini projet Next.js qui démontre la promesse V1 :
   - `src/features/billing/pricing.ts`
   - `src/features/billing/billing.schema.ts`
 - Un index commité : `.drift/contracts.generated.json`
-- Une config ESLint qui active `eslint-plugin-drift-lock`
+- Une config ESLint qui active `@drift-core/eslint-plugin`
 
 ## Commandes utiles
 

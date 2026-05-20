@@ -9,7 +9,7 @@ import {
   renderContext,
   toIndex,
   writeIndex,
-} from '@drift-lock/core';
+} from '@drift-core/core';
 import { installProject, type CiProvider, type InstallProjectSummary, type PackageManager } from './install.js';
 import { installSkills, listBundledSkills, type SkillProvider } from './skills.js';
 
@@ -111,7 +111,7 @@ skills
   .argument('[skills...]', 'skill names to install; defaults to all bundled skills')
   .option('--provider <provider>', 'target provider: openai, claude, or cursor', 'openai')
   .option('--root <dir>', 'project root', process.cwd())
-  .option('--drift-command <command>', 'DriftLock command prefix embedded in installed skills', 'npx --yes drift-lock')
+  .option('--drift-command <command>', 'DriftLock command prefix embedded in installed skills', 'npx --yes @drift-core/cli')
   .option('--force', 'overwrite existing installed skills', false)
   .action(async (selected: string[], options: { provider: string; root: string; driftCommand: string; force: boolean }) => {
     const provider = parseProvider(options.provider);

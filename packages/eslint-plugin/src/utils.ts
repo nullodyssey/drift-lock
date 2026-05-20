@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import type { DriftError } from '@drift-lock/core';
+import type { DriftError } from '@drift-core/core';
 
 export type RuleOptions = {
   root?: string;
