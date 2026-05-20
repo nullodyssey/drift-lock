@@ -6,7 +6,7 @@
       "id": "billing.create-checkout-session",
       "scope": "declaration",
       "stability": "locked",
-      "intent": "Cree une session Checkout pour l'abonnement Pro en respectant les sources de verite billing.",
+      "intent": "Create a Checkout session for the Pro subscription while respecting the billing sources of truth.",
       "ssot": {
         "pricing": "@/features/billing/pricing.ts",
         "schema": "@/features/billing/billing.schema.ts"
@@ -40,7 +40,7 @@
         "type": "function",
         "name": "createCheckoutSession"
       },
-      "contentHash": "sha256:341435355793df7821cfc43f7623160c6848fc571b4f16c0a68cba9368e464ec"
+      "contentHash": "sha256:f0410a0087dc61a2931ac521819ee856caade7aca31feeb4f25a1073fa3e9afc"
     }
   ]
 }

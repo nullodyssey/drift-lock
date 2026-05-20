@@ -64,7 +64,7 @@ version: 1
 id: billing.create-checkout-session
 scope: declaration
 stability: locked
-intent: Cree une session Checkout Stripe pour l'abonnement Pro.
+intent: Create a Stripe Checkout session for the Pro subscription.
 */
 if (true) {}
 `,
@@ -144,12 +144,12 @@ ruleTester.run('ssot-flow', rules['ssot-flow'] as any, {
       },
       {
         filename: accepted.filename,
-        code: validActionsSource().replace("l'abonnement Pro.", "l'abonnement Premium."),
+        code: validActionsSource().replace('the Pro subscription.', 'the Premium subscription.'),
         options: [{ root: accepted.root }],
       },
       {
         filename: 'src/actions.ts',
-        code: validActionsSource().replace("l'abonnement Pro.", "l'abonnement Premium."),
+        code: validActionsSource().replace('the Pro subscription.', 'the Premium subscription.'),
       },
     ],
     invalid: [
@@ -161,7 +161,7 @@ ruleTester.run('ssot-flow', rules['ssot-flow'] as any, {
       },
       {
         filename: changed.filename,
-        code: validActionsSource().replace("l'abonnement Pro.", "l'abonnement Premium."),
+        code: validActionsSource().replace('the Pro subscription.', 'the Premium subscription.'),
         options: [{ root: changed.root }],
         errors: [{ message: /DRIFT011/ }],
       },
@@ -213,7 +213,7 @@ scope: declaration
 stability: locked
 
 intent: >
-  Cree une session Checkout Stripe pour l'abonnement Pro.
+  Create a Stripe Checkout session for the Pro subscription.
 
 ssot:
   pricing: "@/features/billing/pricing.ts"
@@ -251,7 +251,7 @@ scope: declaration
 stability: locked
 
 intent: >
-  Cree une session Checkout Stripe pour l'abonnement Pro.
+  Create a Stripe Checkout session for the Pro subscription.
 
 ssot:
   pricing: "@/features/billing/pricing.ts"

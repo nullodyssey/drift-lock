@@ -10,7 +10,7 @@ scope: declaration
 stability: locked
 
 intent: >
-  Cree une session Checkout pour l'abonnement Pro en respectant les sources de verite billing.
+  Create a Checkout session for the Pro subscription while respecting the billing sources of truth.
 
 ssot:
   pricing: "@/features/billing/pricing.ts"

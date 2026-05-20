@@ -58,7 +58,7 @@ version: 1
 id: billing.create-checkout-session
 scope: declaration
 stability: locked
-intent: Cree une session Checkout Stripe pour l'abonnement Pro.
+intent: Create a Stripe Checkout session for the Pro subscription.
 */
 if (true) {}
 `,
@@ -218,7 +218,7 @@ if (true) {}
 
     await writeFile(
       path.join(root, 'src/actions.ts'),
-      validActionsSource().replace("l'abonnement Pro.", "l'abonnement Premium."),
+      validActionsSource().replace('the Pro subscription.', 'the Premium subscription.'),
       'utf8',
     );
 
@@ -262,7 +262,7 @@ if (true) {}
 
     await writeFile(
       path.join(root, 'src/actions.ts'),
-      validActionsSource().replace("l'abonnement Pro.", "l'abonnement Premium."),
+      validActionsSource().replace('the Pro subscription.', 'the Premium subscription.'),
       'utf8',
     );
     await mkdir(path.join(root, '.drift/accepted-contract-changes'), { recursive: true });
@@ -318,7 +318,7 @@ scope: declaration
 stability: locked
 
 intent: >
-  Cree une session Checkout Stripe pour l'abonnement Pro.
+  Create a Stripe Checkout session for the Pro subscription.
 
 ssot:
   pricing: "@/features/billing/pricing.ts"
@@ -356,7 +356,7 @@ scope: declaration
 stability: locked
 
 intent: >
-  Cree une session Checkout Stripe pour l'abonnement Pro.
+  Create a Stripe Checkout session for the Pro subscription.
 
 ssot:
   pricing: "@/features/billing/pricing.ts"
