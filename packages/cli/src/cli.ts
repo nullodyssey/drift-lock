@@ -172,6 +172,7 @@ program
       sourceDir: options.source ?? config.source,
       indexPath: options.index ?? config.index,
       contractId,
+      requireContracts: config.requireContracts,
     });
 
     if (options.json) {

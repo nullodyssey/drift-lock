@@ -232,6 +232,28 @@ describe('drift-lock explain command', () => {
     expect(failing.stdout).toContain('billing.create-checkout-session');
     expect(failing.stdout).not.toContain('billing.other-checkout-session');
   });
+
+  it('explains required-contract failures from config', async () => {
+    await buildCore();
+    const root = await tempProject();
+    await mkdir(path.join(root, 'src/features/billing'), { recursive: true });
+    await writeFile(path.join(root, 'src/features/billing/actions.ts'), 'export const checkoutAction = true;\n', 'utf8');
+    await writeDriftConfigFile(root, ['src/features/**/actions.ts']);
+
+    const result = await runCli(['explain', '--root', root]);
+    const jsonResult = await runCli(['explain', '--json', '--root', root]);
+    const json = JSON.parse(jsonResult.stdout) as { explanations: Array<Record<string, unknown>> };
+
+    expect(result.code).toBe(1);
+    expect(result.stdout).toContain('DRIFT015_REQUIRED_CONTRACT_MISSING');
+    expect(result.stdout).toContain('src/features/billing/actions.ts');
+    expect(jsonResult.code).toBe(1);
+    expect(json.explanations[0]).toMatchObject({
+      code: 'DRIFT015_REQUIRED_CONTRACT_MISSING',
+      file: 'src/features/billing/actions.ts',
+      found: 'No valid @drift contract was extracted for this file.',
+    });
+  });
 });
 
 describe('drift-lock context command', () => {

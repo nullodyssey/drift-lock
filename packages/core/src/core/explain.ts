@@ -129,6 +129,15 @@ function explainError(error: DriftError, contract?: DriftExtractedContract): Dri
     };
   }
 
+  if (error.code === 'DRIFT015_REQUIRED_CONTRACT_MISSING') {
+    return {
+      ...base,
+      expected: `File "${error.file}" should contain a valid @drift contract because it matches "${stringDetail(details.pattern) ?? 'a required contract pattern'}".`,
+      found: 'No valid @drift contract was extracted for this file.',
+      suggestedFix: 'Add an @drift contract to the file, or remove the file from requireContracts if it is not a critical Drift-protected surface.',
+    };
+  }
+
   return {
     ...base,
     expected: 'The @drift contract should satisfy the declared schema, anchor, stability and invariants.',

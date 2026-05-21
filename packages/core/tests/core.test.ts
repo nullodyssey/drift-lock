@@ -772,6 +772,26 @@ if (true) {}
     ]);
   });
 
+  it('explains required files without contracts', async () => {
+    const root = await createProject({
+      'src/features/billing/actions.ts': 'export const checkoutAction = true;\n',
+    });
+
+    const result = await explainContracts({ root, requireContracts: ['src/features/**/actions.ts'] });
+
+    expect(result.explanations).toEqual([
+      expect.objectContaining({
+        code: 'DRIFT015_REQUIRED_CONTRACT_MISSING',
+        file: 'src/features/billing/actions.ts',
+        expected:
+          'File "src/features/billing/actions.ts" should contain a valid @drift contract because it matches "src/features/**/actions.ts".',
+        found: 'No valid @drift contract was extracted for this file.',
+        suggestedFix:
+          'Add an @drift contract to the file, or remove the file from requireContracts if it is not a critical Drift-protected surface.',
+      }),
+    ]);
+  });
+
   it('explains generic ssot usage errors and filters by contract id', async () => {
     const root = await createProject({
       'src/actions.ts': validActionsSource('billing.create-checkout-session').replace(
