@@ -138,6 +138,21 @@ ruleTester.run('ssot-flow', rules['ssot-flow'] as any, {
       code: validBranchFlowSource().replace('return { priceId: price.priceId };', "return { priceId: 'price_fallback' };"),
       errors: [{ message: /DRIFT013/ }],
     },
+    {
+      filename: 'src/actions.ts',
+      code: flowSourceWithBody(`if (input.plan === 'pro') {
+    return { priceId: BILLING_PRICES.pro.priceId };
+  }`),
+      errors: [{ message: /DRIFT014/ }],
+    },
+    {
+      filename: 'src/actions.ts',
+      code: flowSourceWithBody(`switch (input.plan) {
+    case 'pro':
+      return { priceId: BILLING_PRICES.pro.priceId };
+  }`),
+      errors: [{ message: /DRIFT014/ }],
+    },
   ],
 });
 
@@ -434,6 +449,34 @@ export function createCheckoutSession(input: { plan: 'pro' | 'team' }) {
 
   const price = BILLING_PRICES.team;
   return { priceId: price.priceId };
+}
+`;
+}
+
+function flowSourceWithBody(body: string, id = 'billing.create-checkout-session'): string {
+  return `import { BILLING_PRICES } from '@/features/billing/pricing';
+
+/* @drift
+version: 1
+id: ${id}
+scope: declaration
+stability: locked
+
+intent: >
+  Create a checkout response while proving return values come from pricing.
+
+ssot:
+  pricing: "@/features/billing/pricing.ts"
+
+invariants:
+  - id: checkout-price-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.priceId
+*/
+export function createCheckoutSession(input: { plan: 'pro' | 'team' }) {
+  ${body}
 }
 `;
 }

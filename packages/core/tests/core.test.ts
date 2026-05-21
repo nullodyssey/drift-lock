@@ -163,6 +163,100 @@ if (true) {}
     expect(result.errors.map((error) => error.code)).toContain('DRIFT013_SSOT_FLOW_NOT_PROVEN');
   });
 
+  it('rejects if branches that can fall through without a proven return', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`if (input.plan === 'pro') {
+    return { priceId: BILLING_PRICES.pro.priceId };
+  }`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT014_UNSUPPORTED_FLOW_PATTERN');
+  });
+
+  it('accepts incomplete if branches when a proven return follows', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`if (input.plan === 'pro') {
+    return { priceId: BILLING_PRICES.pro.priceId };
+  }
+
+  const price = BILLING_PRICES[input.plan];
+  return { priceId: price.priceId };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('accepts if branches that terminate with return or throw', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`if (input.plan === 'pro') {
+    return { priceId: BILLING_PRICES.pro.priceId };
+  } else {
+    throw new Error('Unsupported plan');
+  }`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('rejects if else branches that can fall through at function end', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`if (input.plan === 'pro') {
+    return { priceId: BILLING_PRICES.pro.priceId };
+  } else {
+    const plan = input.plan;
+  }`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT014_UNSUPPORTED_FLOW_PATTERN');
+  });
+
+  it('rejects switches that can fall through without a proven return', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`switch (input.plan) {
+    case 'pro':
+      return { priceId: BILLING_PRICES.pro.priceId };
+  }`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT014_UNSUPPORTED_FLOW_PATTERN');
+  });
+
+  it('accepts switches when every case and default terminates', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`switch (input.plan) {
+    case 'pro':
+      return { priceId: BILLING_PRICES.pro.priceId };
+    case 'team':
+      throw new Error('Unsupported plan');
+    default:
+      throw new Error('Unknown plan');
+  }`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('accepts incomplete switches when a proven return follows', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`switch (input.plan) {
+    case 'pro':
+      return { priceId: BILLING_PRICES.pro.priceId };
+  }
+
+  const price = BILLING_PRICES[input.plan];
+  return { priceId: price.priceId };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
   it('rejects unsupported nested return control flow instead of ignoring it', async () => {
     const root = await createProject({
       'src/actions.ts': validFlowSource().replace(
@@ -665,5 +759,33 @@ invariants:
 export const createCheckoutSession = (input: { plan: 'pro' }) => ({
   priceId: BILLING_PRICES[input.plan].priceId,
 });
+`;
+}
+
+function flowSourceWithBody(body: string, id = 'billing.create-checkout-session'): string {
+  return `import { BILLING_PRICES } from '@/features/billing/pricing';
+
+/* @drift
+version: 1
+id: ${id}
+scope: declaration
+stability: locked
+
+intent: >
+  Create a checkout response while proving return values come from pricing.
+
+ssot:
+  pricing: "@/features/billing/pricing.ts"
+
+invariants:
+  - id: checkout-price-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.priceId
+*/
+export function createCheckoutSession(input: { plan: 'pro' | 'team' }) {
+  ${body}
+}
 `;
 }

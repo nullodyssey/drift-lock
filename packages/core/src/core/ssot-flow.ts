@@ -10,6 +10,11 @@ type FlowValue = {
 
 type FunctionLikeWithBody = ts.FunctionDeclaration | ts.FunctionExpression | ts.ArrowFunction;
 
+type FlowCheckResult = {
+  errors: DriftError[];
+  completed: boolean;
+};
+
 const untrusted: FlowValue = { trusted: false, unsupported: false };
 const trusted: FlowValue = { trusted: true, unsupported: false };
 const unsupported: FlowValue = { trusted: false, unsupported: true };
@@ -70,7 +75,7 @@ function checkFunctionFlow(
   if (ts.isBlock(body)) {
     const checked = checkStatements(contract, invariant, body.statements, env);
     errors.push(...checked.errors);
-    if (!checked.sawReturn) errors.push(...unsupportedForSinks(contract, invariant, sinks));
+    if (!checked.completed) errors.push(...unsupportedForSinks(contract, invariant, sinks));
   } else {
     errors.push(...checkReturnExpression(contract, invariant, body, env));
   }
@@ -83,9 +88,8 @@ function checkStatements(
   invariant: DriftInvariant,
   statements: ts.NodeArray<ts.Statement>,
   env: Map<string, FlowValue>,
-): { errors: DriftError[]; sawReturn: boolean } {
+): FlowCheckResult {
   const errors: DriftError[] = [];
-  let sawReturn = false;
 
   for (const statement of statements) {
     if (ts.isVariableStatement(statement)) {
@@ -94,32 +98,35 @@ function checkStatements(
     }
 
     if (ts.isReturnStatement(statement)) {
-      sawReturn = true;
       errors.push(...checkReturnStatement(contract, invariant, statement, env));
-      continue;
+      return { errors, completed: true };
+    }
+
+    if (ts.isThrowStatement(statement)) {
+      return { errors, completed: true };
     }
 
     if (ts.isIfStatement(statement)) {
       const checked = checkIfStatement(contract, invariant, statement, env);
-      sawReturn = checked.sawReturn || sawReturn;
       errors.push(...checked.errors);
+      if (checked.completed) return { errors, completed: true };
       continue;
     }
 
     if (ts.isSwitchStatement(statement)) {
       const checked = checkSwitchStatement(contract, invariant, statement, env);
-      sawReturn = checked.sawReturn || sawReturn;
       errors.push(...checked.errors);
+      if (checked.completed) return { errors, completed: true };
       continue;
     }
 
     if (hasReturnOutsideNestedFunction(statement)) {
-      sawReturn = true;
       errors.push(...unsupportedForSinks(contract, invariant, invariant.sinks ?? []));
+      return { errors, completed: true };
     }
   }
 
-  return { errors, sawReturn };
+  return { errors, completed: false };
 }
 
 function checkIfStatement(
@@ -127,15 +134,15 @@ function checkIfStatement(
   invariant: DriftInvariant,
   statement: ts.IfStatement,
   env: Map<string, FlowValue>,
-): { errors: DriftError[]; sawReturn: boolean } {
+): FlowCheckResult {
   const thenChecked = checkStatementBranch(contract, invariant, statement.thenStatement, cloneEnv(env));
   const elseChecked = statement.elseStatement
     ? checkStatementBranch(contract, invariant, statement.elseStatement, cloneEnv(env))
-    : { errors: [], sawReturn: false };
+    : { errors: [], completed: false };
 
   return {
     errors: [...thenChecked.errors, ...elseChecked.errors],
-    sawReturn: thenChecked.sawReturn || elseChecked.sawReturn,
+    completed: thenChecked.completed && elseChecked.completed,
   };
 }
 
@@ -144,17 +151,19 @@ function checkSwitchStatement(
   invariant: DriftInvariant,
   statement: ts.SwitchStatement,
   env: Map<string, FlowValue>,
-): { errors: DriftError[]; sawReturn: boolean } {
+): FlowCheckResult {
   const errors: DriftError[] = [];
-  let sawReturn = false;
+  let hasDefault = false;
+  let allClausesComplete = true;
 
   for (const clause of statement.caseBlock.clauses) {
+    if (ts.isDefaultClause(clause)) hasDefault = true;
     const checked = checkStatements(contract, invariant, clause.statements, cloneEnv(env));
-    sawReturn = checked.sawReturn || sawReturn;
+    allClausesComplete = checked.completed && allClausesComplete;
     errors.push(...checked.errors);
   }
 
-  return { errors, sawReturn };
+  return { errors, completed: hasDefault && allClausesComplete };
 }
 
 function checkStatementBranch(
@@ -162,26 +171,27 @@ function checkStatementBranch(
   invariant: DriftInvariant,
   statement: ts.Statement,
   env: Map<string, FlowValue>,
-): { errors: DriftError[]; sawReturn: boolean } {
+): FlowCheckResult {
   if (ts.isBlock(statement)) return checkStatements(contract, invariant, statement.statements, env);
   if (ts.isReturnStatement(statement)) {
-    return { errors: checkReturnStatement(contract, invariant, statement, env), sawReturn: true };
+    return { errors: checkReturnStatement(contract, invariant, statement, env), completed: true };
   }
+  if (ts.isThrowStatement(statement)) return { errors: [], completed: true };
   if (ts.isIfStatement(statement)) return checkIfStatement(contract, invariant, statement, env);
   if (ts.isSwitchStatement(statement)) return checkSwitchStatement(contract, invariant, statement, env);
   if (ts.isVariableStatement(statement)) {
     applyVariableStatement(statement, env);
-    return { errors: [], sawReturn: false };
+    return { errors: [], completed: false };
   }
 
   if (hasReturnOutsideNestedFunction(statement)) {
     return {
       errors: unsupportedForSinks(contract, invariant, invariant.sinks ?? []),
-      sawReturn: true,
+      completed: true,
     };
   }
 
-  return { errors: [], sawReturn: false };
+  return { errors: [], completed: false };
 }
 
 function hasReturnOutsideNestedFunction(statement: ts.Statement): boolean {
