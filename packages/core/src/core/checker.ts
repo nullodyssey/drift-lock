@@ -5,6 +5,7 @@ import type { DriftContractsIndex, DriftError, DriftExtractedContract } from '..
 import { diffContractSets } from './contract-diff.js';
 import { driftError } from './errors.js';
 import { extractContracts, type ExtractOptions } from './extractor.js';
+import { filterIndexByFiles, resolveGitFileScope } from './git-scope.js';
 import { readIndex, toIndex } from './index-file.js';
 import { moduleSpecifierCandidates } from './module-specifier.js';
 import { checkSsotFlow } from './ssot-flow.js';
@@ -12,6 +13,7 @@ import { checkSsotFlow } from './ssot-flow.js';
 export type CheckOptions = ExtractOptions & {
   indexPath?: string;
   changedOnly?: boolean;
+  gitBase?: string;
 };
 
 export async function checkContracts(options: CheckOptions): Promise<{
@@ -19,10 +21,14 @@ export async function checkContracts(options: CheckOptions): Promise<{
   errors: DriftError[];
 }> {
   const root = path.resolve(options.root);
-  const extracted = await extractContracts(options);
-  const errors = [...extracted.errors];
   const index = await readIndex(root, options.indexPath);
-  const contractsToCheck = options.changedOnly ? changedContracts(extracted.contracts, index) : extracted.contracts;
+  const gitScope = options.gitBase ? await resolveGitFileScope(root, options.gitBase, options.sourceDir, index) : undefined;
+  const scopedIndex = gitScope && index ? filterIndexByFiles(index, gitScope.contractFiles) : index;
+  const extracted = await extractContracts({ ...options, files: gitScope?.extractFiles ?? options.files });
+  const errors = [...extracted.errors];
+  const contractsToCheck = options.changedOnly
+    ? changedContracts(extracted.contracts, scopedIndex, gitScope?.impactedContractIds)
+    : extracted.contracts;
 
   // Run invariant checks only after extraction. Schema/ancrage errors should not
   // prevent other valid contracts in the repo from being checked.
@@ -34,16 +40,21 @@ export async function checkContracts(options: CheckOptions): Promise<{
 
   // Without a committed index there is no trustworthy baseline for locked
   // contracts, so V1 skips only locked-change detection.
-  if (index) {
-    errors.push(...checkLockedChanges(root, extracted.contracts, index));
+  if (scopedIndex) {
+    errors.push(...checkLockedChanges(root, extracted.contracts, scopedIndex));
   }
 
   return { contracts: extracted.contracts, errors };
 }
 
-function changedContracts(contracts: DriftExtractedContract[], index: DriftContractsIndex | undefined): DriftExtractedContract[] {
+function changedContracts(
+  contracts: DriftExtractedContract[],
+  index: DriftContractsIndex | undefined,
+  impactedContractIds: string[] = [],
+): DriftExtractedContract[] {
   if (!index) return contracts;
   const changedIds = new Set(diffContractSets(toIndex(contracts).contracts, index.contracts).changes.map((change) => change.id));
+  for (const id of impactedContractIds) changedIds.add(id);
   return contracts.filter((contract) => changedIds.has(contract.id));
 }
 

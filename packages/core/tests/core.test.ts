@@ -1,6 +1,8 @@
-import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { mkdtemp, mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { promisify } from 'node:util';
 import { describe, expect, it } from 'vitest';
 import { checkContracts } from '@drift-lock/core';
 import { diffContracts, formatContractDiffSummary, writeAcceptanceFile } from '@drift-lock/core';
@@ -9,6 +11,8 @@ import { renderContext } from '@drift-lock/core';
 import { extractContracts, extractContractsFromSource } from '@drift-lock/core';
 import { isValidContractId, readDriftConfig, writeDriftConfig } from '@drift-lock/core';
 import { toIndex, writeIndex } from '@drift-lock/core';
+
+const execFileAsync = promisify(execFile);
 
 describe('drift v1 core', () => {
   it('extracts a valid declaration contract with a stable hash', () => {
@@ -783,6 +787,57 @@ if (true) {}
     expect(changedOnly.errors.some((error) => error.contractId === 'billing.unchanged')).toBe(false);
   });
 
+  it('limits contract diffs to files changed since a Git base', async () => {
+    const root = await createProject({
+      'src/changed.ts': validActionsSource('billing.changed'),
+      'src/unchanged.ts': validActionsSource('billing.unchanged'),
+      'src/removed.ts': validActionsSource('billing.removed'),
+    });
+    const extracted = await extractContracts({ root });
+    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await createGitBaseline(root);
+
+    await writeFile(
+      path.join(root, 'src/changed.ts'),
+      validActionsSource('billing.changed').replace('the Pro subscription.', 'the Team subscription.'),
+      'utf8',
+    );
+    await unlink(path.join(root, 'src/removed.ts'));
+
+    const diff = await diffContracts({ root, gitBase: 'HEAD' });
+
+    expect(diff.diff.changes).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'billing.changed', kind: 'changed', fields: ['intent'] }),
+      expect.objectContaining({ id: 'billing.removed', kind: 'removed' }),
+    ]));
+    expect(diff.diff.changes.some((change) => change.id === 'billing.unchanged')).toBe(false);
+  });
+
+  it('checks Git-scoped SSOT impacts and ignores unrelated pre-existing drift', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource().replace('priceId: price.priceId,', "priceId: 'price_hardcoded',"),
+      'src/unchanged.ts': schemaOnlySource('billing.unchanged').replace(
+        "import { billingSchema } from '@/features/billing/billing.schema';\n",
+        '',
+      ),
+      'src/features/billing/pricing.ts': 'export const BILLING_PRICES = { pro: { priceId: "price", monthlyAmount: 10, currency: "usd" } };\n',
+    });
+    const extracted = await extractContracts({ root });
+    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await createGitBaseline(root);
+    await writeFile(
+      path.join(root, 'src/features/billing/pricing.ts'),
+      'export const BILLING_PRICES = { pro: { priceId: "price_v2", monthlyAmount: 20, currency: "usd" } };\n',
+      'utf8',
+    );
+
+    const result = await checkContracts({ root, changedOnly: true, gitBase: 'HEAD' });
+
+    expect(result.contracts.map((contract) => contract.id)).toEqual(['billing.create-checkout-session']);
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT013_SSOT_FLOW_NOT_PROVEN');
+    expect(result.errors.some((error) => error.contractId === 'billing.unchanged')).toBe(false);
+  });
+
   it('treats contracts from legacy indexes without bodyHash as changed', async () => {
     const root = await createProject({ 'src/actions.ts': validFlowSource() });
     const extracted = await extractContracts({ root });
@@ -875,6 +930,14 @@ async function createProject(files: Record<string, string>): Promise<string> {
   return root;
 }
 
+async function createGitBaseline(root: string): Promise<void> {
+  await execFileAsync('git', ['init'], { cwd: root });
+  await execFileAsync('git', ['config', 'user.email', 'drift@example.com'], { cwd: root });
+  await execFileAsync('git', ['config', 'user.name', 'Drift Test'], { cwd: root });
+  await execFileAsync('git', ['add', '.'], { cwd: root });
+  await execFileAsync('git', ['commit', '-m', 'baseline'], { cwd: root });
+}
+
 function validActionsSource(id = 'billing.create-checkout-session'): string {
   return `import { billingSchema } from '@/features/billing/billing.schema';
 import { PRO_PRICE_ID } from '@/features/billing/pricing';
@@ -934,6 +997,32 @@ invariants:
     ssot: pricing
 */
 export const price = PRO_PRICE_ID;
+`;
+}
+
+function schemaOnlySource(id = 'billing.schema-only'): string {
+  return `import { billingSchema } from '@/features/billing/billing.schema';
+
+/* @drift
+version: 1
+id: ${id}
+scope: declaration
+stability: locked
+
+intent: >
+  Validate checkout input using the billing schema.
+
+ssot:
+  schema: "@/features/billing/billing.schema.ts"
+
+invariants:
+  - id: validates-input
+    enforce: drift/ssot-usage
+    ssot: schema
+*/
+export function validateCheckoutInput(input: unknown) {
+  return billingSchema.parse(input);
+}
 `;
 }
 

@@ -126,11 +126,14 @@ For a PR workflow, run:
 ```bash
 drift-lock diff --summary
 drift-lock check --changed
+drift-lock diff --summary --git-base origin/main
+drift-lock check --changed --git-base origin/main
 drift-lock accept billing.create-checkout-session --reason "Intentional billing contract change"
 ```
 
 Use `accept` only for intentional locked contract changes with a clear product
-reason.
+reason. Add `--git-base <ref>` in PR workflows when you want Drift to focus on
+files changed since a Git base instead of the whole extracted index.
 
 When a check fails, run:
 

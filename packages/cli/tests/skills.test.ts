@@ -282,6 +282,57 @@ describe('drift-lock changed workflow commands', () => {
     ]));
   });
 
+  it('limits changed checks and diffs to a Git base', async () => {
+    await buildCore();
+    const root = await tempProject();
+    await writeFile(
+      path.join(root, 'src/unchanged.ts'),
+      validUsageSource('billing.unchanged').replace("import { PRO_PRICE_ID } from '@/features/billing/pricing';\n", ''),
+      'utf8',
+    );
+    await writeFile(path.join(root, 'src/changed.ts'), validFlowSource('billing.changed'), 'utf8');
+    await runCli(['extract', '--root', root, '--source', 'src']);
+    await createGitBaseline(root);
+    await writeFile(
+      path.join(root, 'src/changed.ts'),
+      validFlowSource('billing.changed').replace('priceId: price.priceId,', "priceId: 'price_hardcoded',"),
+      'utf8',
+    );
+
+    const changed = await runCli(['check', '--changed', '--git-base', 'HEAD', '--root', root, '--source', 'src']);
+    const summary = await runCli(['diff', '--summary', '--git-base', 'HEAD', '--root', root, '--source', 'src']);
+
+    expect(changed.code).toBe(1);
+    expect(changed.stderr).toContain('DRIFT013');
+    expect(changed.stderr).not.toContain('billing.unchanged');
+    expect(summary.code).toBe(0);
+    expect(summary.stdout).toContain('billing.changed (changed)');
+    expect(summary.stdout).not.toContain('billing.unchanged');
+  });
+
+  it('requires --changed when check uses a Git base', async () => {
+    await buildCore();
+    const root = await tempProject();
+
+    const result = await runCli(['check', '--git-base', 'HEAD', '--root', root, '--source', 'src']);
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('Use --git-base together with --changed.');
+  });
+
+  it('reports invalid Git bases compactly', async () => {
+    await buildCore();
+    const root = await tempProject();
+    await writeFile(path.join(root, 'src/actions.ts'), validFlowSource('billing.changed'), 'utf8');
+    await runCli(['extract', '--root', root, '--source', 'src']);
+    await createGitBaseline(root);
+
+    const result = await runCli(['diff', '--summary', '--git-base', 'missing/base', '--root', root, '--source', 'src']);
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('Unable to resolve Git changed files from "missing/base"');
+  });
+
   it('creates acceptance files and supports force', async () => {
     await buildCore();
     const root = await tempProject();
@@ -365,6 +416,14 @@ async function expectMissing(file: string): Promise<void> {
 
 async function buildCore(): Promise<void> {
   await execFileAsync('pnpm', ['--filter', '@drift-lock/core', 'run', 'build'], { cwd: repoRoot });
+}
+
+async function createGitBaseline(root: string): Promise<void> {
+  await execFileAsync('git', ['init'], { cwd: root });
+  await execFileAsync('git', ['config', 'user.email', 'drift@example.com'], { cwd: root });
+  await execFileAsync('git', ['config', 'user.name', 'Drift Test'], { cwd: root });
+  await execFileAsync('git', ['add', '.'], { cwd: root });
+  await execFileAsync('git', ['commit', '-m', 'baseline'], { cwd: root });
 }
 
 async function runCli(args: string[]): Promise<{ stdout: string; stderr: string; code: number }> {

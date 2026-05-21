@@ -7,6 +7,7 @@ export * from './core/errors.js';
 export * from './core/explain.js';
 export * from './core/extractor.js';
 export * from './core/files.js';
+export * from './core/git-scope.js';
 export * from './core/hash.js';
 export * from './core/index-file.js';
 export * from './core/module-specifier.js';

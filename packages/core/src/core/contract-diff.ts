@@ -10,12 +10,14 @@ import type {
   DriftIndexedContract,
 } from '../types.js';
 import { extractContracts, type ExtractOptions } from './extractor.js';
+import { filterContractsByFiles, filterIndexByFiles, resolveGitFileScope } from './git-scope.js';
 import { canonicalize } from './hash.js';
 import { readIndex, toIndex } from './index-file.js';
 import { isValidContractId } from './validator.js';
 
 export type DiffContractsOptions = ExtractOptions & {
   indexPath?: string;
+  gitBase?: string;
 };
 
 export type AcceptContractChangeOptions = {
@@ -31,12 +33,15 @@ export async function diffContracts(options: DiffContractsOptions): Promise<{
   diff: DriftContractDiff;
 }> {
   const root = path.resolve(options.root);
-  const extracted = await extractContracts(options);
   const index = await readIndex(root, options.indexPath);
+  const gitScope = options.gitBase ? await resolveGitFileScope(root, options.gitBase, options.sourceDir, index) : undefined;
+  const extracted = await extractContracts({ ...options, files: gitScope?.extractFiles ?? options.files });
+  const currentContracts = gitScope ? filterContractsByFiles(extracted.contracts, gitScope.contractFiles) : extracted.contracts;
+  const previousContracts = gitScope && index ? filterIndexByFiles(index, gitScope.contractFiles).contracts : index?.contracts ?? [];
   return {
-    contracts: extracted.contracts,
+    contracts: currentContracts,
     errors: extracted.errors,
-    diff: diffContractSets(toIndex(extracted.contracts).contracts, index?.contracts ?? []),
+    diff: diffContractSets(toIndex(currentContracts).contracts, previousContracts),
   };
 }
 

@@ -89,7 +89,11 @@ program
   .option('--source <dir>', 'source directory to scan')
   .option('--index <file>', 'index path')
   .option('--changed', 'only validate contracts changed since the Drift index', false)
-  .action(async (options: { root: string; source?: string; index?: string; changed: boolean }) => {
+  .option('--git-base <ref>', 'limit changed checks to files changed since a Git ref')
+  .action(async (options: { root: string; source?: string; index?: string; changed: boolean; gitBase?: string }) => {
+    if (options.gitBase && !options.changed) {
+      throw new Error('Use --git-base together with --changed.');
+    }
     const root = path.resolve(options.root);
     const config = await readDriftConfig(root);
     const result = await checkContracts({
@@ -97,9 +101,11 @@ program
       sourceDir: options.source ?? config.source,
       indexPath: options.index ?? config.index,
       changedOnly: options.changed,
+      gitBase: options.gitBase,
     });
     if (result.errors.length > 0) fail(result.errors);
-    console.log(`Checked ${result.contracts.length} @drift contract(s)${options.changed ? ' with changed-only filtering' : ''}.`);
+    const filters = [options.changed ? 'changed-only filtering' : undefined, options.gitBase ? `Git base ${options.gitBase}` : undefined].filter(Boolean);
+    console.log(`Checked ${result.contracts.length} @drift contract(s)${filters.length > 0 ? ` with ${filters.join(' and ')}` : ''}.`);
   });
 
 program
@@ -137,13 +143,15 @@ program
   .option('--index <file>', 'index path')
   .option('--summary', 'print a reviewer-oriented summary', true)
   .option('--json', 'print machine-readable JSON', false)
-  .action(async (options: { root: string; source?: string; index?: string; summary: boolean; json: boolean }) => {
+  .option('--git-base <ref>', 'limit the diff to files changed since a Git ref')
+  .action(async (options: { root: string; source?: string; index?: string; summary: boolean; json: boolean; gitBase?: string }) => {
     const root = path.resolve(options.root);
     const config = await readDriftConfig(root);
     const result = await diffContracts({
       root,
       sourceDir: options.source ?? config.source,
       indexPath: options.index ?? config.index,
+      gitBase: options.gitBase,
     });
     if (result.errors.length > 0) fail(result.errors);
 
