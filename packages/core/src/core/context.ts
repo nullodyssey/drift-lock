@@ -1,6 +1,13 @@
 import path from 'node:path';
-import type { DriftError } from '../types.js';
+import type { DriftError, DriftExtractedContract, DriftInvariant } from '../types.js';
 import { extractContracts } from './extractor.js';
+import { normalizePath } from './files.js';
+
+export type RenderTaskContextOptions = {
+  root: string;
+  sourceDir?: string;
+  task: string;
+};
 
 export async function renderContext(root: string, file: string): Promise<{ output: string; errors: DriftError[] }> {
   const relativeFile = path.relative(path.resolve(root), path.resolve(root, file)).split(path.sep).join('/');
@@ -35,4 +42,130 @@ export async function renderContext(root: string, file: string): Promise<{ outpu
   }
 
   return { output: lines.join('\n'), errors: [] };
+}
+
+export async function renderTaskContext(options: RenderTaskContextOptions): Promise<{ output: string; errors: DriftError[] }> {
+  const extracted = await extractContracts({ root: options.root, sourceDir: options.sourceDir });
+  if (extracted.errors.length > 0) return { output: '', errors: extracted.errors };
+
+  const rankedContracts = extracted.contracts
+    .map((contract) => ({ contract, score: scoreContractForTask(contract, options.task) }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score || a.contract.id.localeCompare(b.contract.id));
+
+  const lines = ['Drift Context For Task', '', 'Task:', options.task, '', 'Relevant Drift Contracts:'];
+  if (rankedContracts.length === 0) {
+    lines.push('No relevant @drift contracts found for this task.');
+  } else {
+    for (const { contract } of rankedContracts) {
+      lines.push(...formatTaskContract(contract));
+    }
+  }
+
+  lines.push('', 'Relevant Files:');
+  const relevantFiles = relevantTaskFiles(rankedContracts.map((item) => item.contract));
+  if (relevantFiles.length === 0) {
+    lines.push('No relevant files found.');
+  } else {
+    for (const file of relevantFiles) lines.push(`- ${file}`);
+  }
+
+  lines.push(
+    '',
+    'Planning Notes:',
+    '- Update declared SSOT files before changing derived behavior.',
+    '- Respect locked contracts and listed invariants while planning.',
+    '- Run drift-lock diff --summary after implementation.',
+    '- Run drift-lock check after implementation.',
+  );
+
+  return { output: lines.join('\n'), errors: [] };
+}
+
+function scoreContractForTask(contract: DriftExtractedContract, task: string): number {
+  const tokens = tokenize(task);
+  if (tokens.length === 0) return 0;
+
+  let score = 0;
+  score += scoreText(tokens, contract.id, 6);
+  score += scoreText(tokens, contract.file, 6);
+  score += scoreText(tokens, contract.intent, 3);
+
+  if (contract.ssot) {
+    for (const [key, value] of Object.entries(contract.ssot)) {
+      score += scoreText(tokens, key, 6);
+      score += scoreText(tokens, value, 6);
+    }
+  }
+
+  for (const invariant of contract.invariants ?? []) {
+    score += scoreText(tokens, invariant.id, 3);
+    score += scoreText(tokens, invariant.enforce, 2);
+    if (invariant.ssot) score += scoreText(tokens, invariant.ssot, 6);
+    for (const sink of invariant.sinks ?? []) {
+      score += scoreText(tokens, sink, 2);
+    }
+  }
+
+  for (const item of contract.llm?.must_not_change ?? []) {
+    score += scoreText(tokens, item, 2);
+  }
+
+  if (score > 0 && contract.stability === 'locked') score += 1;
+  return score;
+}
+
+function scoreText(taskTokens: string[], value: string, weight: number): number {
+  const valueTokens = new Set(tokenize(value));
+  let matches = 0;
+  for (const token of taskTokens) {
+    if (valueTokens.has(token)) matches += 1;
+  }
+  return matches * weight;
+}
+
+function tokenize(value: string): string[] {
+  return value
+    .toLowerCase()
+    .split(/[^a-z0-9]+/g)
+    .filter((token) => token.length >= 3);
+}
+
+function formatTaskContract(contract: DriftExtractedContract): string[] {
+  const lines = [`- ${contract.id}`, `  file: ${contract.file}`, `  stability: ${contract.stability}`, `  intent: ${contract.intent}`];
+  if (contract.ssot) {
+    lines.push('  ssot:');
+    for (const [key, value] of Object.entries(contract.ssot).sort(([left], [right]) => left.localeCompare(right))) {
+      lines.push(`    ${key}: ${value}`);
+    }
+  }
+  if (contract.invariants?.length) {
+    lines.push('  invariants:');
+    for (const invariant of contract.invariants) {
+      lines.push(`    - ${formatTaskInvariant(invariant)}`);
+    }
+  }
+  if (contract.llm?.must_not_change?.length) {
+    lines.push('  must_not_change:');
+    for (const item of contract.llm.must_not_change) lines.push(`    - ${item}`);
+  }
+  return lines;
+}
+
+function formatTaskInvariant(invariant: DriftInvariant): string {
+  const details = [`${invariant.id}: ${invariant.enforce}`];
+  if (invariant.ssot) details.push(`ssot=${invariant.ssot}`);
+  if (invariant.sinks?.length) details.push(`sinks=${invariant.sinks.join(', ')}`);
+  return details.join(' ');
+}
+
+function relevantTaskFiles(contracts: DriftExtractedContract[]): string[] {
+  const files = new Set<string>();
+  for (const contract of contracts) {
+    files.add(contract.file);
+    for (const value of Object.values(contract.ssot ?? {})) {
+      files.add(normalizePath(value));
+    }
+  }
+  return [...files].sort((a, b) => a.localeCompare(b));
 }

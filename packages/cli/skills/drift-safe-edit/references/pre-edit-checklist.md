@@ -1,6 +1,7 @@
 # Pre-Edit Checklist
 
 ```txt
+- [ ] If starting from a product/user prompt, run or read task context
 - [ ] Identify target files
 - [ ] Run or read Drift context for contracted files
 - [ ] Note locked contracts
@@ -15,6 +16,7 @@
 Useful commands:
 
 ```bash
+{{DRIFT_COMMAND}} context --task "<user prompt>"
 {{DRIFT_COMMAND}} context <file>
 {{DRIFT_COMMAND}} diff --summary
 {{DRIFT_COMMAND}} check

@@ -9,14 +9,15 @@ Use this skill before non-trivial edits to files that may contain or depend on D
 
 ## Workflow
 
-1. Identify the likely target files from the user request.
-2. Run or recommend `{{DRIFT_COMMAND}} context <file>` for each critical file.
-3. Extract the relevant contract ids, intents, SSOTs, locked invariants, and `llm.must_not_change` items.
-4. Detect conflicts between the requested change and the contracts.
-5. If the task touches contracts or protected files, recommend `{{DRIFT_COMMAND}} diff --summary` for contract review.
-6. If Drift is already failing, run or recommend `{{DRIFT_COMMAND}} explain` or `{{DRIFT_COMMAND}} explain <contract-id>` to capture actionable diagnostics.
-7. Recommend the agent role or next skill to use.
-8. List the checks that must run after the edit.
+1. If the change starts from a product/user prompt, run or recommend `{{DRIFT_COMMAND}} context --task "<user prompt>"` before planning.
+2. Identify the likely target files from the user request.
+3. Run or recommend `{{DRIFT_COMMAND}} context <file>` for each critical file when files are known.
+4. Extract the relevant contract ids, intents, SSOTs, locked invariants, and `llm.must_not_change` items.
+5. Detect conflicts between the requested change and the contracts.
+6. If the task touches contracts or protected files, recommend `{{DRIFT_COMMAND}} diff --summary` for contract review.
+7. If Drift is already failing, run or recommend `{{DRIFT_COMMAND}} explain` or `{{DRIFT_COMMAND}} explain <contract-id>` to capture actionable diagnostics.
+8. Recommend the agent role or next skill to use.
+9. List the checks that must run after the edit.
 
 ## Commands
 
@@ -26,7 +27,7 @@ Use the configured Drift command prefix:
 {{DRIFT_COMMAND}}
 ```
 
-Build concrete Drift commands by appending the subcommand, for example `{{DRIFT_COMMAND}} context <file>`, `{{DRIFT_COMMAND}} diff --summary`, `{{DRIFT_COMMAND}} check`, or `{{DRIFT_COMMAND}} explain <contract-id>`.
+Build concrete Drift commands by appending the subcommand, for example `{{DRIFT_COMMAND}} context --task "<user prompt>"`, `{{DRIFT_COMMAND}} context <file>`, `{{DRIFT_COMMAND}} diff --summary`, `{{DRIFT_COMMAND}} check`, or `{{DRIFT_COMMAND}} explain <contract-id>`.
 
 For non-Drift checks, inspect the target project's scripts first and only recommend commands that exist in that project.
 

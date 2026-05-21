@@ -14,7 +14,7 @@ comes from the intended source.
 DriftLock makes those rules explicit and checkable:
 
 - `@drift` contracts describe local intent and sources of truth.
-- `drift-lock context` gives agents the relevant contract before they edit.
+- `drift-lock context --task` gives agents relevant constraints before they plan.
 - `drift-lock check` validates supported invariants in CI.
 - `drift-lock explain` turns violations into actionable diagnostics.
 - `@drift-lock/eslint-plugin` brings the same feedback into the developer loop.
@@ -106,6 +106,7 @@ detected in CI.
 
 ```bash
 drift-lock context <file>
+drift-lock context --task "<user prompt>"
 drift-lock extract
 drift-lock check
 drift-lock check --changed
@@ -115,11 +116,23 @@ drift-lock skills list
 drift-lock skills install --provider openai
 ```
 
-`context` renders contract-aware context for agents. `extract` updates the
-committed contract index. `check` validates contracts, locked baselines, and
-supported invariants. `diff --summary` reviews contract changes for PRs.
-`explain` prints human-readable diagnostics for current violations and can be
-filtered to one contract id.
+`context <file>` renders contract-aware context for a target file.
+`context --task` prepares pre-plan context for AI-assisted work from the user
+prompt, so the agent can see relevant contracts, SSOTs, invariants, and planning
+notes before implementation. `extract` updates the committed contract index.
+`check` validates contracts, locked baselines, and supported invariants.
+`diff --summary` reviews contract changes for PRs. `explain` prints
+human-readable diagnostics for current violations and can be filtered to one
+contract id.
+
+For the AI-assisted workflow, run context before planning:
+
+```bash
+drift-lock context --task "add yearly billing plan"
+```
+
+Then plan and implement against the listed constraints, and finish with
+`drift-lock diff --summary` plus `drift-lock check`.
 
 For a PR workflow, run:
 

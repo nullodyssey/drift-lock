@@ -9,14 +9,15 @@ Use this skill when implementing changes in or around files protected by Drift C
 
 ## Workflow
 
-1. Read Drift context before editing, or ask `@cm` for it if missing.
-2. Identify locked contracts, SSOTs, and invariants that constrain the change.
-3. Edit code without changing locked contracts unless the user explicitly requested a contract change.
-4. If the request conflicts with a locked contract, stop and report the conflict.
-5. If contracted files changed, run or report `{{DRIFT_COMMAND}} diff --summary` before accepting or finalizing contract changes.
-6. Run the required checks after editing.
-7. If Drift checks fail, run or report `{{DRIFT_COMMAND}} explain` or `{{DRIFT_COMMAND}} explain <contract-id>` before proposing a fix.
-8. Report changed files, contract diff summary, Drift explanations, and verification results.
+1. If the change starts from a product/user prompt, read `{{DRIFT_COMMAND}} context --task "<user prompt>"` before planning or ask `@cm` for it.
+2. Read `{{DRIFT_COMMAND}} context <file>` before editing known target files.
+3. Identify locked contracts, SSOTs, and invariants that constrain the change.
+4. Edit code without changing locked contracts unless the user explicitly requested a contract change.
+5. If the request conflicts with a locked contract, stop and report the conflict.
+6. If contracted files changed, run or report `{{DRIFT_COMMAND}} diff --summary` before accepting or finalizing contract changes.
+7. Run the required checks after editing.
+8. If Drift checks fail, run or report `{{DRIFT_COMMAND}} explain` or `{{DRIFT_COMMAND}} explain <contract-id>` before proposing a fix.
+9. Report changed files, contract diff summary, Drift explanations, and verification results.
 
 ## Commands
 
@@ -26,7 +27,7 @@ Use the configured Drift command prefix:
 {{DRIFT_COMMAND}}
 ```
 
-Build concrete Drift commands by appending the subcommand, for example `{{DRIFT_COMMAND}} context <file>`, `{{DRIFT_COMMAND}} diff --summary`, `{{DRIFT_COMMAND}} check`, or `{{DRIFT_COMMAND}} explain <contract-id>`.
+Build concrete Drift commands by appending the subcommand, for example `{{DRIFT_COMMAND}} context --task "<user prompt>"`, `{{DRIFT_COMMAND}} context <file>`, `{{DRIFT_COMMAND}} diff --summary`, `{{DRIFT_COMMAND}} check`, or `{{DRIFT_COMMAND}} explain <contract-id>`.
 
 For non-Drift checks, inspect the target project's scripts first and only run commands that exist in that project.
 

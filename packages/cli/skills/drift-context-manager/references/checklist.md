@@ -3,6 +3,7 @@
 Use this checklist before routing work to another agent or starting implementation.
 
 ```txt
+- [ ] If starting from a product/user prompt, run or request: {{DRIFT_COMMAND}} context --task "<user prompt>"
 - [ ] Identify target file(s)
 - [ ] Check whether each target has a Drift Contract
 - [ ] Run or request: {{DRIFT_COMMAND}} context <file>
@@ -20,6 +21,7 @@ Use this checklist before routing work to another agent or starting implementati
 Default Drift commands:
 
 ```bash
+{{DRIFT_COMMAND}} context --task "<user prompt>"
 {{DRIFT_COMMAND}} check
 {{DRIFT_COMMAND}} diff --summary
 {{DRIFT_COMMAND}} explain <contract-id>

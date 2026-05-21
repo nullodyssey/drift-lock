@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { checkContracts } from '@drift-lock/core';
 import { diffContracts, formatContractDiffSummary, writeAcceptanceFile } from '@drift-lock/core';
 import { explainContracts, formatExplanations } from '@drift-lock/core';
-import { renderContext } from '@drift-lock/core';
+import { renderContext, renderTaskContext } from '@drift-lock/core';
 import { extractContracts, extractContractsFromSource } from '@drift-lock/core';
 import { isValidContractId, readDriftConfig, writeDriftConfig } from '@drift-lock/core';
 import { toIndex, writeIndex } from '@drift-lock/core';
@@ -592,6 +592,43 @@ if (true) {}
     expect(result.output).toContain('Relevant Drift Contracts');
     expect(result.output).toContain('billing.create-checkout-session');
     expect(result.output).toContain('pricing: @/features/billing/pricing.ts');
+  });
+
+  it('renders pre-plan task context from relevant contracts', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource('billing.create-checkout-session'),
+      'src/other.ts': validActionsSource('support.unrelated-ticket')
+        .replaceAll('billing', 'support')
+        .replaceAll('pricing', 'queue')
+        .replaceAll('Pricing', 'Queue')
+        .replace('Create a Stripe Checkout session for the Pro subscription.', 'Send support ticket notifications.'),
+    });
+    const result = await renderTaskContext({ root, task: 'add yearly billing pricing plan' });
+
+    expect(result.errors).toEqual([]);
+    expect(result.output).toContain('Drift Context For Task');
+    expect(result.output).toContain('Task:\nadd yearly billing pricing plan');
+    expect(result.output).toContain('- billing.create-checkout-session');
+    expect(result.output).toContain('  stability: locked');
+    expect(result.output).toContain('  ssot:');
+    expect(result.output).toContain('    pricing: @/features/billing/pricing.ts');
+    expect(result.output).toContain('    - checkout-price-from-pricing: drift/ssot-flow ssot=pricing sinks=return.priceId, return.amount');
+    expect(result.output).toContain('Relevant Files:');
+    expect(result.output).toContain('- @/features/billing/pricing.ts');
+    expect(result.output).toContain('- src/actions.ts');
+    expect(result.output).not.toContain('support.unrelated-ticket');
+    expect(result.output).toContain('Planning Notes:');
+    expect(result.output).toContain('- Run drift-lock diff --summary after implementation.');
+  });
+
+  it('renders explicit empty task context when no contracts match', async () => {
+    const root = await createProject({ 'src/actions.ts': validActionsSource() });
+    const result = await renderTaskContext({ root, task: 'rename dashboard navigation labels' });
+
+    expect(result.errors).toEqual([]);
+    expect(result.output).toContain('No relevant @drift contracts found for this task.');
+    expect(result.output).toContain('No relevant files found.');
+    expect(result.output).toContain('Planning Notes:');
   });
 
   it('explains missing ssot-flow sinks with actionable diagnostics', async () => {
