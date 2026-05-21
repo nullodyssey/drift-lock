@@ -23,6 +23,9 @@ Recommended next role:
 
 Required checks:
 - <command>
+
+Explain diagnostics:
+- <command or "not needed">
 ```
 
 Keep the output short. Do not rewrite the full contract unless the user asks.

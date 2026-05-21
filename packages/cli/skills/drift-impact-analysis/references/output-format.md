@@ -15,6 +15,9 @@ Likely drift modes:
 Required proof:
 - <check command or test>
 
+Explain diagnostics:
+- <explain command or "not needed">
+
 Recommendation:
 - <proceed / clarify / change contract intentionally>
 ```

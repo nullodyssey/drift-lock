@@ -31,3 +31,6 @@ LOW/MEDIUM -> @dev can proceed with required checks
 HIGH -> @dev can proceed only with explicit constraints and full checks
 CRITICAL -> ask for product/contract confirmation before implementation
 ```
+
+When a Drift check is already failing, use `{{DRIFT_COMMAND}} explain` or
+`{{DRIFT_COMMAND}} explain <contract-id>` before classifying the next fix.

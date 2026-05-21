@@ -14,7 +14,8 @@ Use this skill when implementing changes in or around files protected by Drift C
 3. Edit code without changing locked contracts unless the user explicitly requested a contract change.
 4. If the request conflicts with a locked contract, stop and report the conflict.
 5. Run the required checks after editing.
-6. Report changed files and verification results.
+6. If Drift checks fail, run or report `{{DRIFT_COMMAND}} explain` or `{{DRIFT_COMMAND}} explain <contract-id>` before proposing a fix.
+7. Report changed files, Drift explanations, and verification results.
 
 ## Commands
 
@@ -24,7 +25,7 @@ Use the configured Drift command prefix:
 {{DRIFT_COMMAND}}
 ```
 
-Build concrete Drift commands by appending the subcommand, for example `{{DRIFT_COMMAND}} context <file>` or `{{DRIFT_COMMAND}} check`.
+Build concrete Drift commands by appending the subcommand, for example `{{DRIFT_COMMAND}} context <file>`, `{{DRIFT_COMMAND}} check`, or `{{DRIFT_COMMAND}} explain <contract-id>`.
 
 For non-Drift checks, inspect the target project's scripts first and only run commands that exist in that project.
 

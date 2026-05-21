@@ -13,8 +13,9 @@ Use this skill before non-trivial edits to files that may contain or depend on D
 2. Run or recommend `{{DRIFT_COMMAND}} context <file>` for each critical file.
 3. Extract the relevant contract ids, intents, SSOTs, locked invariants, and `llm.must_not_change` items.
 4. Detect conflicts between the requested change and the contracts.
-5. Recommend the agent role or next skill to use.
-6. List the checks that must run after the edit.
+5. If Drift is already failing, run or recommend `{{DRIFT_COMMAND}} explain` or `{{DRIFT_COMMAND}} explain <contract-id>` to capture actionable diagnostics.
+6. Recommend the agent role or next skill to use.
+7. List the checks that must run after the edit.
 
 ## Commands
 
@@ -24,7 +25,7 @@ Use the configured Drift command prefix:
 {{DRIFT_COMMAND}}
 ```
 
-Build concrete Drift commands by appending the subcommand, for example `{{DRIFT_COMMAND}} context <file>` or `{{DRIFT_COMMAND}} check`.
+Build concrete Drift commands by appending the subcommand, for example `{{DRIFT_COMMAND}} context <file>`, `{{DRIFT_COMMAND}} check`, or `{{DRIFT_COMMAND}} explain <contract-id>`.
 
 For non-Drift checks, inspect the target project's scripts first and only recommend commands that exist in that project.
 

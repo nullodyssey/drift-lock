@@ -16,6 +16,7 @@ DriftLock makes those rules explicit and checkable:
 - `@drift` contracts describe local intent and sources of truth.
 - `drift-lock context` gives agents the relevant contract before they edit.
 - `drift-lock check` validates supported invariants in CI.
+- `drift-lock explain` turns violations into actionable diagnostics.
 - `@drift-lock/eslint-plugin` brings the same feedback into the developer loop.
 
 DriftLock does not replace tests or code review. It adds a deterministic layer
@@ -107,13 +108,26 @@ detected in CI.
 drift-lock context <file>
 drift-lock extract
 drift-lock check
+drift-lock explain [contract-id]
 drift-lock skills list
 drift-lock skills install --provider openai
 ```
 
 `context` renders contract-aware context for agents. `extract` updates the
 committed contract index. `check` validates contracts, locked baselines, and
-supported invariants.
+supported invariants. `explain` prints human-readable diagnostics for current
+violations and can be filtered to one contract id.
+
+When a check fails, run:
+
+```bash
+drift-lock explain
+drift-lock explain billing.create-checkout-session
+drift-lock explain --json
+```
+
+Use `--json` when an agent or CI step needs stable diagnostic fields such as the
+contract id, invariant, sink, reason, found expression, and suggested fix.
 
 ## ESLint
 

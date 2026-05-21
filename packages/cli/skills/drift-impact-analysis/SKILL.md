@@ -13,8 +13,9 @@ Use this skill before implementation when the change may affect contracted code,
 2. Map direct contract impact: contract ids, stability, SSOTs, and invariants.
 3. Map indirect impact: files referenced by SSOTs and consumers likely to depend on changed outputs.
 4. Classify likely drift failure modes: `DRIFT010`, `DRIFT011`, `DRIFT013`, `DRIFT014`.
-5. Assign a risk level and required proof.
-6. Recommend whether the work can go to `@dev` or needs product/contract clarification first.
+5. If a Drift violation is present, use `{{DRIFT_COMMAND}} explain` or `{{DRIFT_COMMAND}} explain <contract-id>` to ground the failure mode.
+6. Assign a risk level and required proof.
+7. Recommend whether the work can go to `@dev` or needs product/contract clarification first.
 
 ## Commands
 
@@ -24,7 +25,7 @@ Use the configured Drift command prefix:
 {{DRIFT_COMMAND}}
 ```
 
-For Drift proof, recommend `{{DRIFT_COMMAND}} check`. For lint, typecheck, build, and tests, inspect the target project's scripts first and only recommend commands that exist in that project.
+For Drift proof, recommend `{{DRIFT_COMMAND}} check`. For failed Drift checks, recommend `{{DRIFT_COMMAND}} explain` or `{{DRIFT_COMMAND}} explain <contract-id>`. For lint, typecheck, build, and tests, inspect the target project's scripts first and only recommend commands that exist in that project.
 
 ## Output
 
