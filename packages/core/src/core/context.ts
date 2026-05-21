@@ -164,8 +164,16 @@ function relevantTaskFiles(contracts: DriftExtractedContract[]): string[] {
   for (const contract of contracts) {
     files.add(contract.file);
     for (const value of Object.values(contract.ssot ?? {})) {
-      files.add(normalizePath(value));
+      files.add(resolveTaskSsotFile(contract.file, value));
     }
   }
   return [...files].sort((a, b) => a.localeCompare(b));
+}
+
+function resolveTaskSsotFile(contractFile: string, ssotPath: string): string {
+  const normalized = normalizePath(ssotPath);
+  if (normalized.startsWith('./') || normalized.startsWith('../')) {
+    return normalizePath(path.posix.join(path.posix.dirname(contractFile), normalized));
+  }
+  return normalized;
 }

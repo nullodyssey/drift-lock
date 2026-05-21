@@ -621,6 +621,22 @@ if (true) {}
     expect(result.output).toContain('- Run drift-lock diff --summary after implementation.');
   });
 
+  it('resolves relative ssot paths in task context relevant files', async () => {
+    const root = await createProject({
+      'src/features/billing/actions.ts': validFlowSource('billing.create-checkout-session').replace(
+        'pricing: "@/features/billing/pricing.ts"',
+        'pricing: "./pricing.ts"',
+      ),
+    });
+    const result = await renderTaskContext({ root, task: 'change billing pricing' });
+
+    expect(result.errors).toEqual([]);
+    expect(result.output).toContain('    pricing: ./pricing.ts');
+    expect(result.output).toContain('- src/features/billing/actions.ts');
+    expect(result.output).toContain('- src/features/billing/pricing.ts');
+    expect(result.output).not.toContain('- ./pricing.ts');
+  });
+
   it('renders explicit empty task context when no contracts match', async () => {
     const root = await createProject({ 'src/actions.ts': validActionsSource() });
     const result = await renderTaskContext({ root, task: 'rename dashboard navigation labels' });
