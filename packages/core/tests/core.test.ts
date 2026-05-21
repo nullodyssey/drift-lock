@@ -172,6 +172,7 @@ if (true) {}
 
     const result = await checkContracts({ root });
     expect(result.errors.map((error) => error.code)).toContain('DRIFT014_UNSUPPORTED_FLOW_PATTERN');
+    expect(result.errors.some((error) => error.details?.reason === 'implicit-fallthrough')).toBe(true);
   });
 
   it('accepts incomplete if branches when a proven return follows', async () => {
@@ -242,11 +243,60 @@ if (true) {}
     expect(result.errors).toEqual([]);
   });
 
+  it('accepts empty switch case fallthrough into a terminating case', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`switch (input.plan) {
+    case 'pro':
+    case 'team':
+      return { priceId: BILLING_PRICES.pro.priceId };
+    default:
+      throw new Error('Unknown plan');
+  }`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('rejects non-empty switch case fallthrough as unsupported', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`switch (input.plan) {
+    case 'pro':
+      const price = BILLING_PRICES.pro;
+    case 'team':
+      return { priceId: BILLING_PRICES.pro.priceId };
+    default:
+      throw new Error('Unknown plan');
+  }`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT014_UNSUPPORTED_FLOW_PATTERN');
+    expect(result.errors.some((error) => error.details?.reason === 'unsupported-switch-fallthrough')).toBe(true);
+  });
+
   it('accepts incomplete switches when a proven return follows', async () => {
     const root = await createProject({
       'src/actions.ts': flowSourceWithBody(`switch (input.plan) {
     case 'pro':
       return { priceId: BILLING_PRICES.pro.priceId };
+  }
+
+  const price = BILLING_PRICES[input.plan];
+  return { priceId: price.priceId };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('accepts switch breaks when a proven return follows', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`switch (input.plan) {
+    case 'pro':
+      break;
+    case 'team':
+      break;
   }
 
   const price = BILLING_PRICES[input.plan];
@@ -347,6 +397,21 @@ if (true) {}
     expect(result.errors.map((error) => error.code)).toContain('DRIFT013_SSOT_FLOW_NOT_PROVEN');
   });
 
+  it('annotates missing sinks with a stable ssot-flow reason', async () => {
+    const root = await createProject({
+      'src/actions.ts': validNestedFlowSource().replace('amount: amount,', 'total: amount,'),
+    });
+
+    const result = await checkContracts({ root });
+    const missingSink = result.errors.find((error) => error.details?.sink === 'return.totals.monthly.amount');
+    expect(missingSink).toMatchObject({
+      code: 'DRIFT013_SSOT_FLOW_NOT_PROVEN',
+      message:
+        'DRIFT013: Contract "billing.create-checkout-session" requires sink "return.totals.monthly.amount" to derive from ssot "pricing".',
+      details: { reason: 'missing-sink' },
+    });
+  });
+
   it('rejects unsupported awaited ssot flow sink expressions', async () => {
     const root = await createProject({
       'src/actions.ts': validFlowSource().replace('priceId: price.priceId,', 'priceId: await resolvePriceId(price),'),
@@ -354,6 +419,7 @@ if (true) {}
 
     const result = await checkContracts({ root });
     expect(result.errors.map((error) => error.code)).toContain('DRIFT014_UNSUPPORTED_FLOW_PATTERN');
+    expect(result.errors.some((error) => error.details?.reason === 'unsupported-call')).toBe(true);
   });
 
   it('treats parameters that shadow trusted imports as untrusted', async () => {

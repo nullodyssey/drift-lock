@@ -6,6 +6,8 @@ import { moduleSpecifierCandidates } from './module-specifier.js';
 type FlowValue = {
   trusted: boolean;
   unsupported: boolean;
+  reason?: FlowReason;
+  nodeKind?: string;
 };
 
 type FunctionLikeWithBody = ts.FunctionDeclaration | ts.FunctionExpression | ts.ArrowFunction;
@@ -13,11 +15,24 @@ type FunctionLikeWithBody = ts.FunctionDeclaration | ts.FunctionExpression | ts.
 type FlowCheckResult = {
   errors: DriftError[];
   completed: boolean;
+  breaks: boolean;
+  fallsThrough: boolean;
 };
+
+type FlowReason =
+  | 'missing-sink'
+  | 'untrusted-value'
+  | 'unsupported-call'
+  | 'unsupported-return'
+  | 'unsupported-spread'
+  | 'unsupported-mutation'
+  | 'implicit-fallthrough'
+  | 'unsupported-switch-fallthrough'
+  | 'unsupported-pattern';
 
 const untrusted: FlowValue = { trusted: false, unsupported: false };
 const trusted: FlowValue = { trusted: true, unsupported: false };
-const unsupported: FlowValue = { trusted: false, unsupported: true };
+const unsupported: FlowValue = { trusted: false, unsupported: true, reason: 'unsupported-pattern' };
 
 export function checkSsotFlow(contract: DriftExtractedContract, text: string): DriftError[] {
   const errors: DriftError[] = [];
@@ -35,7 +50,7 @@ export function checkSsotFlow(contract: DriftExtractedContract, text: string): D
     if (!ssotPath) continue;
 
     if (!functionNode?.body) {
-      errors.push(...unsupportedForSinks(contract, invariant, sinks));
+      errors.push(...unsupportedForSinks(contract, invariant, sinks, 'unsupported-return'));
       continue;
     }
 
@@ -55,7 +70,7 @@ function checkFunctionFlow(
   const errors: DriftError[] = [];
   const sinks = invariant.sinks ?? [];
   const body = functionNode.body;
-  if (!body) return unsupportedForSinks(contract, invariant, sinks);
+  if (!body) return unsupportedForSinks(contract, invariant, sinks, 'unsupported-return');
   const trustedImports = findTrustedImports(sourceFile, ssotPath);
 
   if (trustedImports.size === 0) {
@@ -63,7 +78,7 @@ function checkFunctionFlow(
   }
 
   if (hasUnsupportedMutation(body)) {
-    return unsupportedForSinks(contract, invariant, sinks);
+    return unsupportedForSinks(contract, invariant, sinks, 'unsupported-mutation');
   }
 
   const env = new Map<string, FlowValue>();
@@ -75,7 +90,9 @@ function checkFunctionFlow(
   if (ts.isBlock(body)) {
     const checked = checkStatements(contract, invariant, body.statements, env);
     errors.push(...checked.errors);
-    if (!checked.completed) errors.push(...unsupportedForSinks(contract, invariant, sinks));
+    if (!checked.completed || checked.breaks || checked.fallsThrough) {
+      errors.push(...unsupportedForSinks(contract, invariant, sinks, 'implicit-fallthrough'));
+    }
   } else {
     errors.push(...checkReturnExpression(contract, invariant, body, env));
   }
@@ -90,6 +107,8 @@ function checkStatements(
   env: Map<string, FlowValue>,
 ): FlowCheckResult {
   const errors: DriftError[] = [];
+  let completed = false;
+  let breaks = false;
 
   for (const statement of statements) {
     if (ts.isVariableStatement(statement)) {
@@ -99,34 +118,42 @@ function checkStatements(
 
     if (ts.isReturnStatement(statement)) {
       errors.push(...checkReturnStatement(contract, invariant, statement, env));
-      return { errors, completed: true };
+      return { errors, completed: true, breaks, fallsThrough: false };
     }
 
     if (ts.isThrowStatement(statement)) {
-      return { errors, completed: true };
+      return { errors, completed: true, breaks, fallsThrough: false };
+    }
+
+    if (ts.isBreakStatement(statement)) {
+      return { errors, completed, breaks: true, fallsThrough: false };
     }
 
     if (ts.isIfStatement(statement)) {
       const checked = checkIfStatement(contract, invariant, statement, env);
       errors.push(...checked.errors);
-      if (checked.completed) return { errors, completed: true };
+      completed = checked.completed || completed;
+      breaks = checked.breaks || breaks;
+      if (!checked.fallsThrough) return { errors, completed, breaks, fallsThrough: false };
       continue;
     }
 
     if (ts.isSwitchStatement(statement)) {
       const checked = checkSwitchStatement(contract, invariant, statement, env);
       errors.push(...checked.errors);
-      if (checked.completed) return { errors, completed: true };
+      completed = checked.completed || completed;
+      breaks = checked.breaks || breaks;
+      if (!checked.fallsThrough) return { errors, completed, breaks, fallsThrough: false };
       continue;
     }
 
     if (hasReturnOutsideNestedFunction(statement)) {
-      errors.push(...unsupportedForSinks(contract, invariant, invariant.sinks ?? []));
-      return { errors, completed: true };
+      errors.push(...unsupportedForSinks(contract, invariant, invariant.sinks ?? [], 'unsupported-return'));
+      return { errors, completed: true, breaks, fallsThrough: false };
     }
   }
 
-  return { errors, completed: false };
+  return { errors, completed, breaks, fallsThrough: true };
 }
 
 function checkIfStatement(
@@ -138,11 +165,13 @@ function checkIfStatement(
   const thenChecked = checkStatementBranch(contract, invariant, statement.thenStatement, cloneEnv(env));
   const elseChecked = statement.elseStatement
     ? checkStatementBranch(contract, invariant, statement.elseStatement, cloneEnv(env))
-    : { errors: [], completed: false };
+    : { errors: [], completed: false, breaks: false, fallsThrough: true };
 
   return {
     errors: [...thenChecked.errors, ...elseChecked.errors],
-    completed: thenChecked.completed && elseChecked.completed,
+    completed: thenChecked.completed || elseChecked.completed,
+    breaks: thenChecked.breaks || elseChecked.breaks,
+    fallsThrough: thenChecked.fallsThrough || elseChecked.fallsThrough,
   };
 }
 
@@ -154,16 +183,31 @@ function checkSwitchStatement(
 ): FlowCheckResult {
   const errors: DriftError[] = [];
   let hasDefault = false;
-  let allClausesComplete = true;
+  let completed = false;
+  let fallsThrough = false;
+  const clauses = statement.caseBlock.clauses;
 
-  for (const clause of statement.caseBlock.clauses) {
+  for (const [index, clause] of clauses.entries()) {
     if (ts.isDefaultClause(clause)) hasDefault = true;
+    if (clause.statements.length === 0) {
+      if (index === clauses.length - 1) fallsThrough = true;
+      continue;
+    }
+
     const checked = checkStatements(contract, invariant, clause.statements, cloneEnv(env));
-    allClausesComplete = checked.completed && allClausesComplete;
     errors.push(...checked.errors);
+    completed = checked.completed || completed;
+    fallsThrough = checked.breaks || fallsThrough;
+
+    if (checked.fallsThrough && index < clauses.length - 1) {
+      errors.push(...unsupportedForSinks(contract, invariant, invariant.sinks ?? [], 'unsupported-switch-fallthrough'));
+      continue;
+    }
+
+    if (checked.fallsThrough) fallsThrough = true;
   }
 
-  return { errors, completed: hasDefault && allClausesComplete };
+  return { errors, completed, breaks: false, fallsThrough: !hasDefault || fallsThrough };
 }
 
 function checkStatementBranch(
@@ -174,24 +218,27 @@ function checkStatementBranch(
 ): FlowCheckResult {
   if (ts.isBlock(statement)) return checkStatements(contract, invariant, statement.statements, env);
   if (ts.isReturnStatement(statement)) {
-    return { errors: checkReturnStatement(contract, invariant, statement, env), completed: true };
+    return { errors: checkReturnStatement(contract, invariant, statement, env), completed: true, breaks: false, fallsThrough: false };
   }
-  if (ts.isThrowStatement(statement)) return { errors: [], completed: true };
+  if (ts.isThrowStatement(statement)) return { errors: [], completed: true, breaks: false, fallsThrough: false };
+  if (ts.isBreakStatement(statement)) return { errors: [], completed: false, breaks: true, fallsThrough: false };
   if (ts.isIfStatement(statement)) return checkIfStatement(contract, invariant, statement, env);
   if (ts.isSwitchStatement(statement)) return checkSwitchStatement(contract, invariant, statement, env);
   if (ts.isVariableStatement(statement)) {
     applyVariableStatement(statement, env);
-    return { errors: [], completed: false };
+    return { errors: [], completed: false, breaks: false, fallsThrough: true };
   }
 
   if (hasReturnOutsideNestedFunction(statement)) {
     return {
-      errors: unsupportedForSinks(contract, invariant, invariant.sinks ?? []),
+      errors: unsupportedForSinks(contract, invariant, invariant.sinks ?? [], 'unsupported-return'),
       completed: true,
+      breaks: false,
+      fallsThrough: false,
     };
   }
 
-  return { errors: [], completed: false };
+  return { errors: [], completed: false, breaks: false, fallsThrough: true };
 }
 
 function hasReturnOutsideNestedFunction(statement: ts.Statement): boolean {
@@ -224,7 +271,7 @@ function checkReturnStatement(
   const sinks = invariant.sinks ?? [];
 
   if (!statement.expression) {
-    return unsupportedForSinks(contract, invariant, sinks);
+    return unsupportedForSinks(contract, invariant, sinks, 'unsupported-return');
   }
 
   return checkReturnExpression(contract, invariant, statement.expression, env);
@@ -287,11 +334,11 @@ function checkReturnExpression(
   const returnExpression = unwrapReturnExpression(expression);
 
   if (!ts.isObjectLiteralExpression(returnExpression)) {
-    return unsupportedForSinks(contract, invariant, sinks);
+    return unsupportedForSinks(contract, invariant, sinks, 'unsupported-return', returnExpression);
   }
 
   if (returnExpression.properties.some(ts.isSpreadAssignment)) {
-    return unsupportedForSinks(contract, invariant, sinks);
+    return unsupportedForSinks(contract, invariant, sinks, 'unsupported-spread', returnExpression);
   }
 
   for (const sink of sinks) {
@@ -299,18 +346,22 @@ function checkReturnExpression(
     const property = findSinkExpression(returnExpression, path);
 
     if (!property) {
-      errors.push(flowNotProven(contract, invariant, sink));
+      errors.push(flowNotProven(contract, invariant, sink, 'missing-sink'));
       continue;
     }
 
     if (property.unsupported || !property.expression) {
-      errors.push(unsupportedPattern(contract, invariant, sink));
+      errors.push(unsupportedPattern(contract, invariant, sink, 'unsupported-pattern'));
       continue;
     }
 
     const flow = expressionFlow(property.expression, env);
     if (flow.trusted) continue;
-    errors.push(flow.unsupported ? unsupportedPattern(contract, invariant, sink) : flowNotProven(contract, invariant, sink));
+    errors.push(
+      flow.unsupported
+        ? unsupportedPattern(contract, invariant, sink, flow.reason ?? 'unsupported-pattern', flow.nodeKind)
+        : flowNotProven(contract, invariant, sink, 'untrusted-value', flow.nodeKind),
+    );
   }
 
   return errors;
@@ -343,7 +394,7 @@ function expressionFlow(expression: ts.Expression, env: Map<string, FlowValue>):
   }
 
   if (ts.isBinaryExpression(expression)) {
-    if (!isDerivedBinaryOperator(expression.operatorToken.kind)) return unsupported;
+    if (!isDerivedBinaryOperator(expression.operatorToken.kind)) return unsupportedFlow('unsupported-pattern', expression);
     return combineDerived([expressionFlow(expression.left, env), expressionFlow(expression.right, env)]);
   }
 
@@ -364,16 +415,20 @@ function expressionFlow(expression: ts.Expression, env: Map<string, FlowValue>):
   }
 
   if (ts.isCallExpression(expression) || ts.isNewExpression(expression) || ts.isAwaitExpression(expression)) {
-    return unsupported;
+    return unsupportedFlow('unsupported-call', expression);
   }
 
-  return unsupported;
+  return unsupportedFlow('unsupported-pattern', expression);
 }
 
 function combineDerived(values: FlowValue[]): FlowValue {
   const hasTrusted = values.some((value) => value.trusted);
   if (hasTrusted) return trusted;
   return values.length > 0 && values.every((value) => value.unsupported) ? unsupported : untrusted;
+}
+
+function unsupportedFlow(reason: FlowReason, node: ts.Node): FlowValue {
+  return { trusted: false, unsupported: true, reason, nodeKind: ts.SyntaxKind[node.kind] };
 }
 
 function findSinkExpression(
@@ -484,24 +539,42 @@ function bindingNames(name: ts.BindingName): string[] {
   });
 }
 
-function unsupportedForSinks(contract: DriftExtractedContract, invariant: DriftInvariant, sinks: string[]): DriftError[] {
-  return sinks.map((sink) => unsupportedPattern(contract, invariant, sink));
+function unsupportedForSinks(
+  contract: DriftExtractedContract,
+  invariant: DriftInvariant,
+  sinks: string[],
+  reason: FlowReason = 'unsupported-pattern',
+  node?: ts.Node,
+): DriftError[] {
+  return sinks.map((sink) => unsupportedPattern(contract, invariant, sink, reason, node ? ts.SyntaxKind[node.kind] : undefined));
 }
 
-function flowNotProven(contract: DriftExtractedContract, invariant: DriftInvariant, sink: string): DriftError {
+function flowNotProven(
+  contract: DriftExtractedContract,
+  invariant: DriftInvariant,
+  sink: string,
+  reason: FlowReason = 'untrusted-value',
+  nodeKind?: string,
+): DriftError {
   return driftError(
     'DRIFT013_SSOT_FLOW_NOT_PROVEN',
     contract.file,
-    { id: contract.id, invariantId: invariant.id, ssotKey: invariant.ssot, sink },
+    { id: contract.id, invariantId: invariant.id, ssotKey: invariant.ssot, sink, reason, nodeKind },
     { line: contract.line, column: contract.column },
   );
 }
 
-function unsupportedPattern(contract: DriftExtractedContract, invariant: DriftInvariant, sink: string): DriftError {
+function unsupportedPattern(
+  contract: DriftExtractedContract,
+  invariant: DriftInvariant,
+  sink: string,
+  reason: FlowReason = 'unsupported-pattern',
+  nodeKind?: string,
+): DriftError {
   return driftError(
     'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
     contract.file,
-    { id: contract.id, invariantId: invariant.id, ssotKey: invariant.ssot, sink },
+    { id: contract.id, invariantId: invariant.id, ssotKey: invariant.ssot, sink, reason, nodeKind },
     { line: contract.line, column: contract.column },
   );
 }

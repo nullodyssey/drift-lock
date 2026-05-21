@@ -114,6 +114,28 @@ ruleTester.run('ssot-flow', rules['ssot-flow'] as any, {
       filename: 'src/actions.ts',
       code: validConstArrowFlowSource(),
     },
+    {
+      filename: 'src/actions.ts',
+      code: flowSourceWithBody(`switch (input.plan) {
+    case 'pro':
+    case 'team':
+      return { priceId: BILLING_PRICES.pro.priceId };
+    default:
+      throw new Error('Unknown plan');
+  }`),
+    },
+    {
+      filename: 'src/actions.ts',
+      code: flowSourceWithBody(`switch (input.plan) {
+    case 'pro':
+      break;
+    case 'team':
+      break;
+  }
+
+  const price = BILLING_PRICES[input.plan];
+  return { priceId: price.priceId };`),
+    },
   ],
   invalid: [
     {
@@ -150,6 +172,18 @@ ruleTester.run('ssot-flow', rules['ssot-flow'] as any, {
       code: flowSourceWithBody(`switch (input.plan) {
     case 'pro':
       return { priceId: BILLING_PRICES.pro.priceId };
+  }`),
+      errors: [{ message: /DRIFT014/ }],
+    },
+    {
+      filename: 'src/actions.ts',
+      code: flowSourceWithBody(`switch (input.plan) {
+    case 'pro':
+      const price = BILLING_PRICES.pro;
+    case 'team':
+      return { priceId: BILLING_PRICES.pro.priceId };
+    default:
+      throw new Error('Unknown plan');
   }`),
       errors: [{ message: /DRIFT014/ }],
     },
