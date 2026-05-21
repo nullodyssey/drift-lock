@@ -140,6 +140,74 @@ if (true) {}
     expect(result.errors).toEqual([]);
   });
 
+  it('proves ssot flow for nested return paths and const aliases', async () => {
+    const root = await createProject({ 'src/actions.ts': validNestedFlowSource() });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('proves ssot flow across all branch returns', async () => {
+    const root = await createProject({ 'src/actions.ts': validBranchFlowSource() });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('detects branch returns that bypass ssot flow', async () => {
+    const root = await createProject({
+      'src/actions.ts': validBranchFlowSource().replace('return { priceId: price.priceId };', "return { priceId: 'price_fallback' };"),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT013_SSOT_FLOW_NOT_PROVEN');
+  });
+
+  it('rejects unsupported nested return control flow instead of ignoring it', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource().replace(
+        'const price = BILLING_PRICES[payload.plan];',
+        `const price = BILLING_PRICES[payload.plan];
+  try {
+    return { priceId: 'price_fallback', amount: 1, currency: 'USD' };
+  } catch {}`,
+      ),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT014_UNSUPPORTED_FLOW_PATTERN');
+  });
+
+  it('rejects unsupported unbraced branch returns instead of ignoring them', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource().replace(
+        'const price = BILLING_PRICES[payload.plan];',
+        `const price = BILLING_PRICES[payload.plan];
+  if (payload.plan === 'pro')
+    try {
+      return { priceId: 'price_fallback', amount: 1, currency: 'USD' };
+    } catch {}`,
+      ),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT014_UNSUPPORTED_FLOW_PATTERN');
+  });
+
+  it('proves ssot flow for const arrow function contracts', async () => {
+    const root = await createProject({ 'src/actions.ts': validConstArrowFlowSource() });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('proves ssot flow for expression-bodied arrow contracts', async () => {
+    const root = await createProject({ 'src/actions.ts': validExpressionArrowFlowSource() });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
   it('detects local values that bypass ssot flow', async () => {
     const root = await createProject({
       'src/actions.ts': validFlowSource().replace(
@@ -176,6 +244,24 @@ if (true) {}
     expect(result.errors.map((error) => error.code)).toContain('DRIFT014_UNSUPPORTED_FLOW_PATTERN');
   });
 
+  it('detects missing nested ssot flow sinks', async () => {
+    const root = await createProject({
+      'src/actions.ts': validNestedFlowSource().replace('amount: amount,', 'total: amount,'),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT013_SSOT_FLOW_NOT_PROVEN');
+  });
+
+  it('rejects unsupported awaited ssot flow sink expressions', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource().replace('priceId: price.priceId,', 'priceId: await resolvePriceId(price),'),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT014_UNSUPPORTED_FLOW_PATTERN');
+  });
+
   it('treats parameters that shadow trusted imports as untrusted', async () => {
     const root = await createProject({
       'src/actions.ts': validFlowSource()
@@ -204,6 +290,15 @@ if (true) {}
     const result = extractContractsFromSource(
       'src/actions.ts',
       validFlowSource().replace('      - return.priceId', '      - checkout.priceId'),
+    );
+
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT004_INVALID_FIELD_VALUE');
+  });
+
+  it('rejects collection wildcard ssot flow sinks in the P0 schema', () => {
+    const result = extractContractsFromSource(
+      'src/actions.ts',
+      validFlowSource().replace('      - return.priceId', '      - return.items[].priceId'),
     );
 
     expect(result.errors.map((error) => error.code)).toContain('DRIFT004_INVALID_FIELD_VALUE');
@@ -434,5 +529,141 @@ export async function createCheckoutSession(input: unknown) {
     currency: price.currency,
   };
 }
+`;
+}
+
+function validNestedFlowSource(id = 'billing.create-checkout-session'): string {
+  return `import { parseCheckoutInput } from '@/features/billing/billing.schema';
+import { BILLING_PRICES } from '@/features/billing/pricing';
+
+/* @drift
+version: 1
+id: ${id}
+scope: declaration
+stability: locked
+
+intent: >
+  Create a Stripe Checkout session for the Pro subscription.
+
+ssot:
+  pricing: "@/features/billing/pricing.ts"
+
+invariants:
+  - id: checkout-price-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.lineItem.price.id
+      - return.totals.monthly.amount
+*/
+export async function createCheckoutSession(input: unknown) {
+  const payload = parseCheckoutInput(input);
+  const price = BILLING_PRICES[payload.plan];
+  const amount = price.monthlyAmount * payload.seats;
+
+  return {
+    lineItem: {
+      price: {
+        id: price.priceId,
+      },
+    },
+    totals: {
+      monthly: {
+        amount: amount,
+      },
+    },
+  };
+}
+`;
+}
+
+function validBranchFlowSource(id = 'billing.create-checkout-session'): string {
+  return `import { BILLING_PRICES } from '@/features/billing/pricing';
+
+/* @drift
+version: 1
+id: ${id}
+scope: declaration
+stability: locked
+
+intent: >
+  Create a Stripe Checkout session for the selected subscription plan.
+
+ssot:
+  pricing: "@/features/billing/pricing.ts"
+
+invariants:
+  - id: checkout-price-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.priceId
+*/
+export function createCheckoutSession(input: { plan: 'pro' | 'team' }) {
+  if (input.plan === 'pro') {
+    const price = BILLING_PRICES.pro;
+    return { priceId: price.priceId };
+  }
+
+  const price = BILLING_PRICES.team;
+  return { priceId: price.priceId };
+}
+`;
+}
+
+function validConstArrowFlowSource(id = 'billing.create-checkout-session'): string {
+  return `import { BILLING_PRICES } from '@/features/billing/pricing';
+
+/* @drift
+version: 1
+id: ${id}
+scope: declaration
+stability: locked
+
+intent: >
+  Create a Stripe Checkout session for the selected subscription plan.
+
+ssot:
+  pricing: "@/features/billing/pricing.ts"
+
+invariants:
+  - id: checkout-price-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.priceId
+*/
+export const createCheckoutSession = async (input: { plan: 'pro' }) => {
+  const price = BILLING_PRICES[input.plan];
+  return { priceId: price.priceId };
+};
+`;
+}
+
+function validExpressionArrowFlowSource(id = 'billing.create-checkout-session'): string {
+  return `import { BILLING_PRICES } from '@/features/billing/pricing';
+
+/* @drift
+version: 1
+id: ${id}
+scope: declaration
+stability: locked
+
+intent: >
+  Create a Stripe Checkout session for the selected subscription plan.
+
+ssot:
+  pricing: "@/features/billing/pricing.ts"
+
+invariants:
+  - id: checkout-price-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.priceId
+*/
+export const createCheckoutSession = (input: { plan: 'pro' }) => ({
+  priceId: BILLING_PRICES[input.plan].priceId,
+});
 `;
 }

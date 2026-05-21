@@ -8,6 +8,8 @@ type FlowValue = {
   unsupported: boolean;
 };
 
+type FunctionLikeWithBody = ts.FunctionDeclaration | ts.FunctionExpression | ts.ArrowFunction;
+
 const untrusted: FlowValue = { trusted: false, unsupported: false };
 const trusted: FlowValue = { trusted: true, unsupported: false };
 const unsupported: FlowValue = { trusted: false, unsupported: true };
@@ -20,7 +22,7 @@ export function checkSsotFlow(contract: DriftExtractedContract, text: string): D
   if (flowInvariants.length === 0) return errors;
 
   const sourceFile = ts.createSourceFile(contract.file, text, ts.ScriptTarget.Latest, true, scriptKind(contract.file));
-  const functionNode = findAnchoredFunction(sourceFile, contract);
+  const functionNode = findAnchoredFunctionLike(sourceFile, contract);
 
   for (const invariant of flowInvariants) {
     const sinks = invariant.sinks ?? [];
@@ -41,7 +43,7 @@ export function checkSsotFlow(contract: DriftExtractedContract, text: string): D
 function checkFunctionFlow(
   sourceFile: ts.SourceFile,
   contract: DriftExtractedContract,
-  functionNode: ts.FunctionDeclaration,
+  functionNode: FunctionLikeWithBody,
   invariant: DriftInvariant,
   ssotPath: string,
 ): DriftError[] {
@@ -59,18 +61,33 @@ function checkFunctionFlow(
     return unsupportedForSinks(contract, invariant, sinks);
   }
 
-  if (hasNestedReturn(body)) {
-    return unsupportedForSinks(contract, invariant, sinks);
-  }
-
   const env = new Map<string, FlowValue>();
   for (const name of trustedImports) env.set(name, trusted);
   for (const parameter of functionNode.parameters) {
     for (const name of bindingNames(parameter.name)) env.set(name, untrusted);
   }
 
+  if (ts.isBlock(body)) {
+    const checked = checkStatements(contract, invariant, body.statements, env);
+    errors.push(...checked.errors);
+    if (!checked.sawReturn) errors.push(...unsupportedForSinks(contract, invariant, sinks));
+  } else {
+    errors.push(...checkReturnExpression(contract, invariant, body, env));
+  }
+
+  return errors;
+}
+
+function checkStatements(
+  contract: DriftExtractedContract,
+  invariant: DriftInvariant,
+  statements: ts.NodeArray<ts.Statement>,
+  env: Map<string, FlowValue>,
+): { errors: DriftError[]; sawReturn: boolean } {
+  const errors: DriftError[] = [];
   let sawReturn = false;
-  for (const statement of body.statements) {
+
+  for (const statement of statements) {
     if (ts.isVariableStatement(statement)) {
       applyVariableStatement(statement, env);
       continue;
@@ -79,14 +96,128 @@ function checkFunctionFlow(
     if (ts.isReturnStatement(statement)) {
       sawReturn = true;
       errors.push(...checkReturnStatement(contract, invariant, statement, env));
+      continue;
+    }
+
+    if (ts.isIfStatement(statement)) {
+      const checked = checkIfStatement(contract, invariant, statement, env);
+      sawReturn = checked.sawReturn || sawReturn;
+      errors.push(...checked.errors);
+      continue;
+    }
+
+    if (ts.isSwitchStatement(statement)) {
+      const checked = checkSwitchStatement(contract, invariant, statement, env);
+      sawReturn = checked.sawReturn || sawReturn;
+      errors.push(...checked.errors);
+      continue;
+    }
+
+    if (hasReturnOutsideNestedFunction(statement)) {
+      sawReturn = true;
+      errors.push(...unsupportedForSinks(contract, invariant, invariant.sinks ?? []));
     }
   }
 
-  if (!sawReturn) {
-    errors.push(...unsupportedForSinks(contract, invariant, sinks));
+  return { errors, sawReturn };
+}
+
+function checkIfStatement(
+  contract: DriftExtractedContract,
+  invariant: DriftInvariant,
+  statement: ts.IfStatement,
+  env: Map<string, FlowValue>,
+): { errors: DriftError[]; sawReturn: boolean } {
+  const thenChecked = checkStatementBranch(contract, invariant, statement.thenStatement, cloneEnv(env));
+  const elseChecked = statement.elseStatement
+    ? checkStatementBranch(contract, invariant, statement.elseStatement, cloneEnv(env))
+    : { errors: [], sawReturn: false };
+
+  return {
+    errors: [...thenChecked.errors, ...elseChecked.errors],
+    sawReturn: thenChecked.sawReturn || elseChecked.sawReturn,
+  };
+}
+
+function checkSwitchStatement(
+  contract: DriftExtractedContract,
+  invariant: DriftInvariant,
+  statement: ts.SwitchStatement,
+  env: Map<string, FlowValue>,
+): { errors: DriftError[]; sawReturn: boolean } {
+  const errors: DriftError[] = [];
+  let sawReturn = false;
+
+  for (const clause of statement.caseBlock.clauses) {
+    const checked = checkStatements(contract, invariant, clause.statements, cloneEnv(env));
+    sawReturn = checked.sawReturn || sawReturn;
+    errors.push(...checked.errors);
   }
 
-  return errors;
+  return { errors, sawReturn };
+}
+
+function checkStatementBranch(
+  contract: DriftExtractedContract,
+  invariant: DriftInvariant,
+  statement: ts.Statement,
+  env: Map<string, FlowValue>,
+): { errors: DriftError[]; sawReturn: boolean } {
+  if (ts.isBlock(statement)) return checkStatements(contract, invariant, statement.statements, env);
+  if (ts.isReturnStatement(statement)) {
+    return { errors: checkReturnStatement(contract, invariant, statement, env), sawReturn: true };
+  }
+  if (ts.isIfStatement(statement)) return checkIfStatement(contract, invariant, statement, env);
+  if (ts.isSwitchStatement(statement)) return checkSwitchStatement(contract, invariant, statement, env);
+  if (ts.isVariableStatement(statement)) {
+    applyVariableStatement(statement, env);
+    return { errors: [], sawReturn: false };
+  }
+
+  if (hasReturnOutsideNestedFunction(statement)) {
+    return {
+      errors: unsupportedForSinks(contract, invariant, invariant.sinks ?? []),
+      sawReturn: true,
+    };
+  }
+
+  return { errors: [], sawReturn: false };
+}
+
+function hasReturnOutsideNestedFunction(statement: ts.Statement): boolean {
+  let found = false;
+
+  const visit = (node: ts.Node): void => {
+    if (found) return;
+    if (node !== statement && ts.isFunctionLike(node)) return;
+    if (ts.isReturnStatement(node)) {
+      found = true;
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(statement);
+  return found;
+}
+
+function cloneEnv(env: Map<string, FlowValue>): Map<string, FlowValue> {
+  return new Map(env);
+}
+
+function checkReturnStatement(
+  contract: DriftExtractedContract,
+  invariant: DriftInvariant,
+  statement: ts.ReturnStatement,
+  env: Map<string, FlowValue>,
+): DriftError[] {
+  const sinks = invariant.sinks ?? [];
+
+  if (!statement.expression) {
+    return unsupportedForSinks(contract, invariant, sinks);
+  }
+
+  return checkReturnExpression(contract, invariant, statement.expression, env);
 }
 
 function findTrustedImports(sourceFile: ts.SourceFile, ssotPath: string): Set<string> {
@@ -135,26 +266,27 @@ function applyVariableStatement(statement: ts.VariableStatement, env: Map<string
   }
 }
 
-function checkReturnStatement(
+function checkReturnExpression(
   contract: DriftExtractedContract,
   invariant: DriftInvariant,
-  statement: ts.ReturnStatement,
+  expression: ts.Expression,
   env: Map<string, FlowValue>,
 ): DriftError[] {
   const errors: DriftError[] = [];
   const sinks = invariant.sinks ?? [];
+  const returnExpression = unwrapReturnExpression(expression);
 
-  if (!statement.expression || !ts.isObjectLiteralExpression(statement.expression)) {
+  if (!ts.isObjectLiteralExpression(returnExpression)) {
     return unsupportedForSinks(contract, invariant, sinks);
   }
 
-  if (statement.expression.properties.some(ts.isSpreadAssignment)) {
+  if (returnExpression.properties.some(ts.isSpreadAssignment)) {
     return unsupportedForSinks(contract, invariant, sinks);
   }
 
   for (const sink of sinks) {
-    const propertyName = sink.slice('return.'.length);
-    const property = findObjectProperty(statement.expression, propertyName);
+    const path = sink.slice('return.'.length).split('.');
+    const property = findSinkExpression(returnExpression, path);
 
     if (!property) {
       errors.push(flowNotProven(contract, invariant, sink));
@@ -172,6 +304,11 @@ function checkReturnStatement(
   }
 
   return errors;
+}
+
+function unwrapReturnExpression(expression: ts.Expression): ts.Expression {
+  if (ts.isParenthesizedExpression(expression)) return unwrapReturnExpression(expression.expression);
+  return expression;
 }
 
 function expressionFlow(expression: ts.Expression, env: Map<string, FlowValue>): FlowValue {
@@ -229,16 +366,22 @@ function combineDerived(values: FlowValue[]): FlowValue {
   return values.length > 0 && values.every((value) => value.unsupported) ? unsupported : untrusted;
 }
 
-function findObjectProperty(
+function findSinkExpression(
   expression: ts.ObjectLiteralExpression,
-  name: string,
+  path: string[],
 ): { expression?: ts.Expression; unsupported: boolean } | undefined {
+  const [name, ...rest] = path;
+  if (!name) return { expression, unsupported: false };
+
   for (const property of expression.properties) {
     if (ts.isPropertyAssignment(property) && propertyNameText(property.name) === name) {
-      return { expression: property.initializer, unsupported: false };
+      if (rest.length === 0) return { expression: property.initializer, unsupported: false };
+      if (!ts.isObjectLiteralExpression(property.initializer)) return { unsupported: true };
+      if (property.initializer.properties.some(ts.isSpreadAssignment)) return { unsupported: true };
+      return findSinkExpression(property.initializer, rest);
     }
     if (ts.isShorthandPropertyAssignment(property) && property.name.text === name) {
-      return { expression: property.name, unsupported: false };
+      return rest.length === 0 ? { expression: property.name, unsupported: false } : { unsupported: true };
     }
     if (ts.isMethodDeclaration(property) && propertyNameText(property.name) === name) {
       return { unsupported: true };
@@ -253,20 +396,35 @@ function propertyNameText(name: ts.PropertyName): string | undefined {
   return undefined;
 }
 
-function findAnchoredFunction(sourceFile: ts.SourceFile, contract: DriftExtractedContract): ts.FunctionDeclaration | undefined {
-  if (contract.anchor.type !== 'function') return undefined;
-  const anchorName = contract.anchor.name;
-  return sourceFile.statements.find(
-    (statement): statement is ts.FunctionDeclaration =>
-      ts.isFunctionDeclaration(statement) && statement.name?.text === anchorName,
-  );
+function findAnchoredFunctionLike(sourceFile: ts.SourceFile, contract: DriftExtractedContract): FunctionLikeWithBody | undefined {
+  if (contract.anchor.type === 'function') {
+    const anchorName = contract.anchor.name;
+    return sourceFile.statements.find(
+      (statement): statement is ts.FunctionDeclaration =>
+        ts.isFunctionDeclaration(statement) && statement.name?.text === anchorName,
+    );
+  }
+
+  if (contract.anchor.type !== 'const') return undefined;
+
+  for (const statement of sourceFile.statements) {
+    if (!ts.isVariableStatement(statement)) continue;
+    for (const declaration of statement.declarationList.declarations) {
+      if (!ts.isIdentifier(declaration.name) || declaration.name.text !== contract.anchor.name) continue;
+      if (declaration.initializer && (ts.isArrowFunction(declaration.initializer) || ts.isFunctionExpression(declaration.initializer))) {
+        return declaration.initializer;
+      }
+    }
+  }
+
+  return undefined;
 }
 
 function scriptKind(file: string): ts.ScriptKind {
   return file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
 }
 
-function hasUnsupportedMutation(body: ts.Block): boolean {
+function hasUnsupportedMutation(body: ts.ConciseBody): boolean {
   let found = false;
 
   const visit = (node: ts.Node): void => {
@@ -285,23 +443,6 @@ function hasUnsupportedMutation(body: ts.Block): boolean {
         found = true;
         return;
       }
-    }
-    ts.forEachChild(node, visit);
-  };
-
-  visit(body);
-  return found;
-}
-
-function hasNestedReturn(body: ts.Block): boolean {
-  let found = false;
-
-  const visit = (node: ts.Node): void => {
-    if (found) return;
-    if (node !== body && ts.isFunctionLike(node)) return;
-    if (ts.isReturnStatement(node) && !body.statements.includes(node)) {
-      found = true;
-      return;
     }
     ts.forEachChild(node, visit);
   };

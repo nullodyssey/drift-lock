@@ -177,7 +177,7 @@ function validateInvariants(
       } else {
         const seen = new Set<string>();
         for (const sink of invariant.sinks) {
-          if (!isString(sink) || !/^return\.[A-Za-z_$][\w$]*$/.test(sink.trim()) || seen.has(sink.trim())) {
+          if (!isString(sink) || !/^return\.[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/.test(sink.trim()) || seen.has(sink.trim())) {
             errors.push(driftError('DRIFT004_INVALID_FIELD_VALUE', file, { field: `${fieldPrefix}.sinks` }, position));
             break;
           }

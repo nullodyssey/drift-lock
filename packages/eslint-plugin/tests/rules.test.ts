@@ -106,6 +106,14 @@ ruleTester.run('ssot-flow', rules['ssot-flow'] as any, {
       filename: 'src/actions.ts',
       code: validFlowSource(),
     },
+    {
+      filename: 'src/actions.ts',
+      code: validNestedFlowSource(),
+    },
+    {
+      filename: 'src/actions.ts',
+      code: validConstArrowFlowSource(),
+    },
   ],
   invalid: [
     {
@@ -124,6 +132,11 @@ ruleTester.run('ssot-flow', rules['ssot-flow'] as any, {
       filename: 'src/actions.ts',
       code: validFlowSource().replace('const price = BILLING_PRICES[payload.plan];', 'const price = resolvePrice(payload.plan);'),
       errors: [{ message: /DRIFT014/ }, { message: /DRIFT014/ }, { message: /DRIFT014/ }],
+    },
+    {
+      filename: 'src/actions.ts',
+      code: validBranchFlowSource().replace('return { priceId: price.priceId };', "return { priceId: 'price_fallback' };"),
+      errors: [{ message: /DRIFT013/ }],
     },
   ],
 });
@@ -313,6 +326,114 @@ export async function createCheckoutSession(input: unknown) {
     amount: price.monthlyAmount * payload.seats,
     currency: price.currency,
   };
+}
+`;
+}
+
+function validNestedFlowSource(id = 'billing.create-checkout-session'): string {
+  return `import { parseCheckoutInput } from '@/features/billing/billing.schema';
+import { BILLING_PRICES } from '@/features/billing/pricing';
+
+/* @drift
+version: 1
+id: ${id}
+scope: declaration
+stability: locked
+
+intent: >
+  Create a Stripe Checkout session for the Pro subscription.
+
+ssot:
+  pricing: "@/features/billing/pricing.ts"
+
+invariants:
+  - id: checkout-price-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.lineItem.price.id
+      - return.totals.monthly.amount
+*/
+export async function createCheckoutSession(input: unknown) {
+  const payload = parseCheckoutInput(input);
+  const price = BILLING_PRICES[payload.plan];
+  const amount = price.monthlyAmount * payload.seats;
+
+  return {
+    lineItem: {
+      price: {
+        id: price.priceId,
+      },
+    },
+    totals: {
+      monthly: {
+        amount,
+      },
+    },
+  };
+}
+`;
+}
+
+function validConstArrowFlowSource(id = 'billing.create-checkout-session'): string {
+  return `import { BILLING_PRICES } from '@/features/billing/pricing';
+
+/* @drift
+version: 1
+id: ${id}
+scope: declaration
+stability: locked
+
+intent: >
+  Create a Stripe Checkout session for the selected subscription plan.
+
+ssot:
+  pricing: "@/features/billing/pricing.ts"
+
+invariants:
+  - id: checkout-price-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.priceId
+*/
+export const createCheckoutSession = async (input: { plan: 'pro' }) => {
+  const price = BILLING_PRICES[input.plan];
+  return { priceId: price.priceId };
+};
+`;
+}
+
+function validBranchFlowSource(id = 'billing.create-checkout-session'): string {
+  return `import { BILLING_PRICES } from '@/features/billing/pricing';
+
+/* @drift
+version: 1
+id: ${id}
+scope: declaration
+stability: locked
+
+intent: >
+  Create a Stripe Checkout session for the selected subscription plan.
+
+ssot:
+  pricing: "@/features/billing/pricing.ts"
+
+invariants:
+  - id: checkout-price-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.priceId
+*/
+export function createCheckoutSession(input: { plan: 'pro' | 'team' }) {
+  if (input.plan === 'pro') {
+    const price = BILLING_PRICES.pro;
+    return { priceId: price.priceId };
+  }
+
+  const price = BILLING_PRICES.team;
+  return { priceId: price.priceId };
 }
 `;
 }

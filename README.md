@@ -163,7 +163,7 @@ DriftLock V1 catches supported forms of:
 - invalid `@drift` contract syntax or schema
 - locked contract changes without explicit acceptance
 - missing usage of declared sources of truth
-- return fields that no longer derive from a declared source of truth
+- return fields or nested return paths that no longer derive from a declared source of truth
 
 The practical failure mode is simple: if an agent replaces a declared pricing
 source with a hardcoded local object, `drift-lock check` can fail before that
@@ -179,12 +179,12 @@ V1 is intentionally narrow:
 - `scope: declaration` for function-level flow checks
 - `stability: draft` and `stability: locked`
 - `drift/ssot-usage`
-- `drift/ssot-flow` for simple declaration-scoped function return-object flows
+- `drift/ssot-flow` for declaration-scoped function return-object flows with explicit `return.<path>` sinks
 
 `drift/ssot-flow` does not try to prove arbitrary program correctness. Complex
-helpers, mutations, spreads, deep object paths, collections, and branch-heavy
-flows may be unsupported in V1 and should fail clearly rather than create a
-false sense of safety. `drift/ssot-flow` is rejected on `scope: file` contracts.
+helpers, mutations, spreads, collections, and callback-heavy flows may be
+unsupported in V1 and should fail clearly rather than create a false sense of
+safety. `drift/ssot-flow` is rejected on `scope: file` contracts.
 
 ## Packages
 
