@@ -838,6 +838,45 @@ if (true) {}
     expect(result.errors.some((error) => error.contractId === 'billing.unchanged')).toBe(false);
   });
 
+  it('rejects duplicate ids introduced outside the Git scope', async () => {
+    const root = await createProject({
+      'src/existing.ts': validActionsSource('billing.duplicate'),
+    });
+    const extracted = await extractContracts({ root });
+    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await createGitBaseline(root);
+    await writeFile(path.join(root, 'src/new.ts'), validActionsSource('billing.duplicate'), 'utf8');
+    await execFileAsync('git', ['add', 'src/new.ts'], { cwd: root });
+
+    const result = await checkContracts({ root, changedOnly: true, gitBase: 'HEAD' });
+
+    expect(result.errors).toEqual([
+      expect.objectContaining({
+        code: 'DRIFT005_DUPLICATE_CONTRACT_ID',
+        contractId: 'billing.duplicate',
+        file: 'src/new.ts',
+      }),
+    ]);
+  });
+
+  it('does not report a Git-scoped duplicate for the same indexed file', async () => {
+    const root = await createProject({
+      'src/actions.ts': validActionsSource('billing.same-file'),
+    });
+    const extracted = await extractContracts({ root });
+    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await createGitBaseline(root);
+    await writeFile(
+      path.join(root, 'src/actions.ts'),
+      validActionsSource('billing.same-file').replace('the Pro subscription.', 'the Team subscription.'),
+      'utf8',
+    );
+
+    const result = await checkContracts({ root, changedOnly: true, gitBase: 'HEAD' });
+
+    expect(result.errors.some((error) => error.code === 'DRIFT005_DUPLICATE_CONTRACT_ID')).toBe(false);
+  });
+
   it('treats contracts from legacy indexes without bodyHash as changed', async () => {
     const root = await createProject({ 'src/actions.ts': validFlowSource() });
     const extracted = await extractContracts({ root });

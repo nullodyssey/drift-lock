@@ -26,6 +26,9 @@ export async function checkContracts(options: CheckOptions): Promise<{
   const scopedIndex = gitScope && index ? filterIndexByFiles(index, gitScope.contractFiles) : index;
   const extracted = await extractContracts({ ...options, files: gitScope?.extractFiles ?? options.files });
   const errors = [...extracted.errors];
+  if (gitScope && index) {
+    errors.push(...checkScopedDuplicateIds(extracted.contracts, index, gitScope.contractFiles));
+  }
   const contractsToCheck = options.changedOnly
     ? changedContracts(extracted.contracts, scopedIndex, gitScope?.impactedContractIds)
     : extracted.contracts;
@@ -45,6 +48,33 @@ export async function checkContracts(options: CheckOptions): Promise<{
   }
 
   return { contracts: extracted.contracts, errors };
+}
+
+function checkScopedDuplicateIds(
+  contracts: DriftExtractedContract[],
+  index: DriftContractsIndex,
+  scopedFiles: string[],
+): DriftError[] {
+  const errors: DriftError[] = [];
+  const scopedFileSet = new Set(scopedFiles);
+  const indexedById = new Map(index.contracts.map((contract) => [contract.id, contract]));
+
+  for (const contract of contracts) {
+    const indexed = indexedById.get(contract.id);
+    if (!indexed) continue;
+    if (indexed.file === contract.file) continue;
+    if (scopedFileSet.has(indexed.file)) continue;
+    errors.push(
+      driftError(
+        'DRIFT005_DUPLICATE_CONTRACT_ID',
+        contract.file,
+        { id: contract.id },
+        { line: contract.line, column: contract.column },
+      ),
+    );
+  }
+
+  return errors;
 }
 
 function changedContracts(

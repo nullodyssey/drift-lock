@@ -310,6 +310,22 @@ describe('drift-lock changed workflow commands', () => {
     expect(summary.stdout).not.toContain('billing.unchanged');
   });
 
+  it('reports duplicate contract ids introduced outside the Git scope', async () => {
+    await buildCore();
+    const root = await tempProject();
+    await writeFile(path.join(root, 'src/existing.ts'), validUsageSource('billing.duplicate'), 'utf8');
+    await runCli(['extract', '--root', root, '--source', 'src']);
+    await createGitBaseline(root);
+    await writeFile(path.join(root, 'src/new.ts'), validUsageSource('billing.duplicate'), 'utf8');
+    await execFileAsync('git', ['add', 'src/new.ts'], { cwd: root });
+
+    const result = await runCli(['check', '--changed', '--git-base', 'HEAD', '--root', root, '--source', 'src']);
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('DRIFT005');
+    expect(result.stderr).toContain('Duplicate @drift contract id "billing.duplicate"');
+  });
+
   it('requires --changed when check uses a Git base', async () => {
     await buildCore();
     const root = await tempProject();
