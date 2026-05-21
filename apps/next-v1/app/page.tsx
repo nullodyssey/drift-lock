@@ -1,4 +1,14 @@
-import { contextOutput, demoContract, driftOutput, driftedAction, healthyAction } from '@/demo/snippets';
+import {
+  contextOutput,
+  demoContract,
+  driftOutput,
+  driftedAction,
+  healthyAction,
+  nestedBranchContract,
+  nestedBranchDrifted,
+  nestedBranchHealthy,
+  nestedBranchOutput,
+} from '@/demo/snippets';
 
 const checks = [
   ['Contract parsed', 'YAML strict, typed schema, anchored to the action'],
@@ -50,6 +60,23 @@ export default function Home() {
           <h2>Before editing, the agent receives the contract instead of guessing architecture.</h2>
         </div>
         <pre>{contextOutput}</pre>
+      </section>
+
+      <section className="flowProof" aria-label="Nested ssot-flow branch proof">
+        <div className="flowProofCopy">
+          <p className="eyebrow">New ssot-flow coverage</p>
+          <h2>Nested return paths and branch returns are now part of the proof.</h2>
+          <p>
+            This second locked contract is checked by the same DriftLock command. A hardcoded fallback in one branch fails even
+            when another branch still reads from pricing.
+          </p>
+        </div>
+        <div className="flowGrid">
+          <CodePanel title="1. Nested sinks" code={nestedBranchContract} />
+          <CodePanel title="2. Branch-safe quote" code={nestedBranchHealthy} tone="green" />
+          <CodePanel title="3. Branch drift" code={nestedBranchDrifted} tone="red" />
+          <CodePanel title="4. DriftLock response" code={nestedBranchOutput} tone="amber" />
+        </div>
       </section>
 
       <section className="commands">

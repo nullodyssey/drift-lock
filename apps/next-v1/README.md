@@ -8,6 +8,8 @@ Mini projet Next.js qui démontre la promesse V1 :
 
 - Une server action critique : `src/features/billing/actions.ts`
 - Un contrat `@drift` locked, ancré à `createCheckoutSession`
+- Une deuxième action critique : `src/features/billing/quote-actions.ts`
+- Un contrat `@drift` locked, ancré à `createCheckoutQuote`
 - Deux sources de vérité déclarées :
   - `src/features/billing/pricing.ts`
   - `src/features/billing/billing.schema.ts`
@@ -48,6 +50,19 @@ Résultat attendu : DriftLock échoue avec `DRIFT013_SSOT_FLOW_NOT_PROVEN`.
 La règle `drift/ssot-flow` vérifie que les sorties déclarées (`return.priceId`,
 `return.amount`, `return.currency`) dérivent réellement de la SSOT `pricing`.
 Contrairement à `drift/ssot-usage`, la simple présence de l'import ne suffit pas.
+
+## Scénario nested paths + branches
+
+La deuxième action démontre la nouvelle couverture de `drift/ssot-flow` :
+
+```txt
+return.lineItem.price.id
+return.lineItem.price.currency
+return.totals.monthly.amount
+```
+
+Tous les chemins de retour doivent être prouvés. Si une branche retourne un prix
+ou un montant local, `drift-lock:check` échoue avec `DRIFT013_SSOT_FLOW_NOT_PROVEN`.
 
 Pour prouver la protection des contrats locked, modifie ensuite `stability: locked` en `stability: draft`.
 

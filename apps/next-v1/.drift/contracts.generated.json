@@ -41,6 +41,41 @@
         "name": "createCheckoutSession"
       },
       "contentHash": "sha256:f0410a0087dc61a2931ac521819ee856caade7aca31feeb4f25a1073fa3e9afc"
+    },
+    {
+      "version": 1,
+      "id": "billing.create-checkout-quote",
+      "scope": "declaration",
+      "stability": "locked",
+      "intent": "Create a nested checkout quote while proving every branch derives billing amounts from pricing.",
+      "ssot": {
+        "pricing": "@/features/billing/pricing.ts"
+      },
+      "invariants": [
+        {
+          "id": "checkout-quote-from-pricing",
+          "enforce": "drift/ssot-flow",
+          "ssot": "pricing",
+          "sinks": [
+            "return.lineItem.price.id",
+            "return.lineItem.price.currency",
+            "return.totals.monthly.amount"
+          ]
+        }
+      ],
+      "llm": {
+        "must_not_change": [
+          "pricing source",
+          "nested quote totals",
+          "branch return provenance"
+        ]
+      },
+      "file": "src/features/billing/quote-actions.ts",
+      "anchor": {
+        "type": "function",
+        "name": "createCheckoutQuote"
+      },
+      "contentHash": "sha256:8ba58c46c84e930db0b23d50341221e956a5a74a20e838668fa29efbde04e788"
     }
   ]
 }

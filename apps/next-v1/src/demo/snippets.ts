@@ -77,3 +77,68 @@ export const contextOutput = `Relevant Drift Contracts
     - pricing source
     - accepted input shape
     - checkout flow`;
+
+export const nestedBranchContract = `${driftMarker}
+version: 1
+id: billing.create-checkout-quote
+scope: declaration
+stability: locked
+
+intent: >
+  Create a nested checkout quote while proving every branch derives billing amounts from pricing.
+
+ssot:
+  pricing: "@/features/billing/pricing.ts"
+
+invariants:
+  - id: checkout-quote-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.lineItem.price.id
+      - return.lineItem.price.currency
+      - return.totals.monthly.amount
+*/`;
+
+export const nestedBranchHealthy = `export async function createCheckoutQuote(input: unknown) {
+  const payload = parseCheckoutInput(input);
+
+  if (payload.seats >= 10) {
+    const price = BILLING_PRICES[payload.plan];
+    const amount = price.monthlyAmount * payload.seats;
+
+    return {
+      lineItem: { price: { id: price.priceId, currency: price.currency } },
+      totals: { monthly: { amount } },
+    };
+  }
+
+  const price = BILLING_PRICES[payload.plan];
+  const amount = price.monthlyAmount * payload.seats;
+  return {
+    lineItem: { price: { id: price.priceId, currency: price.currency } },
+    totals: { monthly: { amount } },
+  };
+}`;
+
+export const nestedBranchDrifted = `export async function createCheckoutQuote(input: unknown) {
+  const payload = parseCheckoutInput(input);
+
+  if (payload.seats >= 10) {
+    return {
+      lineItem: { price: { id: 'manual_quote', currency: 'eur' } },
+      totals: { monthly: { amount: 1 } },
+    };
+  }
+
+  const price = BILLING_PRICES[payload.plan];
+  const amount = price.monthlyAmount * payload.seats;
+  return {
+    lineItem: { price: { id: price.priceId, currency: price.currency } },
+    totals: { monthly: { amount } },
+  };
+}`;
+
+export const nestedBranchOutput = `DRIFT013: Contract "billing.create-checkout-quote" requires sink "return.lineItem.price.id" to derive from ssot "pricing".
+
+DRIFT013: Contract "billing.create-checkout-quote" requires sink "return.totals.monthly.amount" to derive from ssot "pricing".`;
