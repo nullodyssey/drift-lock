@@ -1,22 +1,22 @@
 # DriftLock Next V1 Demo
 
-Mini projet Next.js qui démontre la promesse V1 :
+Small Next.js project that demonstrates the V1 promise:
 
-> Un agent IA peut modifier le code, mais il ne peut pas modifier ou contourner silencieusement le contrat local.
+> An AI agent can modify the code, but it cannot silently modify or bypass the local contract.
 
-## Ce que la démo contient
+## What the demo contains
 
-- Une server action critique : `src/features/billing/actions.ts`
-- Un contrat `@drift` locked, ancré à `createCheckoutSession`
-- Une deuxième action critique : `src/features/billing/quote-actions.ts`
-- Un contrat `@drift` locked, ancré à `createCheckoutQuote`
-- Deux sources de vérité déclarées :
+- A critical server action: `src/features/billing/actions.ts`
+- A locked `@drift` contract, anchored to `createCheckoutSession`
+- A second critical action: `src/features/billing/quote-actions.ts`
+- A locked `@drift` contract, anchored to `createCheckoutQuote`
+- Two declared sources of truth:
   - `src/features/billing/pricing.ts`
   - `src/features/billing/billing.schema.ts`
-- Un index commité : `.drift/contracts.generated.json`
-- Une config ESLint qui active `@drift-lock/eslint-plugin`
+- A committed index: `.drift/contracts.generated.json`
+- An ESLint config that enables `@drift-lock/eslint-plugin`
 
-## Commandes utiles
+## Useful commands
 
 ```bash
 pnpm --filter next-v1 dev
@@ -25,11 +25,11 @@ pnpm --filter next-v1 drift-lock:check
 pnpm --filter next-v1 lint
 ```
 
-## Scénario de preuve
+## Proof scenario
 
-1. Ouvre `src/features/billing/actions.ts`.
-2. Garde l'import de `BILLING_PRICES`.
-3. Remplace la ligne `const price = BILLING_PRICES[payload.plan];` par un objet local :
+1. Open `src/features/billing/actions.ts`.
+2. Keep the `BILLING_PRICES` import.
+3. Replace the line `const price = BILLING_PRICES[payload.plan];` with a local object:
 
 ```ts
 const price = {
@@ -39,21 +39,21 @@ const price = {
 };
 ```
 
-4. Lance :
+4. Run:
 
 ```bash
 pnpm --filter next-v1 drift-lock:check
 ```
 
-Résultat attendu : DriftLock échoue avec `DRIFT013_SSOT_FLOW_NOT_PROVEN`.
+Expected result: DriftLock fails with `DRIFT013_SSOT_FLOW_NOT_PROVEN`.
 
-La règle `drift/ssot-flow` vérifie que les sorties déclarées (`return.priceId`,
-`return.amount`, `return.currency`) dérivent réellement de la SSOT `pricing`.
-Contrairement à `drift/ssot-usage`, la simple présence de l'import ne suffit pas.
+The `drift/ssot-flow` rule verifies that the declared outputs (`return.priceId`,
+`return.amount`, `return.currency`) actually derive from the `pricing` SSOT.
+Unlike `drift/ssot-usage`, the import being present is not enough.
 
-## Scénario nested paths + branches
+## Nested paths + branches scenario
 
-La deuxième action démontre la nouvelle couverture de `drift/ssot-flow` :
+The second action demonstrates the new `drift/ssot-flow` coverage:
 
 ```txt
 return.lineItem.price.id
@@ -61,9 +61,9 @@ return.lineItem.price.currency
 return.totals.monthly.amount
 ```
 
-Tous les chemins de retour doivent être prouvés. Si une branche retourne un prix
-ou un montant local, `drift-lock:check` échoue avec `DRIFT013_SSOT_FLOW_NOT_PROVEN`.
+All return paths must be proven. If a branch returns a local price or amount,
+`drift-lock:check` fails with `DRIFT013_SSOT_FLOW_NOT_PROVEN`.
 
-Pour prouver la protection des contrats locked, modifie ensuite `stability: locked` en `stability: draft`.
+To prove locked contract protection, then change `stability: locked` to `stability: draft`.
 
-Résultat attendu : DriftLock échoue avec `DRIFT011_LOCKED_CONTRACT_CHANGED`.
+Expected result: DriftLock fails with `DRIFT011_LOCKED_CONTRACT_CHANGED`.
