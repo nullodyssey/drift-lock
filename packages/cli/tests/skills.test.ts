@@ -183,6 +183,28 @@ describe('drift-lock explain command', () => {
     });
   });
 
+  it('prints found source expressions in text and JSON explanations', async () => {
+    await buildCore();
+    const root = await tempProject();
+    await writeFile(path.join(root, 'src/actions.ts'), hardcodedSinkSource(), 'utf8');
+
+    const text = await runCli(['explain', '--root', root, '--source', 'src']);
+    const jsonResult = await runCli(['explain', '--root', root, '--source', 'src', '--json']);
+    const json = JSON.parse(jsonResult.stdout) as { explanations: Array<Record<string, unknown>> };
+
+    expect(text.code).toBe(1);
+    expect(text.stdout).toContain("Found:\nreturn.priceId = 'price_hardcoded'");
+    expect(jsonResult.code).toBe(1);
+    expect(json.explanations[0]).toMatchObject({
+      code: 'DRIFT013_SSOT_FLOW_NOT_PROVEN',
+      sink: 'return.priceId',
+      reason: 'untrusted-value',
+      foundExpression: "'price_hardcoded'",
+      foundNodeKind: 'StringLiteral',
+      found: "return.priceId = 'price_hardcoded'",
+    });
+  });
+
   it('filters explanations by contract id and exits zero when clean', async () => {
     await buildCore();
     const root = await tempProject();
@@ -351,6 +373,10 @@ async function runCli(args: string[]): Promise<{ stdout: string; stderr: string;
 
 function missingSinkSource(id = 'billing.create-checkout-session'): string {
   return validFlowSource(id).replace('amount: price.monthlyAmount,', 'total: price.monthlyAmount,');
+}
+
+function hardcodedSinkSource(id = 'billing.create-checkout-session'): string {
+  return validFlowSource(id).replace('priceId: price.priceId,', "priceId: 'price_hardcoded',");
 }
 
 function validFlowSource(id = 'billing.create-checkout-session'): string {

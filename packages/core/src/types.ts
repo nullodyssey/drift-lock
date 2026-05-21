@@ -112,6 +112,8 @@ export type DriftExplanation = {
   sink?: string;
   ssot?: string;
   reason?: string;
+  foundExpression?: string;
+  foundNodeKind?: string;
   expected: string;
   found: string;
   suggestedFix: string;

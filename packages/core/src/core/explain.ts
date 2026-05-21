@@ -57,6 +57,8 @@ function explainError(error: DriftError, contract?: DriftExtractedContract): Dri
   const ssotPath = ssotKey ? stringDetail(contract?.ssot?.[ssotKey]) ?? stringDetail(details.ssotPath) : stringDetail(details.ssotPath);
   const ssot = ssotKey ? (ssotPath ? `${ssotKey} -> ${ssotPath}` : ssotKey) : ssotPath;
   const reason = stringDetail(details.reason);
+  const foundExpression = stringDetail(details.foundExpression);
+  const foundNodeKind = stringDetail(details.foundNodeKind);
 
   const base = {
     code: error.code,
@@ -76,6 +78,8 @@ function explainError(error: DriftError, contract?: DriftExtractedContract): Dri
     sink,
     ssot,
     reason,
+    foundExpression,
+    foundNodeKind,
   };
 
   if (error.code === 'DRIFT010_SSOT_NOT_USED') {
@@ -109,7 +113,7 @@ function explainError(error: DriftError, contract?: DriftExtractedContract): Dri
     return {
       ...base,
       expected: `Sink "${sink ?? 'unknown'}" should derive from ssot "${ssotKey ?? 'unknown'}".`,
-      found: foundForSsotFlow(reason, sink),
+      found: foundForSsotFlow(reason, sink, foundExpression),
       suggestedFix: suggestedFixForSsotFlow(reason, sink),
     };
   }
@@ -120,7 +124,7 @@ function explainError(error: DriftError, contract?: DriftExtractedContract): Dri
       expected: sink
         ? `Sink "${sink}" should be proven through a supported local ssot-flow pattern.`
         : 'The invariant should be proven through a supported local ssot-flow pattern.',
-      found: foundForSsotFlow(reason, sink),
+      found: foundForSsotFlow(reason, sink, foundExpression),
       suggestedFix: suggestedFixForSsotFlow(reason, sink),
     };
   }
@@ -133,7 +137,9 @@ function explainError(error: DriftError, contract?: DriftExtractedContract): Dri
   };
 }
 
-function foundForSsotFlow(reason: string | undefined, sink: string | undefined): string {
+function foundForSsotFlow(reason: string | undefined, sink: string | undefined, foundExpression: string | undefined): string {
+  if (foundExpression && sink) return `${sink} = ${foundExpression}`;
+  if (foundExpression) return `Found expression: ${foundExpression}`;
   if (reason === 'missing-sink') return `Sink "${sink ?? 'unknown'}" is missing from the returned object.`;
   if (reason === 'untrusted-value') return `Sink "${sink ?? 'unknown'}" is assigned from a value that is not proven to derive from the SSOT.`;
   if (reason === 'unsupported-call') return `Sink "${sink ?? 'unknown'}" depends on a call, await, or constructor that Drift cannot prove locally.`;

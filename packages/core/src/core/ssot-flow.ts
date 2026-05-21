@@ -19,6 +19,12 @@ type FlowCheckResult = {
   fallsThrough: boolean;
 };
 
+type FlowErrorDetails = {
+  nodeKind?: string;
+  foundExpression?: string;
+  foundNodeKind?: string;
+};
+
 type FlowReason =
   | 'missing-sink'
   | 'untrusted-value'
@@ -88,19 +94,20 @@ function checkFunctionFlow(
   }
 
   if (ts.isBlock(body)) {
-    const checked = checkStatements(contract, invariant, body.statements, env);
+    const checked = checkStatements(sourceFile, contract, invariant, body.statements, env);
     errors.push(...checked.errors);
     if (!checked.completed || checked.breaks || checked.fallsThrough) {
       errors.push(...unsupportedForSinks(contract, invariant, sinks, 'implicit-fallthrough'));
     }
   } else {
-    errors.push(...checkReturnExpression(contract, invariant, body, env));
+    errors.push(...checkReturnExpression(sourceFile, contract, invariant, body, env));
   }
 
   return errors;
 }
 
 function checkStatements(
+  sourceFile: ts.SourceFile,
   contract: DriftExtractedContract,
   invariant: DriftInvariant,
   statements: ts.NodeArray<ts.Statement>,
@@ -117,7 +124,7 @@ function checkStatements(
     }
 
     if (ts.isReturnStatement(statement)) {
-      errors.push(...checkReturnStatement(contract, invariant, statement, env));
+      errors.push(...checkReturnStatement(sourceFile, contract, invariant, statement, env));
       return { errors, completed: true, breaks, fallsThrough: false };
     }
 
@@ -130,7 +137,7 @@ function checkStatements(
     }
 
     if (ts.isIfStatement(statement)) {
-      const checked = checkIfStatement(contract, invariant, statement, env);
+      const checked = checkIfStatement(sourceFile, contract, invariant, statement, env);
       errors.push(...checked.errors);
       completed = checked.completed || completed;
       breaks = checked.breaks || breaks;
@@ -139,7 +146,7 @@ function checkStatements(
     }
 
     if (ts.isSwitchStatement(statement)) {
-      const checked = checkSwitchStatement(contract, invariant, statement, env);
+      const checked = checkSwitchStatement(sourceFile, contract, invariant, statement, env);
       errors.push(...checked.errors);
       completed = checked.completed || completed;
       breaks = checked.breaks || breaks;
@@ -157,14 +164,15 @@ function checkStatements(
 }
 
 function checkIfStatement(
+  sourceFile: ts.SourceFile,
   contract: DriftExtractedContract,
   invariant: DriftInvariant,
   statement: ts.IfStatement,
   env: Map<string, FlowValue>,
 ): FlowCheckResult {
-  const thenChecked = checkStatementBranch(contract, invariant, statement.thenStatement, cloneEnv(env));
+  const thenChecked = checkStatementBranch(sourceFile, contract, invariant, statement.thenStatement, cloneEnv(env));
   const elseChecked = statement.elseStatement
-    ? checkStatementBranch(contract, invariant, statement.elseStatement, cloneEnv(env))
+    ? checkStatementBranch(sourceFile, contract, invariant, statement.elseStatement, cloneEnv(env))
     : { errors: [], completed: false, breaks: false, fallsThrough: true };
 
   return {
@@ -176,6 +184,7 @@ function checkIfStatement(
 }
 
 function checkSwitchStatement(
+  sourceFile: ts.SourceFile,
   contract: DriftExtractedContract,
   invariant: DriftInvariant,
   statement: ts.SwitchStatement,
@@ -194,7 +203,7 @@ function checkSwitchStatement(
       continue;
     }
 
-    const checked = checkStatements(contract, invariant, clause.statements, cloneEnv(env));
+    const checked = checkStatements(sourceFile, contract, invariant, clause.statements, cloneEnv(env));
     errors.push(...checked.errors);
     completed = checked.completed || completed;
     fallsThrough = checked.breaks || fallsThrough;
@@ -211,19 +220,20 @@ function checkSwitchStatement(
 }
 
 function checkStatementBranch(
+  sourceFile: ts.SourceFile,
   contract: DriftExtractedContract,
   invariant: DriftInvariant,
   statement: ts.Statement,
   env: Map<string, FlowValue>,
 ): FlowCheckResult {
-  if (ts.isBlock(statement)) return checkStatements(contract, invariant, statement.statements, env);
+  if (ts.isBlock(statement)) return checkStatements(sourceFile, contract, invariant, statement.statements, env);
   if (ts.isReturnStatement(statement)) {
-    return { errors: checkReturnStatement(contract, invariant, statement, env), completed: true, breaks: false, fallsThrough: false };
+    return { errors: checkReturnStatement(sourceFile, contract, invariant, statement, env), completed: true, breaks: false, fallsThrough: false };
   }
   if (ts.isThrowStatement(statement)) return { errors: [], completed: true, breaks: false, fallsThrough: false };
   if (ts.isBreakStatement(statement)) return { errors: [], completed: false, breaks: true, fallsThrough: false };
-  if (ts.isIfStatement(statement)) return checkIfStatement(contract, invariant, statement, env);
-  if (ts.isSwitchStatement(statement)) return checkSwitchStatement(contract, invariant, statement, env);
+  if (ts.isIfStatement(statement)) return checkIfStatement(sourceFile, contract, invariant, statement, env);
+  if (ts.isSwitchStatement(statement)) return checkSwitchStatement(sourceFile, contract, invariant, statement, env);
   if (ts.isVariableStatement(statement)) {
     applyVariableStatement(statement, env);
     return { errors: [], completed: false, breaks: false, fallsThrough: true };
@@ -263,6 +273,7 @@ function cloneEnv(env: Map<string, FlowValue>): Map<string, FlowValue> {
 }
 
 function checkReturnStatement(
+  sourceFile: ts.SourceFile,
   contract: DriftExtractedContract,
   invariant: DriftInvariant,
   statement: ts.ReturnStatement,
@@ -274,7 +285,7 @@ function checkReturnStatement(
     return unsupportedForSinks(contract, invariant, sinks, 'unsupported-return');
   }
 
-  return checkReturnExpression(contract, invariant, statement.expression, env);
+  return checkReturnExpression(sourceFile, contract, invariant, statement.expression, env);
 }
 
 function findTrustedImports(sourceFile: ts.SourceFile, ssotPath: string): Set<string> {
@@ -324,6 +335,7 @@ function applyVariableStatement(statement: ts.VariableStatement, env: Map<string
 }
 
 function checkReturnExpression(
+  sourceFile: ts.SourceFile,
   contract: DriftExtractedContract,
   invariant: DriftInvariant,
   expression: ts.Expression,
@@ -357,10 +369,17 @@ function checkReturnExpression(
 
     const flow = expressionFlow(property.expression, env);
     if (flow.trusted) continue;
+    const expressionDetails = sourceExpressionDetails(sourceFile, property.expression);
     errors.push(
       flow.unsupported
-        ? unsupportedPattern(contract, invariant, sink, flow.reason ?? 'unsupported-pattern', flow.nodeKind)
-        : flowNotProven(contract, invariant, sink, 'untrusted-value', flow.nodeKind),
+        ? unsupportedPattern(contract, invariant, sink, flow.reason ?? 'unsupported-pattern', {
+            nodeKind: flow.nodeKind,
+            ...expressionDetails,
+          })
+        : flowNotProven(contract, invariant, sink, 'untrusted-value', {
+            nodeKind: flow.nodeKind,
+            ...expressionDetails,
+          }),
     );
   }
 
@@ -546,7 +565,7 @@ function unsupportedForSinks(
   reason: FlowReason = 'unsupported-pattern',
   node?: ts.Node,
 ): DriftError[] {
-  return sinks.map((sink) => unsupportedPattern(contract, invariant, sink, reason, node ? ts.SyntaxKind[node.kind] : undefined));
+  return sinks.map((sink) => unsupportedPattern(contract, invariant, sink, reason, { nodeKind: node ? ts.SyntaxKind[node.kind] : undefined }));
 }
 
 function flowNotProven(
@@ -554,12 +573,12 @@ function flowNotProven(
   invariant: DriftInvariant,
   sink: string,
   reason: FlowReason = 'untrusted-value',
-  nodeKind?: string,
+  details: FlowErrorDetails = {},
 ): DriftError {
   return driftError(
     'DRIFT013_SSOT_FLOW_NOT_PROVEN',
     contract.file,
-    { id: contract.id, invariantId: invariant.id, ssotKey: invariant.ssot, sink, reason, nodeKind },
+    { id: contract.id, invariantId: invariant.id, ssotKey: invariant.ssot, sink, reason, ...details },
     { line: contract.line, column: contract.column },
   );
 }
@@ -569,12 +588,19 @@ function unsupportedPattern(
   invariant: DriftInvariant,
   sink: string,
   reason: FlowReason = 'unsupported-pattern',
-  nodeKind?: string,
+  details: FlowErrorDetails = {},
 ): DriftError {
   return driftError(
     'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
     contract.file,
-    { id: contract.id, invariantId: invariant.id, ssotKey: invariant.ssot, sink, reason, nodeKind },
+    { id: contract.id, invariantId: invariant.id, ssotKey: invariant.ssot, sink, reason, ...details },
     { line: contract.line, column: contract.column },
   );
+}
+
+function sourceExpressionDetails(sourceFile: ts.SourceFile, expression: ts.Expression): FlowErrorDetails {
+  return {
+    foundExpression: expression.getText(sourceFile),
+    foundNodeKind: ts.SyntaxKind[expression.kind],
+  };
 }

@@ -370,6 +370,24 @@ if (true) {}
     expect(result.errors.map((error) => error.code)).toContain('DRIFT013_SSOT_FLOW_NOT_PROVEN');
   });
 
+  it('annotates untrusted ssot flow sinks with the returned source expression', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource().replace('priceId: price.priceId,', "priceId: 'price_hardcoded',"),
+    });
+
+    const result = await checkContracts({ root });
+    const untrustedSink = result.errors.find((error) => error.details?.sink === 'return.priceId');
+
+    expect(untrustedSink).toMatchObject({
+      code: 'DRIFT013_SSOT_FLOW_NOT_PROVEN',
+      details: {
+        reason: 'untrusted-value',
+        foundExpression: "'price_hardcoded'",
+        foundNodeKind: 'StringLiteral',
+      },
+    });
+  });
+
   it('detects unsupported ssot flow helper calls', async () => {
     const root = await createProject({
       'src/actions.ts': validFlowSource().replace('const price = BILLING_PRICES[payload.plan];', 'const price = resolvePrice(payload.plan);'),
@@ -412,6 +430,8 @@ if (true) {}
         'DRIFT013: Contract "billing.create-checkout-session" requires sink "return.totals.monthly.amount" to derive from ssot "pricing".',
       details: { reason: 'missing-sink' },
     });
+    expect(missingSink?.details).not.toHaveProperty('foundExpression');
+    expect(missingSink?.details).not.toHaveProperty('foundNodeKind');
   });
 
   it('rejects unsupported awaited ssot flow sink expressions', async () => {
@@ -421,7 +441,12 @@ if (true) {}
 
     const result = await checkContracts({ root });
     expect(result.errors.map((error) => error.code)).toContain('DRIFT014_UNSUPPORTED_FLOW_PATTERN');
-    expect(result.errors.some((error) => error.details?.reason === 'unsupported-call')).toBe(true);
+    expect(result.errors.find((error) => error.details?.reason === 'unsupported-call')).toMatchObject({
+      details: {
+        foundExpression: 'await resolvePriceId(price)',
+        foundNodeKind: 'AwaitExpression',
+      },
+    });
   });
 
   it('treats parameters that shadow trusted imports as untrusted', async () => {
@@ -584,6 +609,26 @@ if (true) {}
       found: 'Sink "return.totals.monthly.amount" is missing from the returned object.',
       suggestedFix: 'Add "return.totals.monthly.amount" to the returned object and derive it from the declared SSOT.',
     });
+  });
+
+  it('explains ssot-flow sink failures with the exact found expression', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource().replace('priceId: price.priceId,', "priceId: 'price_hardcoded',"),
+    });
+
+    const result = await explainContracts({ root });
+    const explanation = result.explanations.find((item) => item.sink === 'return.priceId');
+    const output = formatExplanations(result.explanations);
+
+    expect(explanation).toMatchObject({
+      code: 'DRIFT013_SSOT_FLOW_NOT_PROVEN',
+      sink: 'return.priceId',
+      reason: 'untrusted-value',
+      foundExpression: "'price_hardcoded'",
+      foundNodeKind: 'StringLiteral',
+      found: "return.priceId = 'price_hardcoded'",
+    });
+    expect(output).toContain("Found:\nreturn.priceId = 'price_hardcoded'");
   });
 
   it('explains unsupported switch fallthrough with a dedicated fix', async () => {
