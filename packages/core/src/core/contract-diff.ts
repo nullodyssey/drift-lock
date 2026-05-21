@@ -212,11 +212,30 @@ function diffInvariants(current: DriftInvariant[], previous: DriftInvariant[]): 
     });
   }
 
+  const previousOrder = previous.map((invariant) => invariant.id);
+  const currentOrder = current.map((invariant) => invariant.id);
+  if (changes.length === 0 && !sameStringArray(previousOrder, currentOrder)) {
+    changes.push({
+      id: '__order__',
+      kind: 'reordered',
+      fields: [],
+      previousOrder,
+      currentOrder,
+    });
+  }
+
   return changes;
 }
 
 function formatInvariantChange(change: DriftInvariantChange): string[] {
   const lines: string[] = [];
+  if (change.kind === 'reordered') {
+    lines.push('    ~ invariant order changed');
+    lines.push(`      previous: ${(change.previousOrder ?? []).join(', ')}`);
+    lines.push(`      current: ${(change.currentOrder ?? []).join(', ')}`);
+    return lines;
+  }
+
   const marker = change.kind === 'added' ? '+' : change.kind === 'removed' ? '-' : '~';
   lines.push(`    ${marker} ${change.id}`);
 
@@ -264,4 +283,9 @@ function sortedSinks(sinks: string[] | undefined): string[] {
 function difference(left: string[], right: string[]): string[] {
   const rightSet = new Set(right);
   return left.filter((item) => !rightSet.has(item));
+}
+
+function sameStringArray(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) return false;
+  return left.every((item, index) => item === right[index]);
 }

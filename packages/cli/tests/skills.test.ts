@@ -321,6 +321,38 @@ describe('drift-lock changed workflow commands', () => {
     });
   });
 
+  it('prints invariant reorder changes in summaries and JSON', async () => {
+    await buildCore();
+    const root = await tempProject();
+    const baselineSource = dualInvariantUsageSource('billing.changed');
+    const reorderedSource = reorderInvariantBlocks(baselineSource);
+    expect(reorderedSource).not.toBe(baselineSource);
+
+    await writeFile(path.join(root, 'src/actions.ts'), baselineSource, 'utf8');
+    await runCli(['extract', '--root', root, '--source', 'src']);
+    await writeFile(path.join(root, 'src/actions.ts'), reorderedSource, 'utf8');
+
+    const summary = await runCli(['diff', '--summary', '--root', root, '--source', 'src']);
+    const jsonResult = await runCli(['diff', '--summary', '--json', '--root', root, '--source', 'src']);
+    const json = JSON.parse(jsonResult.stdout) as { changes: Array<Record<string, unknown>> };
+
+    expect(summary.code).toBe(0);
+    expect(summary.stdout).toContain('    ~ invariant order changed');
+    expect(summary.stdout).toContain('      previous: uses-pricing-ssot, validates-input');
+    expect(summary.stdout).toContain('      current: validates-input, uses-pricing-ssot');
+    expect(jsonResult.code).toBe(0);
+    expect(json.changes[0]).toMatchObject({
+      invariantChanges: [
+        {
+          id: '__order__',
+          kind: 'reordered',
+          previousOrder: ['uses-pricing-ssot', 'validates-input'],
+          currentOrder: ['validates-input', 'uses-pricing-ssot'],
+        },
+      ],
+    });
+  });
+
   it('limits changed checks and diffs to a Git base', async () => {
     await buildCore();
     const root = await tempProject();
@@ -556,4 +588,51 @@ export function createCheckoutSession() {
   return { price: PRO_PRICE_ID };
 }
 `;
+}
+
+function dualInvariantUsageSource(id = 'billing.create-checkout-session'): string {
+  return `import { PRO_PRICE_ID } from '@/features/billing/pricing';
+
+/* @drift
+version: 1
+id: ${id}
+scope: declaration
+stability: locked
+
+intent: >
+  Create a Stripe Checkout session for the Pro subscription.
+
+ssot:
+  pricing: "@/features/billing/pricing.ts"
+  schema: "@/features/billing/billing.schema.ts"
+
+invariants:
+  - id: uses-pricing-ssot
+    enforce: drift/ssot-usage
+    ssot: pricing
+  - id: validates-input
+    enforce: drift/ssot-usage
+    ssot: schema
+*/
+export function createCheckoutSession() {
+  return { price: PRO_PRICE_ID };
+}
+`;
+}
+
+function reorderInvariantBlocks(source: string): string {
+  return source.replace(
+    `  - id: uses-pricing-ssot
+    enforce: drift/ssot-usage
+    ssot: pricing
+  - id: validates-input
+    enforce: drift/ssot-usage
+    ssot: schema`,
+    `  - id: validates-input
+    enforce: drift/ssot-usage
+    ssot: schema
+  - id: uses-pricing-ssot
+    enforce: drift/ssot-usage
+    ssot: pricing`,
+  );
 }

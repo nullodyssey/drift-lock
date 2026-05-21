@@ -841,6 +841,38 @@ if (true) {}
     expect(result.diff.changes[0]?.invariantChanges).toBeUndefined();
   });
 
+  it('reports invariant block reorders explicitly', async () => {
+    const baselineSource = validActionsSource('billing.changed');
+    const reorderedSource = reorderActionInvariantBlocks(baselineSource);
+    expect(reorderedSource).not.toBe(baselineSource);
+
+    const root = await createProject({
+      'src/actions.ts': baselineSource,
+    });
+    const extracted = await extractContracts({ root });
+    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeFile(path.join(root, 'src/actions.ts'), reorderedSource, 'utf8');
+
+    const result = await diffContracts({ root });
+    const summary = formatContractDiffSummary(result.diff);
+
+    expect(result.diff.changes[0]).toMatchObject({
+      id: 'billing.changed',
+      fields: ['invariants'],
+      invariantChanges: [
+        {
+          id: '__order__',
+          kind: 'reordered',
+          previousOrder: ['uses-pricing-ssot', 'validates-input'],
+          currentOrder: ['validates-input', 'uses-pricing-ssot'],
+        },
+      ],
+    });
+    expect(summary).toContain('    ~ invariant order changed');
+    expect(summary).toContain('      previous: uses-pricing-ssot, validates-input');
+    expect(summary).toContain('      current: validates-input, uses-pricing-ssot');
+  });
+
   it('does not report semantic no-op diffs when ssot keys are reordered', async () => {
     const root = await createProject({ 'src/actions.ts': validActionsSource() });
     const extracted = await extractContracts({ root });
@@ -1117,6 +1149,23 @@ export async function createCheckoutSession(input: unknown) {
   return { payload, price: PRO_PRICE_ID };
 }
 `;
+}
+
+function reorderActionInvariantBlocks(source: string): string {
+  return source.replace(
+    `  - id: uses-pricing-ssot
+    enforce: drift/ssot-usage
+    ssot: pricing
+  - id: validates-input
+    enforce: drift/ssot-usage
+    ssot: schema`,
+    `  - id: validates-input
+    enforce: drift/ssot-usage
+    ssot: schema
+  - id: uses-pricing-ssot
+    enforce: drift/ssot-usage
+    ssot: pricing`,
+  );
 }
 
 function fileScopedUsageSource(): string {
