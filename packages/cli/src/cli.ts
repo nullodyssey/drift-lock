@@ -3,13 +3,16 @@ import { Command } from 'commander';
 import path from 'node:path';
 import {
   checkContracts,
+  diffContracts,
   explainContracts,
+  formatContractDiffSummary,
   formatExplanations,
   extractContracts,
   formatErrors,
   readDriftConfig,
   renderContext,
   toIndex,
+  writeAcceptanceFile,
   writeIndex,
 } from '@drift-lock/core';
 import { installProject, type CiProvider, type InstallProjectSummary, type PackageManager } from './install.js';
@@ -85,16 +88,18 @@ program
   .option('--root <dir>', 'project root', process.cwd())
   .option('--source <dir>', 'source directory to scan')
   .option('--index <file>', 'index path')
-  .action(async (options: { root: string; source?: string; index?: string }) => {
+  .option('--changed', 'only validate contracts changed since the Drift index', false)
+  .action(async (options: { root: string; source?: string; index?: string; changed: boolean }) => {
     const root = path.resolve(options.root);
     const config = await readDriftConfig(root);
     const result = await checkContracts({
       root,
       sourceDir: options.source ?? config.source,
       indexPath: options.index ?? config.index,
+      changedOnly: options.changed,
     });
     if (result.errors.length > 0) fail(result.errors);
-    console.log(`Checked ${result.contracts.length} @drift contract(s).`);
+    console.log(`Checked ${result.contracts.length} @drift contract(s)${options.changed ? ' with changed-only filtering' : ''}.`);
   });
 
 program
@@ -122,6 +127,48 @@ program
     }
 
     if (result.explanations.length > 0) process.exit(1);
+  });
+
+program
+  .command('diff')
+  .description('Summarize Drift contract changes against the Drift index')
+  .option('--root <dir>', 'project root', process.cwd())
+  .option('--source <dir>', 'source directory to scan')
+  .option('--index <file>', 'index path')
+  .option('--summary', 'print a reviewer-oriented summary', true)
+  .option('--json', 'print machine-readable JSON', false)
+  .action(async (options: { root: string; source?: string; index?: string; summary: boolean; json: boolean }) => {
+    const root = path.resolve(options.root);
+    const config = await readDriftConfig(root);
+    const result = await diffContracts({
+      root,
+      sourceDir: options.source ?? config.source,
+      indexPath: options.index ?? config.index,
+    });
+    if (result.errors.length > 0) fail(result.errors);
+
+    if (options.json) {
+      console.log(JSON.stringify(result.diff, null, 2));
+    } else {
+      console.log(formatContractDiffSummary(result.diff));
+    }
+  });
+
+program
+  .command('accept')
+  .description('Create an acceptance file for an intentional locked contract change')
+  .argument('<contractId>', 'contract id to accept')
+  .requiredOption('--reason <reason>', 'reason for accepting the contract change, at least 20 characters')
+  .option('--root <dir>', 'project root', process.cwd())
+  .option('--force', 'overwrite an existing acceptance file', false)
+  .action(async (contractId: string, options: { root: string; reason: string; force: boolean }) => {
+    const result = await writeAcceptanceFile({
+      root: path.resolve(options.root),
+      contractId,
+      reason: options.reason,
+      force: options.force,
+    });
+    console.log(`Accepted ${contractId} -> ${result.path}`);
   });
 
 const skills = program.command('skills').description('Manage DriftLock agent skills');

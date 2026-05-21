@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { checkContracts } from '@drift-lock/core';
+import { diffContracts, formatContractDiffSummary, writeAcceptanceFile } from '@drift-lock/core';
 import { explainContracts, formatExplanations } from '@drift-lock/core';
 import { renderContext } from '@drift-lock/core';
 import { extractContracts, extractContractsFromSource } from '@drift-lock/core';
@@ -654,6 +655,103 @@ if (true) {}
     const index = await readFile(path.join(root, '.drift/contracts.generated.json'), 'utf8');
     expect(index).not.toContain('generatedAt');
     expect(JSON.parse(index).contracts[0]).not.toHaveProperty('raw');
+  });
+
+  it('summarizes added changed and removed contracts against the Drift index', async () => {
+    const root = await createProject({
+      'src/changed.ts': validActionsSource('billing.changed'),
+      'src/removed.ts': validActionsSource('billing.removed'),
+    });
+    const extracted = await extractContracts({ root });
+    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeFile(
+      path.join(root, 'src/changed.ts'),
+      validActionsSource('billing.changed')
+        .replace('the Pro subscription.', 'the Enterprise subscription.')
+        .replace('pricing: "@/features/billing/pricing.ts"', 'pricing: "@/features/billing/pricing-v2.ts"'),
+      'utf8',
+    );
+    await writeFile(path.join(root, 'src/removed.ts'), 'export const removed = true;\n', 'utf8');
+    await writeFile(path.join(root, 'src/added.ts'), validActionsSource('billing.added'), 'utf8');
+
+    const result = await diffContracts({ root });
+    const summary = formatContractDiffSummary(result.diff);
+
+    expect(result.errors).toEqual([]);
+    expect(result.diff.changes).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'billing.changed', kind: 'changed', fields: expect.arrayContaining(['intent', 'ssot']) }),
+      expect.objectContaining({ id: 'billing.added', kind: 'added', fields: [] }),
+      expect.objectContaining({ id: 'billing.removed', kind: 'removed', fields: [] }),
+    ]));
+    expect(summary).toContain('billing.changed (changed)');
+    expect(summary).toContain('fields: intent, ssot');
+  });
+
+  it('checks only changed contracts when changedOnly is enabled', async () => {
+    const root = await createProject({
+      'src/unchanged.ts': validActionsSource('billing.unchanged').replace(
+        "import { PRO_PRICE_ID } from '@/features/billing/pricing';\n",
+        '',
+      ),
+      'src/changed.ts': validActionsSource('billing.changed').replace('stability: locked', 'stability: draft'),
+    });
+    const extracted = await extractContracts({ root });
+    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeFile(
+      path.join(root, 'src/changed.ts'),
+      validActionsSource('billing.changed')
+        .replace('stability: locked', 'stability: draft')
+        .replace('the Pro subscription.', 'the Enterprise subscription.'),
+      'utf8',
+    );
+
+    const changedOnly = await checkContracts({ root, changedOnly: true });
+    const full = await checkContracts({ root });
+
+    expect(changedOnly.errors).toEqual([]);
+    expect(full.errors.map((error) => error.code)).toContain('DRIFT010_SSOT_NOT_USED');
+  });
+
+  it('keeps locked removals blocking when changedOnly is enabled', async () => {
+    const root = await createProject({ 'src/actions.ts': validActionsSource() });
+    const extracted = await extractContracts({ root });
+    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeFile(path.join(root, 'src/actions.ts'), 'export const removed = true;\n', 'utf8');
+
+    const result = await checkContracts({ root, changedOnly: true });
+
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT011_LOCKED_CONTRACT_CHANGED');
+  });
+
+  it('writes acceptance files and protects existing files', async () => {
+    const root = await createProject({});
+    const first = await writeAcceptanceFile({
+      root,
+      contractId: 'billing.create-checkout-session',
+      reason: 'Product change accepted by the billing owner.',
+    });
+
+    await expect(
+      writeAcceptanceFile({
+        root,
+        contractId: 'billing.create-checkout-session',
+        reason: 'Product change accepted by the billing owner.',
+      }),
+    ).rejects.toThrow(/already exists/);
+    await expect(
+      writeAcceptanceFile({ root, contractId: 'billing.short', reason: 'too short' }),
+    ).rejects.toThrow(/at least 20/);
+
+    const content = await readFile(path.join(root, first.path), 'utf8');
+    expect(content).toBe('contract: billing.create-checkout-session\nreason: Product change accepted by the billing owner.\n');
+    await expect(
+      writeAcceptanceFile({
+        root,
+        contractId: 'billing.create-checkout-session',
+        reason: 'Updated product change accepted by owner.',
+        force: true,
+      }),
+    ).resolves.toEqual(first);
   });
 });
 

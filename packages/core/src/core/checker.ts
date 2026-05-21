@@ -2,14 +2,16 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import ts from 'typescript';
 import type { DriftContractsIndex, DriftError, DriftExtractedContract } from '../types.js';
+import { diffContractSets } from './contract-diff.js';
 import { driftError } from './errors.js';
 import { extractContracts, type ExtractOptions } from './extractor.js';
-import { readIndex } from './index-file.js';
+import { readIndex, toIndex } from './index-file.js';
 import { moduleSpecifierCandidates } from './module-specifier.js';
 import { checkSsotFlow } from './ssot-flow.js';
 
 export type CheckOptions = ExtractOptions & {
   indexPath?: string;
+  changedOnly?: boolean;
 };
 
 export async function checkContracts(options: CheckOptions): Promise<{
@@ -20,10 +22,11 @@ export async function checkContracts(options: CheckOptions): Promise<{
   const extracted = await extractContracts(options);
   const errors = [...extracted.errors];
   const index = await readIndex(root, options.indexPath);
+  const contractsToCheck = options.changedOnly ? changedContracts(extracted.contracts, index) : extracted.contracts;
 
   // Run invariant checks only after extraction. Schema/ancrage errors should not
   // prevent other valid contracts in the repo from being checked.
-  for (const contract of extracted.contracts) {
+  for (const contract of contractsToCheck) {
     const text = await readFile(path.resolve(root, contract.file), 'utf8');
     errors.push(...checkSsotUsage(contract, text));
     errors.push(...checkSsotFlow(contract, text));
@@ -36,6 +39,12 @@ export async function checkContracts(options: CheckOptions): Promise<{
   }
 
   return { contracts: extracted.contracts, errors };
+}
+
+function changedContracts(contracts: DriftExtractedContract[], index: DriftContractsIndex | undefined): DriftExtractedContract[] {
+  if (!index) return contracts;
+  const changedIds = new Set(diffContractSets(toIndex(contracts).contracts, index.contracts).changes.map((change) => change.id));
+  return contracts.filter((contract) => changedIds.has(contract.id));
 }
 
 export function checkSsotUsage(contract: DriftExtractedContract, text: string): DriftError[] {

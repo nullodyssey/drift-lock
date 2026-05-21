@@ -200,6 +200,100 @@ describe('drift-lock explain command', () => {
   });
 });
 
+describe('drift-lock changed workflow commands', () => {
+  it('checks only changed contracts', async () => {
+    await buildCore();
+    const root = await tempProject();
+    await writeFile(
+      path.join(root, 'src/unchanged.ts'),
+      validUsageSource('billing.unchanged').replace("import { PRO_PRICE_ID } from '@/features/billing/pricing';\n", ''),
+      'utf8',
+    );
+    await writeFile(path.join(root, 'src/changed.ts'), validUsageSource('billing.changed').replace('stability: locked', 'stability: draft'), 'utf8');
+    await runCli(['extract', '--root', root, '--source', 'src']);
+    await writeFile(
+      path.join(root, 'src/changed.ts'),
+      validUsageSource('billing.changed')
+        .replace('stability: locked', 'stability: draft')
+        .replace('the Pro subscription.', 'the Enterprise subscription.'),
+      'utf8',
+    );
+
+    const changed = await runCli(['check', '--changed', '--root', root, '--source', 'src']);
+    const full = await runCli(['check', '--root', root, '--source', 'src']);
+
+    expect(changed.code).toBe(0);
+    expect(changed.stdout).toContain('with changed-only filtering');
+    expect(full.code).toBe(1);
+    expect(full.stderr).toContain('DRIFT010');
+  });
+
+  it('prints diff summaries and JSON', async () => {
+    await buildCore();
+    const root = await tempProject();
+    await writeFile(path.join(root, 'src/actions.ts'), validUsageSource('billing.changed'), 'utf8');
+    await runCli(['extract', '--root', root, '--source', 'src']);
+    await writeFile(
+      path.join(root, 'src/actions.ts'),
+      validUsageSource('billing.changed').replace('the Pro subscription.', 'the Enterprise subscription.'),
+      'utf8',
+    );
+    await writeFile(path.join(root, 'src/added.ts'), validUsageSource('billing.added'), 'utf8');
+
+    const summary = await runCli(['diff', '--summary', '--root', root, '--source', 'src']);
+    const jsonResult = await runCli(['diff', '--summary', '--json', '--root', root, '--source', 'src']);
+    const json = JSON.parse(jsonResult.stdout) as { changes: Array<Record<string, unknown>> };
+
+    expect(summary.code).toBe(0);
+    expect(summary.stdout).toContain('billing.changed (changed)');
+    expect(summary.stdout).toContain('billing.added (added)');
+    expect(jsonResult.code).toBe(0);
+    expect(json.changes).toEqual([
+      expect.objectContaining({ id: 'billing.changed', kind: 'changed' }),
+      expect.objectContaining({ id: 'billing.added', kind: 'added' }),
+    ]);
+  });
+
+  it('creates acceptance files and supports force', async () => {
+    await buildCore();
+    const root = await tempProject();
+
+    const created = await runCli([
+      'accept',
+      'billing.create-checkout-session',
+      '--reason',
+      'Product change accepted by billing owner.',
+      '--root',
+      root,
+    ]);
+    const rejected = await runCli([
+      'accept',
+      'billing.create-checkout-session',
+      '--reason',
+      'Product change accepted by billing owner.',
+      '--root',
+      root,
+    ]);
+    const forced = await runCli([
+      'accept',
+      'billing.create-checkout-session',
+      '--reason',
+      'Updated product change accepted by owner.',
+      '--root',
+      root,
+      '--force',
+    ]);
+
+    const content = await readFile(path.join(root, '.drift/accepted-contract-changes/billing.create-checkout-session.md'), 'utf8');
+    expect(created.code).toBe(0);
+    expect(created.stdout).toContain('Accepted billing.create-checkout-session');
+    expect(rejected.code).toBe(1);
+    expect(rejected.stderr).toContain('already exists');
+    expect(forced.code).toBe(0);
+    expect(content).toContain('reason: Updated product change accepted by owner.');
+  });
+});
+
 async function tempProject(): Promise<string> {
   const root = await mkdtemp(path.join(os.tmpdir(), 'drift-skills-test-'));
   await mkdir(path.join(root, 'src'), { recursive: true });
@@ -269,6 +363,32 @@ export function createCheckoutSession(input: { plan: 'pro' }) {
     priceId: price.priceId,
     amount: price.monthlyAmount,
   };
+}
+`;
+}
+
+function validUsageSource(id = 'billing.create-checkout-session'): string {
+  return `import { PRO_PRICE_ID } from '@/features/billing/pricing';
+
+/* @drift
+version: 1
+id: ${id}
+scope: declaration
+stability: locked
+
+intent: >
+  Create a Stripe Checkout session for the Pro subscription.
+
+ssot:
+  pricing: "@/features/billing/pricing.ts"
+
+invariants:
+  - id: uses-pricing-ssot
+    enforce: drift/ssot-usage
+    ssot: pricing
+*/
+export function createCheckoutSession() {
+  return { price: PRO_PRICE_ID };
 }
 `;
 }

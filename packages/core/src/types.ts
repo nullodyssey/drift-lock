@@ -49,6 +49,26 @@ export type DriftContractsIndex = {
   contracts: Array<Omit<DriftExtractedContract, 'raw' | 'bodyStart' | 'bodyEnd' | 'line' | 'column'>>;
 };
 
+export type DriftIndexedContract = DriftContractsIndex['contracts'][number];
+
+export type DriftContractChangeKind = 'added' | 'changed' | 'removed';
+
+export type DriftContractChangeField = 'intent' | 'stability' | 'scope' | 'anchor' | 'ssot' | 'invariants' | 'llm' | 'file';
+
+export type DriftContractChange = {
+  id: string;
+  kind: DriftContractChangeKind;
+  file: string;
+  stability?: DriftStability;
+  fields: DriftContractChangeField[];
+  previous?: DriftIndexedContract;
+  current?: DriftIndexedContract;
+};
+
+export type DriftContractDiff = {
+  changes: DriftContractChange[];
+};
+
 export type DriftErrorCode =
   | 'DRIFT001_INVALID_YAML'
   | 'DRIFT002_UNKNOWN_FIELD'
