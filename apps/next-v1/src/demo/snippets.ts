@@ -141,4 +141,6 @@ export const nestedBranchDrifted = `export async function createCheckoutQuote(in
 
 export const nestedBranchOutput = `DRIFT013: Contract "billing.create-checkout-quote" requires sink "return.lineItem.price.id" to derive from ssot "pricing".
 
+DRIFT013: Contract "billing.create-checkout-quote" requires sink "return.lineItem.price.currency" to derive from ssot "pricing".
+
 DRIFT013: Contract "billing.create-checkout-quote" requires sink "return.totals.monthly.amount" to derive from ssot "pricing".`;
