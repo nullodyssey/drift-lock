@@ -10,6 +10,7 @@ import type {
   DriftIndexedContract,
 } from '../types.js';
 import { extractContracts, type ExtractOptions } from './extractor.js';
+import { canonicalize } from './hash.js';
 import { readIndex, toIndex } from './index-file.js';
 import { isValidContractId } from './validator.js';
 
@@ -133,5 +134,5 @@ function changedFields(current: DriftIndexedContract, previous: DriftIndexedCont
 }
 
 function sameValue(left: unknown, right: unknown): boolean {
-  return JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
+  return canonicalize(left ?? null) === canonicalize(right ?? null);
 }

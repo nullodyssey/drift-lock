@@ -688,6 +688,30 @@ if (true) {}
     expect(summary).toContain('fields: intent, ssot');
   });
 
+  it('does not report semantic no-op diffs when ssot keys are reordered', async () => {
+    const root = await createProject({ 'src/actions.ts': validActionsSource() });
+    const extracted = await extractContracts({ root });
+    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeFile(
+      path.join(root, 'src/actions.ts'),
+      validActionsSource().replace(
+        `ssot:
+  pricing: "@/features/billing/pricing.ts"
+  schema: "@/features/billing/billing.schema.ts"`,
+        `ssot:
+  schema: "@/features/billing/billing.schema.ts"
+  pricing: "@/features/billing/pricing.ts"`,
+      ),
+      'utf8',
+    );
+
+    const diff = await diffContracts({ root });
+    const changedOnly = await checkContracts({ root, changedOnly: true });
+
+    expect(diff.diff.changes).toEqual([]);
+    expect(changedOnly.errors).toEqual([]);
+  });
+
   it('checks code-only regressions when changedOnly is enabled', async () => {
     const root = await createProject({
       'src/unchanged.ts': validActionsSource('billing.unchanged').replace(
