@@ -27,7 +27,7 @@ Use the configured Drift command prefix:
 {{DRIFT_COMMAND}}
 ```
 
-Build concrete Drift commands by appending the subcommand, for example `{{DRIFT_COMMAND}} context --task "<user prompt>"`, `{{DRIFT_COMMAND}} context <file>`, `{{DRIFT_COMMAND}} diff --summary`, `{{DRIFT_COMMAND}} check`, or `{{DRIFT_COMMAND}} explain <contract-id>`.
+Build concrete Drift commands by appending the subcommand, for example `{{DRIFT_COMMAND}} context --task "<user prompt>"`, `{{DRIFT_COMMAND}} context <file>`, `{{DRIFT_COMMAND}} coverage`, `{{DRIFT_COMMAND}} diff --summary`, `{{DRIFT_COMMAND}} check`, or `{{DRIFT_COMMAND}} explain <contract-id>`.
 
 For non-Drift checks, inspect the target project's scripts first and only run commands that exist in that project.
 

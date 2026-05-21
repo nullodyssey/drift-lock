@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { checkContracts } from '@drift-lock/core';
 import { diffContracts, formatContractDiffSummary, writeAcceptanceFile } from '@drift-lock/core';
 import { explainContracts, formatExplanations } from '@drift-lock/core';
+import { getCoverage } from '@drift-lock/core';
 import { renderContext, renderTaskContext } from '@drift-lock/core';
 import { extractContracts, extractContractsFromSource } from '@drift-lock/core';
 import { isValidContractId, readDriftConfig, writeDriftConfig } from '@drift-lock/core';
@@ -90,19 +91,34 @@ if (true) {}
       version: 1,
       source: 'src',
       index: '.drift/contracts.generated.json',
+      requireContracts: [],
     });
 
     await writeDriftConfig(root, {
       version: 1,
       source: 'app',
       index: '.drift/custom.generated.json',
+      requireContracts: ['app/**/*.ts'],
     });
 
     await expect(readDriftConfig(root)).resolves.toEqual({
       version: 1,
       source: 'app',
       index: '.drift/custom.generated.json',
+      requireContracts: ['app/**/*.ts'],
     });
+  });
+
+  it('rejects invalid requireContracts config values', async () => {
+    const root = await createProject({});
+    await mkdir(path.join(root, '.drift'), { recursive: true });
+    await writeFile(
+      path.join(root, '.drift/config.json'),
+      JSON.stringify({ version: 1, source: 'src', index: '.drift/contracts.generated.json', requireContracts: ['src/**/*.ts', ''] }),
+      'utf8',
+    );
+
+    await expect(readDriftConfig(root)).rejects.toThrow(/Invalid DriftLock config/);
   });
 
   it('detects missing ssot usage', async () => {
@@ -115,6 +131,23 @@ if (true) {}
 
     const result = await checkContracts({ root });
     expect(result.errors.map((error) => error.code)).toContain('DRIFT010_SSOT_NOT_USED');
+  });
+
+  it('detects required source files without contracts', async () => {
+    const root = await createProject({
+      'src/features/billing/actions.ts': 'export const checkoutAction = true;\n',
+      'src/features/support/actions.ts': validActionsSource('support.actions').replaceAll('billing', 'support'),
+    });
+
+    const result = await checkContracts({ root, requireContracts: ['src/features/**/actions.ts'] });
+
+    expect(result.errors).toEqual([
+      expect.objectContaining({
+        code: 'DRIFT015_REQUIRED_CONTRACT_MISSING',
+        file: 'src/features/billing/actions.ts',
+        details: expect.objectContaining({ pattern: 'src/features/**/actions.ts' }),
+      }),
+    ]);
   });
 
   it('accepts ssot usage on file-scoped contracts', () => {
@@ -645,6 +678,33 @@ if (true) {}
     expect(result.output).toContain('No relevant @drift contracts found for this task.');
     expect(result.output).toContain('No relevant files found.');
     expect(result.output).toContain('Planning Notes:');
+  });
+
+  it('reports Drift coverage for required files and invariants', async () => {
+    const root = await createProject({
+      'src/features/billing/actions.ts': validActionsSource('billing.actions'),
+      'src/features/billing/pricing.ts': 'export const PRO_PRICE_ID = "price_pro";\n',
+      'src/services/payment.ts': 'export function pay() { return true; }\n',
+    });
+
+    const result = await getCoverage({
+      root,
+      requireContracts: ['src/features/**/actions.ts', 'src/services/**/*.ts'],
+    });
+
+    expect(result.errors).toEqual([]);
+    expect(result.coverage).toMatchObject({
+      contracts: { total: 1, locked: 1, draft: 0 },
+      files: {
+        source: 3,
+        withContracts: 1,
+        requiringContracts: 2,
+        requiredCovered: 1,
+        requiredUncovered: 1,
+        requiredUncoveredFiles: ['src/services/payment.ts'],
+      },
+      invariants: { total: 2, executable: 2 },
+    });
   });
 
   it('explains missing ssot-flow sinks with actionable diagnostics', async () => {

@@ -3,6 +3,7 @@ export * from './core/checker.js';
 export * from './core/config.js';
 export * from './core/context.js';
 export * from './core/contract-diff.js';
+export * from './core/coverage.js';
 export * from './core/errors.js';
 export * from './core/explain.js';
 export * from './core/extractor.js';

@@ -8,12 +8,14 @@ export type DriftConfig = {
   version: 1;
   source: string;
   index: string;
+  requireContracts: string[];
 };
 
 export const defaultDriftConfig: DriftConfig = {
   version: 1,
   source: 'src',
   index: defaultIndexPath,
+  requireContracts: [],
 };
 
 export async function readDriftConfig(root: string, input = defaultConfigPath): Promise<DriftConfig> {
@@ -48,9 +50,19 @@ function validateConfig(value: unknown, file: string): DriftConfig {
     throw new Error(`Invalid DriftLock config at "${file}".`);
   }
 
+  if (config.requireContracts !== undefined) {
+    if (!Array.isArray(config.requireContracts)) {
+      throw new Error(`Invalid DriftLock config at "${file}".`);
+    }
+    if (config.requireContracts.some((pattern) => typeof pattern !== 'string' || pattern.trim().length === 0)) {
+      throw new Error(`Invalid DriftLock config at "${file}".`);
+    }
+  }
+
   return {
     version: 1,
     source: config.source,
     index: config.index,
+    requireContracts: config.requireContracts?.map((pattern) => pattern.trim()) ?? [],
   };
 }

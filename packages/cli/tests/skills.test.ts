@@ -35,6 +35,7 @@ describe('drift skills installer', () => {
     const skill = await readFile(path.join(root, '.agents/skills/drift-safe-edit/SKILL.md'), 'utf8');
     expect(skill).toContain('npx --yes @drift-lock/cli context --task "<user prompt>"');
     expect(skill).toContain('npx --yes @drift-lock/cli context <file>');
+    expect(skill).toContain('npx --yes @drift-lock/cli coverage');
     expect(skill).toContain('npx --yes @drift-lock/cli diff --summary');
     expect(skill).toContain('npx --yes @drift-lock/cli explain <contract-id>');
     expect(skill).not.toContain('{{DRIFT_COMMAND}}');
@@ -57,6 +58,7 @@ describe('drift skills installer', () => {
     const checklist = await readFile(path.join(root, '.claude/skills/drift-context-manager/references/checklist.md'), 'utf8');
     expect(checklist).toContain('pnpm --filter next-v1 exec drift-lock context --task "<user prompt>"');
     expect(checklist).toContain('pnpm --filter next-v1 exec drift-lock context <file>');
+    expect(checklist).toContain('pnpm --filter next-v1 exec drift-lock coverage');
     expect(checklist).toContain('pnpm --filter next-v1 exec drift-lock diff --summary');
     expect(checklist).toContain('pnpm --filter next-v1 exec drift-lock explain <contract-id>');
   });
@@ -76,6 +78,7 @@ describe('drift skills installer', () => {
     expect(rule).toContain('Analyze the drift impact');
     expect(rule).toContain('# Drift Impact Analysis');
     expect(rule).toContain('pnpm --filter next-v1 exec drift-lock check');
+    expect(rule).toContain('pnpm --filter next-v1 exec drift-lock coverage');
     expect(rule).toContain('pnpm --filter next-v1 exec drift-lock diff --summary');
     expect(rule).toContain('pnpm --filter next-v1 exec drift-lock explain <contract-id>');
     expect(rule).toContain('## Bundled References');
@@ -152,6 +155,7 @@ describe('drift-lock project installer', () => {
 
     const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8')) as { scripts: Record<string, string> };
     expect(packageJson.scripts['drift-lock:check']).toBe('drift-lock check');
+    expect(packageJson.scripts['drift-lock:coverage']).toBe('drift-lock coverage');
     expect(first.updated).toContain('package.json');
     expect(second.skipped).toContain('package.json');
   });
@@ -276,6 +280,44 @@ describe('drift-lock context command', () => {
 
     expect(result.code).toBe(1);
     expect(result.stderr).toContain('Use either a target file or --task, not both.');
+  });
+});
+
+describe('drift-lock coverage command', () => {
+  it('prints coverage summaries and stable JSON', async () => {
+    await buildCore();
+    const root = await tempProject();
+    await writeFile(path.join(root, 'src/actions.ts'), validUsageSource('billing.actions'), 'utf8');
+    await mkdir(path.join(root, 'src/services'), { recursive: true });
+    await writeFile(path.join(root, 'src/services/payment.ts'), 'export function pay() { return true; }\n', 'utf8');
+    await writeDriftConfigFile(root, ['src/actions.ts', 'src/services/**/*.ts']);
+
+    const summary = await runCli(['coverage', '--root', root]);
+    const jsonResult = await runCli(['coverage', '--json', '--root', root]);
+    const json = JSON.parse(jsonResult.stdout) as { coverage: Record<string, any> };
+
+    expect(summary.code).toBe(0);
+    expect(summary.stdout).toContain('Drift Coverage');
+    expect(summary.stdout).toContain('- total: 1');
+    expect(summary.stdout).toContain('- required files uncovered: 1');
+    expect(summary.stdout).toContain('Required files without contracts:');
+    expect(summary.stdout).toContain('- src/services/payment.ts');
+    expect(jsonResult.code).toBe(0);
+    expect(json.coverage.files.requiredUncoveredFiles).toEqual(['src/services/payment.ts']);
+  });
+
+  it('fails check when a required file has no contract', async () => {
+    await buildCore();
+    const root = await tempProject();
+    await mkdir(path.join(root, 'src/features/billing'), { recursive: true });
+    await writeFile(path.join(root, 'src/features/billing/actions.ts'), 'export const checkoutAction = true;\n', 'utf8');
+    await writeDriftConfigFile(root, ['src/features/**/actions.ts']);
+
+    const result = await runCli(['check', '--root', root]);
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('DRIFT015');
+    expect(result.stderr).toContain('src/features/billing/actions.ts');
   });
 });
 
@@ -540,6 +582,15 @@ async function writePackage(root: string): Promise<void> {
   await writeFile(
     path.join(root, 'package.json'),
     `${JSON.stringify({ name: 'fixture', version: '0.0.0', type: 'module', scripts: {} }, null, 2)}\n`,
+    'utf8',
+  );
+}
+
+async function writeDriftConfigFile(root: string, requireContracts: string[]): Promise<void> {
+  await mkdir(path.join(root, '.drift'), { recursive: true });
+  await writeFile(
+    path.join(root, '.drift/config.json'),
+    `${JSON.stringify({ version: 1, source: 'src', index: '.drift/contracts.generated.json', requireContracts }, null, 2)}\n`,
     'utf8',
   );
 }

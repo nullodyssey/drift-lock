@@ -27,6 +27,8 @@ const messages: Record<DriftErrorCode, (details: Record<string, unknown>) => str
     `DRIFT013: Contract "${String(id)}" requires sink "${String(sink)}" to derive from ssot "${String(ssotKey)}".`,
   DRIFT014_UNSUPPORTED_FLOW_PATTERN: ({ id, sink }) =>
     `DRIFT014: Contract "${String(id)}" uses an unsupported ssot-flow pattern${sink ? ` for sink "${String(sink)}"` : ''}.`,
+  DRIFT015_REQUIRED_CONTRACT_MISSING: ({ pattern }) =>
+    `DRIFT015: File requires an @drift contract because it matches "${String(pattern)}".`,
 };
 
 export function driftError(

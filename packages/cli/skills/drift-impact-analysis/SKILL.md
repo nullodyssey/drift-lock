@@ -12,11 +12,12 @@ Use this skill before implementation when the change may affect contracted code,
 1. Identify the target files and nearby Drift Contracts.
 2. Map direct contract impact: contract ids, stability, SSOTs, and invariants.
 3. Map indirect impact: files referenced by SSOTs and consumers likely to depend on changed outputs.
-4. Use or recommend `{{DRIFT_COMMAND}} diff --summary` to review contract changes when a baseline exists.
-5. Classify likely drift failure modes: `DRIFT010`, `DRIFT011`, `DRIFT013`, `DRIFT014`.
-6. If a Drift violation is present, use `{{DRIFT_COMMAND}} explain` or `{{DRIFT_COMMAND}} explain <contract-id>` to ground the failure mode.
-7. Assign a risk level and required proof.
-8. Recommend whether the work can go to `@dev` or needs product/contract clarification first.
+4. Use or recommend `{{DRIFT_COMMAND}} coverage` when auditing adoption or checking whether critical files are uncovered.
+5. Use or recommend `{{DRIFT_COMMAND}} diff --summary` to review contract changes when a baseline exists.
+6. Classify likely drift failure modes: `DRIFT010`, `DRIFT011`, `DRIFT013`, `DRIFT014`, `DRIFT015`.
+7. If a Drift violation is present, use `{{DRIFT_COMMAND}} explain` or `{{DRIFT_COMMAND}} explain <contract-id>` to ground the failure mode.
+8. Assign a risk level and required proof.
+9. Recommend whether the work can go to `@dev` or needs product/contract clarification first.
 
 ## Commands
 
@@ -26,7 +27,7 @@ Use the configured Drift command prefix:
 {{DRIFT_COMMAND}}
 ```
 
-For Drift proof, recommend `{{DRIFT_COMMAND}} check`. For contract review, recommend `{{DRIFT_COMMAND}} diff --summary`. For failed Drift checks, recommend `{{DRIFT_COMMAND}} explain` or `{{DRIFT_COMMAND}} explain <contract-id>`. For lint, typecheck, build, and tests, inspect the target project's scripts first and only recommend commands that exist in that project.
+For Drift proof, recommend `{{DRIFT_COMMAND}} check`. For adoption reporting, recommend `{{DRIFT_COMMAND}} coverage`. For contract review, recommend `{{DRIFT_COMMAND}} diff --summary`. For failed Drift checks, recommend `{{DRIFT_COMMAND}} explain` or `{{DRIFT_COMMAND}} explain <contract-id>`. For lint, typecheck, build, and tests, inspect the target project's scripts first and only recommend commands that exist in that project.
 
 ## Output
 

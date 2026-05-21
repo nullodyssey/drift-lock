@@ -6,9 +6,11 @@ import {
   diffContracts,
   explainContracts,
   formatContractDiffSummary,
+  formatCoverageSummary,
   formatExplanations,
   extractContracts,
   formatErrors,
+  getCoverage,
   readDriftConfig,
   renderContext,
   renderTaskContext,
@@ -123,10 +125,35 @@ program
       indexPath: options.index ?? config.index,
       changedOnly: options.changed,
       gitBase: options.gitBase,
+      requireContracts: config.requireContracts,
     });
     if (result.errors.length > 0) fail(result.errors);
     const filters = [options.changed ? 'changed-only filtering' : undefined, options.gitBase ? `Git base ${options.gitBase}` : undefined].filter(Boolean);
     console.log(`Checked ${result.contracts.length} @drift contract(s)${filters.length > 0 ? ` with ${filters.join(' and ')}` : ''}.`);
+  });
+
+program
+  .command('coverage')
+  .description('Report Drift contract coverage and uncovered required files')
+  .option('--root <dir>', 'project root', process.cwd())
+  .option('--source <dir>', 'source directory to scan')
+  .option('--json', 'print machine-readable JSON', false)
+  .action(async (options: { root: string; source?: string; json: boolean }) => {
+    const root = path.resolve(options.root);
+    const config = await readDriftConfig(root);
+    const result = await getCoverage({
+      root,
+      sourceDir: options.source ?? config.source,
+      requireContracts: config.requireContracts,
+    });
+    if (result.errors.length > 0) fail(result.errors);
+
+    if (options.json) {
+      console.log(JSON.stringify({ coverage: result.coverage }, null, 2));
+      return;
+    }
+
+    console.log(formatCoverageSummary(result.coverage));
   });
 
 program

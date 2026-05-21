@@ -110,6 +110,7 @@ drift-lock context --task "<user prompt>"
 drift-lock extract
 drift-lock check
 drift-lock check --changed
+drift-lock coverage
 drift-lock diff --summary
 drift-lock explain [contract-id]
 drift-lock skills list
@@ -121,6 +122,7 @@ drift-lock skills install --provider openai
 prompt, so the agent can see relevant contracts, SSOTs, invariants, and planning
 notes before implementation. `extract` updates the committed contract index.
 `check` validates contracts, locked baselines, and supported invariants.
+`coverage` reports contract adoption and files required to have contracts.
 `diff --summary` reviews contract changes for PRs. `explain` prints
 human-readable diagnostics for current violations and can be filtered to one
 contract id.
@@ -158,6 +160,28 @@ drift-lock explain --json
 
 Use `--json` when an agent or CI step needs stable diagnostic fields such as the
 contract id, invariant, sink, reason, found expression, and suggested fix.
+
+## Configuration
+
+DriftLock reads `.drift/config.json`:
+
+```json
+{
+  "version": 1,
+  "source": "src",
+  "index": ".drift/contracts.generated.json",
+  "requireContracts": [
+    "src/features/**/actions.ts",
+    "src/services/**/*.ts"
+  ]
+}
+```
+
+`requireContracts` is optional and defaults to `[]`. When set, `drift-lock check`
+fails with `DRIFT015_REQUIRED_CONTRACT_MISSING` for matching source files that do
+not contain any valid `@drift` contract. Use `drift-lock coverage` to review
+required files that are still uncovered before turning patterns into blocking CI
+policy. See `docs/config.md` for the config reference.
 
 ## ESLint
 

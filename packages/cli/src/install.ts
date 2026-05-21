@@ -139,6 +139,7 @@ async function patchPackageJson(
   const wantedScripts = {
     'drift-lock:extract': 'drift-lock extract',
     'drift-lock:check': 'drift-lock check',
+    'drift-lock:coverage': 'drift-lock coverage',
     'drift-lock:context': 'drift-lock context',
   };
 
