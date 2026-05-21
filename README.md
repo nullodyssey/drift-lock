@@ -108,6 +108,8 @@ detected in CI.
 drift-lock context <file>
 drift-lock extract
 drift-lock check
+drift-lock check --changed
+drift-lock diff --summary
 drift-lock explain [contract-id]
 drift-lock skills list
 drift-lock skills install --provider openai
@@ -115,8 +117,20 @@ drift-lock skills install --provider openai
 
 `context` renders contract-aware context for agents. `extract` updates the
 committed contract index. `check` validates contracts, locked baselines, and
-supported invariants. `explain` prints human-readable diagnostics for current
-violations and can be filtered to one contract id.
+supported invariants. `diff --summary` reviews contract changes for PRs.
+`explain` prints human-readable diagnostics for current violations and can be
+filtered to one contract id.
+
+For a PR workflow, run:
+
+```bash
+drift-lock diff --summary
+drift-lock check --changed
+drift-lock accept billing.create-checkout-session --reason "Intentional billing contract change"
+```
+
+Use `accept` only for intentional locked contract changes with a clear product
+reason.
 
 When a check fails, run:
 

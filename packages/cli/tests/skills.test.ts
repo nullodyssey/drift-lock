@@ -34,6 +34,7 @@ describe('drift skills installer', () => {
 
     const skill = await readFile(path.join(root, '.agents/skills/drift-safe-edit/SKILL.md'), 'utf8');
     expect(skill).toContain('npx --yes @drift-lock/cli context <file>');
+    expect(skill).toContain('npx --yes @drift-lock/cli diff --summary');
     expect(skill).toContain('npx --yes @drift-lock/cli explain <contract-id>');
     expect(skill).not.toContain('{{DRIFT_COMMAND}}');
   });
@@ -54,6 +55,7 @@ describe('drift skills installer', () => {
 
     const checklist = await readFile(path.join(root, '.claude/skills/drift-context-manager/references/checklist.md'), 'utf8');
     expect(checklist).toContain('pnpm --filter next-v1 exec drift-lock context <file>');
+    expect(checklist).toContain('pnpm --filter next-v1 exec drift-lock diff --summary');
     expect(checklist).toContain('pnpm --filter next-v1 exec drift-lock explain <contract-id>');
   });
 
@@ -72,6 +74,7 @@ describe('drift skills installer', () => {
     expect(rule).toContain('Analyze the drift impact');
     expect(rule).toContain('# Drift Impact Analysis');
     expect(rule).toContain('pnpm --filter next-v1 exec drift-lock check');
+    expect(rule).toContain('pnpm --filter next-v1 exec drift-lock diff --summary');
     expect(rule).toContain('pnpm --filter next-v1 exec drift-lock explain <contract-id>');
     expect(rule).toContain('## Bundled References');
     expect(rule).toContain('### references/output-format.md');

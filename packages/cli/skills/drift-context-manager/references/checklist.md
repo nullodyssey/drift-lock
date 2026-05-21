@@ -11,6 +11,7 @@ Use this checklist before routing work to another agent or starting implementati
 - [ ] List invariants, especially drift/ssot-flow and drift/ssot-usage
 - [ ] List llm.must_not_change items
 - [ ] Detect conflicts with the user request
+- [ ] If contracts or protected files may change, recommend: {{DRIFT_COMMAND}} diff --summary
 - [ ] If Drift is already failing, run or request: {{DRIFT_COMMAND}} explain <contract-id>
 - [ ] Recommend next role: @analyst or @dev
 - [ ] List post-edit checks
@@ -20,6 +21,7 @@ Default Drift commands:
 
 ```bash
 {{DRIFT_COMMAND}} check
+{{DRIFT_COMMAND}} diff --summary
 {{DRIFT_COMMAND}} explain <contract-id>
 ```
 

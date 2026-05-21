@@ -12,6 +12,9 @@ Risk:
 Likely drift modes:
 - <DRIFTxxx or none>
 
+Contract diff:
+- <summary command or "not needed">
+
 Required proof:
 - <check command or test>
 

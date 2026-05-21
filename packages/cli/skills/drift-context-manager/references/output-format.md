@@ -18,6 +18,9 @@ Locked constraints:
 Potential conflicts:
 - <conflict or "none found">
 
+Contract diff:
+- <summary command or "not needed">
+
 Recommended next role:
 - @analyst for impact analysis, or @dev for implementation
 

@@ -5,6 +5,7 @@ Run the checks that match the changed area.
 Default for this repo:
 
 ```bash
+{{DRIFT_COMMAND}} diff --summary
 {{DRIFT_COMMAND}} check
 ```
 
@@ -20,6 +21,7 @@ Before final response:
 
 ```txt
 - [ ] State whether any locked contract changed
+- [ ] Include `diff --summary` when contracted files changed
 - [ ] State whether Drift checks passed
 - [ ] If Drift failed, include the relevant explain output
 - [ ] State whether lint/typecheck/tests passed
