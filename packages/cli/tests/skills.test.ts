@@ -292,6 +292,25 @@ describe('drift-lock changed workflow commands', () => {
     expect(forced.code).toBe(0);
     expect(content).toContain('reason: Updated product change accepted by owner.');
   });
+
+  it('rejects unsafe acceptance contract ids', async () => {
+    await buildCore();
+    const root = await tempProject();
+
+    const rejected = await runCli([
+      'accept',
+      '../../../tmp/foo',
+      '--reason',
+      'Product change accepted by billing owner.',
+      '--root',
+      root,
+    ]);
+
+    expect(rejected.code).toBe(1);
+    expect(rejected.stderr).toContain('Invalid contract id "../../../tmp/foo"');
+    await expectMissing(path.join(root, '.drift/accepted-contract-changes'));
+    await expectMissing(path.join(root, 'tmp/foo.md'));
+  });
 });
 
 async function tempProject(): Promise<string> {

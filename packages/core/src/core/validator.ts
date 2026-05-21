@@ -10,6 +10,10 @@ const contractIdPattern = /^[a-z][a-z0-9]*(\.[a-z][a-z0-9-]*)+$/;
 const ssotKeyPattern = /^[a-z][a-z0-9-]*$/;
 const invariantIdPattern = /^[a-z][a-z0-9-]*$/;
 
+export function isValidContractId(id: string): boolean {
+  return contractIdPattern.test(id) && id.length <= 120;
+}
+
 export function validateContractObject(
   parsed: unknown,
   file: string,
@@ -38,7 +42,7 @@ export function validateContractObject(
   }
 
   const id = parsed.id;
-  if ('id' in parsed && (!isString(id) || !contractIdPattern.test(id) || id.length > 120)) {
+  if ('id' in parsed && (!isString(id) || !isValidContractId(id))) {
     errors.push(driftError('DRIFT004_INVALID_FIELD_VALUE', file, { field: 'id' }, position));
   }
 

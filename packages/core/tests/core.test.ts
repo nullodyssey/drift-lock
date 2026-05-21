@@ -7,7 +7,7 @@ import { diffContracts, formatContractDiffSummary, writeAcceptanceFile } from '@
 import { explainContracts, formatExplanations } from '@drift-lock/core';
 import { renderContext } from '@drift-lock/core';
 import { extractContracts, extractContractsFromSource } from '@drift-lock/core';
-import { readDriftConfig, writeDriftConfig } from '@drift-lock/core';
+import { isValidContractId, readDriftConfig, writeDriftConfig } from '@drift-lock/core';
 import { toIndex, writeIndex } from '@drift-lock/core';
 
 describe('drift v1 core', () => {
@@ -774,6 +774,25 @@ if (true) {}
         force: true,
       }),
     ).resolves.toEqual(first);
+  });
+
+  it('rejects unsafe acceptance contract ids before writing files', async () => {
+    const root = await createProject({});
+    const unsafeIds = ['../../../tmp/foo', '../billing.escape', 'billing/escape', 'billing\\escape', 'billing..escape', 'billing escape'];
+
+    expect(isValidContractId('billing.create-checkout-session')).toBe(true);
+    for (const contractId of unsafeIds) {
+      expect(isValidContractId(contractId)).toBe(false);
+      await expect(
+        writeAcceptanceFile({
+          root,
+          contractId,
+          reason: 'Product change accepted by the billing owner.',
+        }),
+      ).rejects.toThrow(/Invalid contract id/);
+    }
+
+    await expect(readFile(path.join(root, '.drift/accepted-contract-changes/../../../tmp/foo.md'), 'utf8')).rejects.toThrow();
   });
 });
 

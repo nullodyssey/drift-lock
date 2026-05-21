@@ -11,6 +11,7 @@ import type {
 } from '../types.js';
 import { extractContracts, type ExtractOptions } from './extractor.js';
 import { readIndex, toIndex } from './index-file.js';
+import { isValidContractId } from './validator.js';
 
 export type DiffContractsOptions = ExtractOptions & {
   indexPath?: string;
@@ -102,6 +103,7 @@ export function formatContractDiffSummary(diff: DriftContractDiff): string {
 export async function writeAcceptanceFile(options: AcceptContractChangeOptions): Promise<{ path: string }> {
   const reason = options.reason.trim();
   if (reason.length < 20) throw new Error('Acceptance reason must be at least 20 characters long.');
+  if (!isValidContractId(options.contractId)) throw new Error(`Invalid contract id "${options.contractId}".`);
 
   const relativePath = path.join('.drift', 'accepted-contract-changes', `${options.contractId}.md`);
   const file = path.resolve(options.root, relativePath);
