@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { checkLockedChangesForFile, type DriftContractsIndex, extractContractsFromSource } from '@drift-core/core';
+import { checkLockedChangesForFile, type DriftContractsIndex, extractContractsFromSource } from '@drift-lock/core';
 import { getRuleOptions, relativeFilename, reportDriftError } from '../utils.js';
 
 type IndexReadResult =

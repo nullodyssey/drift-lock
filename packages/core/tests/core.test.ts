@@ -2,11 +2,11 @@ import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { checkContracts } from '@drift-core/core';
-import { renderContext } from '@drift-core/core';
-import { extractContracts, extractContractsFromSource } from '@drift-core/core';
-import { readDriftConfig, writeDriftConfig } from '@drift-core/core';
-import { toIndex, writeIndex } from '@drift-core/core';
+import { checkContracts } from '@drift-lock/core';
+import { renderContext } from '@drift-lock/core';
+import { extractContracts, extractContractsFromSource } from '@drift-lock/core';
+import { readDriftConfig, writeDriftConfig } from '@drift-lock/core';
+import { toIndex, writeIndex } from '@drift-lock/core';
 
 describe('drift v1 core', () => {
   it('extracts a valid declaration contract with a stable hash', () => {

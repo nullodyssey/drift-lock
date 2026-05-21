@@ -32,10 +32,10 @@ importers:
 
   apps/next-v1:
     dependencies:
-      '@drift-core/cli':
+      '@drift-lock/cli':
         specifier: workspace:*
         version: link:../../packages/cli
-      '@drift-core/eslint-plugin':
+      '@drift-lock/eslint-plugin':
         specifier: workspace:*
         version: link:../../packages/eslint-plugin
       next:
@@ -66,7 +66,7 @@ importers:
 
   packages/cli:
     dependencies:
-      '@drift-core/core':
+      '@drift-lock/core':
         specifier: workspace:*
         version: link:../core
       commander:
@@ -84,7 +84,7 @@ importers:
 
   packages/eslint-plugin:
     dependencies:
-      '@drift-core/core':
+      '@drift-lock/core':
         specifier: workspace:*
         version: link:../core
       eslint:

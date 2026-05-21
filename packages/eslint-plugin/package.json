@@ -1,5 +1,5 @@
 {
-  "name": "@drift-core/eslint-plugin",
+  "name": "@drift-lock/eslint-plugin",
   "version": "0.1.1-alpha",
   "description": "ESLint 9 flat config plugin for DriftLock contracts and invariants.",
   "license": "MIT",
@@ -40,10 +40,10 @@
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean --out-dir dist",
     "check": "tsc --noEmit",
-    "test": "pnpm --filter @drift-core/core run build && vitest run"
+    "test": "pnpm --filter @drift-lock/core run build && vitest run"
   },
   "dependencies": {
-    "@drift-core/core": "workspace:*"
+    "@drift-lock/core": "workspace:*"
   },
   "peerDependencies": {
     "eslint": ">=9"

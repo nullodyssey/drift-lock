@@ -1,5 +1,5 @@
 {
-  "name": "@drift-core/cli",
+  "name": "@drift-lock/cli",
   "version": "0.1.1-alpha",
   "description": "CLI and installer for DriftLock contract-aware agent context and checks.",
   "license": "MIT",
@@ -42,7 +42,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@drift-core/core": "workspace:*",
+    "@drift-lock/core": "workspace:*",
     "commander": "^14.0.2"
   }
 }

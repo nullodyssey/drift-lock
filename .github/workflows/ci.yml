@@ -42,9 +42,9 @@ jobs:
 
       - name: Check publish packages
         run: |
-          pnpm --filter @drift-core/core pack --dry-run
-          pnpm --filter @drift-core/cli pack --dry-run
-          pnpm --filter @drift-core/eslint-plugin pack --dry-run
+          pnpm --filter @drift-lock/core pack --dry-run
+          pnpm --filter @drift-lock/cli pack --dry-run
+          pnpm --filter @drift-lock/eslint-plugin pack --dry-run
 
       - name: Check DriftLock CLI binary
         run: pnpm --filter next-v1 exec drift-lock --help

@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { RuleTester } from 'eslint';
 import * as parser from '@typescript-eslint/parser';
-import { extractContractsFromSource, toIndex } from '@drift-core/core';
+import { extractContractsFromSource, toIndex } from '@drift-lock/core';
 import plugin from '../src/index.js';
 import { describe, expect, it } from 'vitest';
 

@@ -8,7 +8,7 @@ import {
   toIndex,
   writeIndex,
   type DriftConfig,
-} from '@drift-core/core';
+} from '@drift-lock/core';
 import { installSkills, type SkillProvider } from './skills.js';
 
 export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
@@ -37,7 +37,7 @@ export type InstallProjectSummary = {
   notes: string[];
 };
 
-const packageNames = ['@drift-core/cli', '@drift-core/eslint-plugin'];
+const packageNames = ['@drift-lock/cli', '@drift-lock/eslint-plugin'];
 
 export async function installProject(options: InstallProjectOptions): Promise<InstallProjectSummary> {
   const root = path.resolve(options.root);
@@ -92,7 +92,7 @@ export async function installProject(options: InstallProjectOptions): Promise<In
     if (dryRun) {
       summary.commands.push(`drift-lock skills install --provider ${options.agent}`);
     } else {
-      const installed = await installSkills({ provider: options.agent, root, driftCommand: 'npx --yes @drift-core/cli', force });
+      const installed = await installSkills({ provider: options.agent, root, driftCommand: 'npx --yes @drift-lock/cli', force });
       for (const skill of installed) summary.created.push(path.relative(root, skill.path).split(path.sep).join('/'));
     }
   }
@@ -170,7 +170,7 @@ async function configureEslint(root: string, context: InstallWriteContext): Prom
   const config = await findEslintFlatConfig(root);
   if (!config) {
     if (await hasLegacyEslintConfig(root)) {
-      context.summary.notes.push('Existing .eslintrc config was not patched. Add @drift-core/eslint-plugin manually or migrate to ESLint flat config.');
+      context.summary.notes.push('Existing .eslintrc config was not patched. Add @drift-lock/eslint-plugin manually or migrate to ESLint flat config.');
       return;
     }
     await maybeWriteManagedFile(root, 'eslint.config.js', eslintConfigSnippet(), context);
@@ -179,7 +179,7 @@ async function configureEslint(root: string, context: InstallWriteContext): Prom
 
   const absoluteConfig = path.join(root, config);
   const text = await readFile(absoluteConfig, 'utf8');
-  if (text.includes('@drift-core/eslint-plugin') || text.includes('drift-lock')) {
+  if (text.includes('@drift-lock/eslint-plugin') || text.includes('drift-lock')) {
     context.summary.skipped.push(config);
     return;
   }
@@ -294,7 +294,7 @@ function contextCommandNote(packageManager: PackageManager): string {
 }
 
 function eslintConfigSnippet(): string {
-  return `import driftLock from '@drift-core/eslint-plugin';
+  return `import driftLock from '@drift-lock/eslint-plugin';
 
 export default [
   {
@@ -313,7 +313,7 @@ function patchFlatEslintConfig(text: string): string | undefined {
   if (!trimmed.endsWith('];')) return undefined;
   const withoutClose = trimmed.slice(0, -2).trimEnd();
   const separator = withoutClose.endsWith('[') ? '' : ',';
-  return `import driftLock from '@drift-core/eslint-plugin';\n${withoutClose}${separator}
+  return `import driftLock from '@drift-lock/eslint-plugin';\n${withoutClose}${separator}
   {
     plugins: { 'drift-lock': driftLock },
     rules: {

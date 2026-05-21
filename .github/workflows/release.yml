@@ -47,16 +47,16 @@ jobs:
 
       - name: Pack packages
         run: |
-          mkdir -p /tmp/drift-core-packs
-          pnpm --filter @drift-core/core pack --pack-destination /tmp/drift-core-packs
-          pnpm --filter @drift-core/cli pack --pack-destination /tmp/drift-core-packs
-          pnpm --filter @drift-core/eslint-plugin pack --pack-destination /tmp/drift-core-packs
+          mkdir -p /tmp/drift-lock-packs
+          pnpm --filter @drift-lock/core pack --pack-destination /tmp/drift-lock-packs
+          pnpm --filter @drift-lock/cli pack --pack-destination /tmp/drift-lock-packs
+          pnpm --filter @drift-lock/eslint-plugin pack --pack-destination /tmp/drift-lock-packs
 
       - name: Publish core
-        run: npm publish /tmp/drift-core-packs/drift-core-core-*.tgz --access public --provenance
+        run: npm publish /tmp/drift-lock-packs/drift-lock-core-*.tgz --access public --provenance
 
       - name: Publish CLI
-        run: npm publish /tmp/drift-core-packs/drift-core-cli-*.tgz --access public --provenance
+        run: npm publish /tmp/drift-lock-packs/drift-lock-cli-*.tgz --access public --provenance
 
       - name: Publish ESLint plugin
-        run: npm publish /tmp/drift-core-packs/drift-core-eslint-plugin-*.tgz --access public --provenance
+        run: npm publish /tmp/drift-lock-packs/drift-lock-eslint-plugin-*.tgz --access public --provenance

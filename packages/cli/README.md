@@ -3,7 +3,7 @@
 CLI for DriftLock.
 
 ```bash
-npx --yes @drift-core/cli install
+npx --yes @drift-lock/cli install
 drift-lock check
 drift-lock context <file>
 ```

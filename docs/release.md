@@ -5,9 +5,9 @@ This document describes how to publish the DriftLock npm packages.
 Published packages:
 
 ```txt
-@drift-core/core
-@drift-core/cli
-@drift-core/eslint-plugin
+@drift-lock/core
+@drift-lock/cli
+@drift-lock/eslint-plugin
 ```
 
 The public CLI binary is:
@@ -33,7 +33,7 @@ Requirements:
 
 ```txt
 - npm account with 2FA enabled
-- access to the @drift-core npm organization/scope
+- access to the @drift-lock npm organization/scope
 - npm login completed locally
 ```
 
@@ -69,23 +69,23 @@ pnpm --filter next-v1 drift-lock:check
 Create local tarballs:
 
 ```bash
-mkdir -p /tmp/drift-core-packs
-pnpm --filter @drift-core/core pack --pack-destination /tmp/drift-core-packs
-pnpm --filter @drift-core/cli pack --pack-destination /tmp/drift-core-packs
-pnpm --filter @drift-core/eslint-plugin pack --pack-destination /tmp/drift-core-packs
+mkdir -p /tmp/drift-lock-packs
+pnpm --filter @drift-lock/core pack --pack-destination /tmp/drift-lock-packs
+pnpm --filter @drift-lock/cli pack --pack-destination /tmp/drift-lock-packs
+pnpm --filter @drift-lock/eslint-plugin pack --pack-destination /tmp/drift-lock-packs
 ```
 
 Inspect internal dependency conversion:
 
 ```bash
-tar -xOf /tmp/drift-core-packs/drift-core-cli-0.1.1-alpha.tgz package/package.json
-tar -xOf /tmp/drift-core-packs/drift-core-eslint-plugin-0.1.1-alpha.tgz package/package.json
+tar -xOf /tmp/drift-lock-packs/drift-lock-cli-0.1.1-alpha.tgz package/package.json
+tar -xOf /tmp/drift-lock-packs/drift-lock-eslint-plugin-0.1.1-alpha.tgz package/package.json
 ```
 
 Expected dependency:
 
 ```json
-"@drift-core/core": "0.1.1-alpha"
+"@drift-lock/core": "0.1.1-alpha"
 ```
 
 ### 4. Publish in dependency order
@@ -96,25 +96,25 @@ provenance generation only works from supported CI providers such as GitHub
 Actions. The CI release workflow enables provenance explicitly.
 
 ```bash
-npm publish /tmp/drift-core-packs/drift-core-core-0.1.1-alpha.tgz --access public --tag alpha --provenance=false
-npm publish /tmp/drift-core-packs/drift-core-cli-0.1.1-alpha.tgz --access public --tag alpha --provenance=false
-npm publish /tmp/drift-core-packs/drift-core-eslint-plugin-0.1.1-alpha.tgz --access public --tag alpha --provenance=false
+npm publish /tmp/drift-lock-packs/drift-lock-core-0.1.1-alpha.tgz --access public --tag alpha --provenance=false
+npm publish /tmp/drift-lock-packs/drift-lock-cli-0.1.1-alpha.tgz --access public --tag alpha --provenance=false
+npm publish /tmp/drift-lock-packs/drift-lock-eslint-plugin-0.1.1-alpha.tgz --access public --tag alpha --provenance=false
 ```
 
 ### 5. Verify npm
 
 ```bash
-npm view @drift-core/core version dist-tags
-npm view @drift-core/cli version dist-tags
-npm view @drift-core/eslint-plugin version dist-tags
+npm view @drift-lock/core version dist-tags
+npm view @drift-lock/cli version dist-tags
+npm view @drift-lock/eslint-plugin version dist-tags
 ```
 
 Smoke test:
 
 ```bash
-npx --yes @drift-core/cli --help
-npx --yes @drift-core/cli skills list
-npx --yes @drift-core/cli install --dry-run
+npx --yes @drift-lock/cli --help
+npx --yes @drift-lock/cli skills list
+npx --yes @drift-lock/cli install --dry-run
 ```
 
 ## P2 - CI Release
@@ -126,9 +126,9 @@ Use this procedure after the first publish path is validated and npm Trusted Pub
 Configure npm Trusted Publishing for each package:
 
 ```txt
-@drift-core/core
-@drift-core/cli
-@drift-core/eslint-plugin
+@drift-lock/core
+@drift-lock/cli
+@drift-lock/eslint-plugin
 ```
 
 Trusted publisher settings:
@@ -153,9 +153,9 @@ permissions:
 Bump package versions before publishing. Example:
 
 ```bash
-pnpm --filter @drift-core/core version 0.1.1-alpha --no-git-tag-version
-pnpm --filter @drift-core/cli version 0.1.1-alpha --no-git-tag-version
-pnpm --filter @drift-core/eslint-plugin version 0.1.1-alpha --no-git-tag-version
+pnpm --filter @drift-lock/core version 0.1.1-alpha --no-git-tag-version
+pnpm --filter @drift-lock/cli version 0.1.1-alpha --no-git-tag-version
+pnpm --filter @drift-lock/eslint-plugin version 0.1.1-alpha --no-git-tag-version
 ```
 
 Update the root workspace version if desired, then verify:
@@ -198,16 +198,16 @@ The workflow:
 ### 4. Verify after CI publish
 
 ```bash
-npm view @drift-core/core version dist-tags
-npm view @drift-core/cli version dist-tags
-npm view @drift-core/eslint-plugin version dist-tags
+npm view @drift-lock/core version dist-tags
+npm view @drift-lock/cli version dist-tags
+npm view @drift-lock/eslint-plugin version dist-tags
 ```
 
 Smoke test:
 
 ```bash
-npx --yes @drift-core/cli --help
-npx --yes @drift-core/cli skills list
+npx --yes @drift-lock/cli --help
+npx --yes @drift-lock/cli skills list
 ```
 
 ## Notes

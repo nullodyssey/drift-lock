@@ -1,5 +1,5 @@
 {
-  "name": "@drift-core/core",
+  "name": "@drift-lock/core",
   "version": "0.1.1-alpha",
   "description": "Core parser, extractor, context renderer, and deterministic checks for DriftLock.",
   "license": "MIT",

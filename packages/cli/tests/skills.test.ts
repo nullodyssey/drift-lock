@@ -25,7 +25,7 @@ describe('drift skills installer', () => {
     await expectExists(path.join(root, '.agents/skills/drift-safe-edit/references/pre-edit-checklist.md'));
 
     const skill = await readFile(path.join(root, '.agents/skills/drift-safe-edit/SKILL.md'), 'utf8');
-    expect(skill).toContain('npx --yes @drift-core/cli context <file>');
+    expect(skill).toContain('npx --yes @drift-lock/cli context <file>');
     expect(skill).not.toContain('{{DRIFT_COMMAND}}');
   });
 
@@ -104,7 +104,7 @@ describe('drift-lock project installer', () => {
     expect(summary.updated).toContain('package.json');
     expect(summary.created).toContain('eslint.config.js');
     expect(summary.created).toContain('.github/workflows/drift-lock.yml');
-    expect(summary.commands).toContain('pnpm add -D @drift-core/cli @drift-core/eslint-plugin');
+    expect(summary.commands).toContain('pnpm add -D @drift-lock/cli @drift-lock/eslint-plugin');
     await expectMissing(path.join(root, '.drift/config.json'));
   });
 

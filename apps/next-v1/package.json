@@ -13,8 +13,8 @@
     "drift-lock:context": "drift-lock context src/features/billing/actions.ts"
   },
   "dependencies": {
-    "@drift-core/cli": "workspace:*",
-    "@drift-core/eslint-plugin": "workspace:*",
+    "@drift-lock/cli": "workspace:*",
+    "@drift-lock/eslint-plugin": "workspace:*",
     "next": "16.2.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
