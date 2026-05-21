@@ -3,6 +3,7 @@ export * from './core/checker.js';
 export * from './core/config.js';
 export * from './core/context.js';
 export * from './core/errors.js';
+export * from './core/explain.js';
 export * from './core/extractor.js';
 export * from './core/files.js';
 export * from './core/hash.js';

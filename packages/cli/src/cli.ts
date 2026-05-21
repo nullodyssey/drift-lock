@@ -3,6 +3,8 @@ import { Command } from 'commander';
 import path from 'node:path';
 import {
   checkContracts,
+  explainContracts,
+  formatExplanations,
   extractContracts,
   formatErrors,
   readDriftConfig,
@@ -93,6 +95,33 @@ program
     });
     if (result.errors.length > 0) fail(result.errors);
     console.log(`Checked ${result.contracts.length} @drift contract(s).`);
+  });
+
+program
+  .command('explain')
+  .description('Explain Drift violations with actionable diagnostics')
+  .argument('[contractId]', 'contract id to explain')
+  .option('--root <dir>', 'project root', process.cwd())
+  .option('--source <dir>', 'source directory to scan')
+  .option('--index <file>', 'index path')
+  .option('--json', 'print machine-readable JSON', false)
+  .action(async (contractId: string | undefined, options: { root: string; source?: string; index?: string; json: boolean }) => {
+    const root = path.resolve(options.root);
+    const config = await readDriftConfig(root);
+    const result = await explainContracts({
+      root,
+      sourceDir: options.source ?? config.source,
+      indexPath: options.index ?? config.index,
+      contractId,
+    });
+
+    if (options.json) {
+      console.log(JSON.stringify({ explanations: result.explanations }, null, 2));
+    } else {
+      console.log(formatExplanations(result.explanations));
+    }
+
+    if (result.explanations.length > 0) process.exit(1);
   });
 
 const skills = program.command('skills').description('Manage DriftLock agent skills');

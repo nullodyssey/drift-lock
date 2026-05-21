@@ -1,9 +1,17 @@
 import { mkdir, mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 import { describe, expect, it } from 'vitest';
 import { installProject } from '../src/install.js';
 import { installSkills, listBundledSkills } from '../src/skills.js';
+
+const execFileAsync = promisify(execFile);
+const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const repoRoot = path.resolve(packageRoot, '../..');
+const cliSource = path.join(packageRoot, 'src/cli.ts');
 
 describe('drift skills installer', () => {
   it('lists bundled Drift skills', async () => {
@@ -141,8 +149,61 @@ describe('drift-lock project installer', () => {
   });
 });
 
+describe('drift-lock explain command', () => {
+  it('prints actionable text explanations', async () => {
+    await buildCore();
+    const root = await tempProject();
+    await writeFile(path.join(root, 'src/actions.ts'), missingSinkSource(), 'utf8');
+
+    const result = await runCli(['explain', '--root', root, '--source', 'src']);
+
+    expect(result.code).toBe(1);
+    expect(result.stdout).toContain('Drift violation:');
+    expect(result.stdout).toContain('DRIFT013_SSOT_FLOW_NOT_PROVEN billing.create-checkout-session');
+    expect(result.stdout).toContain('Sink: return.amount');
+    expect(result.stdout).toContain('Reason: missing-sink');
+    expect(result.stdout).toContain('Suggested fix:');
+  });
+
+  it('prints stable JSON explanations', async () => {
+    await buildCore();
+    const root = await tempProject();
+    await writeFile(path.join(root, 'src/actions.ts'), missingSinkSource(), 'utf8');
+
+    const result = await runCli(['explain', '--root', root, '--source', 'src', '--json']);
+    const json = JSON.parse(result.stdout) as { explanations: Array<Record<string, unknown>> };
+
+    expect(result.code).toBe(1);
+    expect(json.explanations).toHaveLength(1);
+    expect(json.explanations[0]).toMatchObject({
+      code: 'DRIFT013_SSOT_FLOW_NOT_PROVEN',
+      contractId: 'billing.create-checkout-session',
+      sink: 'return.amount',
+      reason: 'missing-sink',
+    });
+  });
+
+  it('filters explanations by contract id and exits zero when clean', async () => {
+    await buildCore();
+    const root = await tempProject();
+    await writeFile(path.join(root, 'src/actions.ts'), missingSinkSource('billing.create-checkout-session'), 'utf8');
+    await writeFile(path.join(root, 'src/other.ts'), validFlowSource('billing.other-checkout-session'), 'utf8');
+
+    const clean = await runCli(['explain', 'billing.other-checkout-session', '--root', root, '--source', 'src']);
+    const failing = await runCli(['explain', 'billing.create-checkout-session', '--root', root, '--source', 'src']);
+
+    expect(clean.code).toBe(0);
+    expect(clean.stdout.trim()).toBe('No Drift violations found.');
+    expect(failing.code).toBe(1);
+    expect(failing.stdout).toContain('billing.create-checkout-session');
+    expect(failing.stdout).not.toContain('billing.other-checkout-session');
+  });
+});
+
 async function tempProject(): Promise<string> {
-  return mkdtemp(path.join(os.tmpdir(), 'drift-skills-test-'));
+  const root = await mkdtemp(path.join(os.tmpdir(), 'drift-skills-test-'));
+  await mkdir(path.join(root, 'src'), { recursive: true });
+  return root;
 }
 
 async function writePackage(root: string): Promise<void> {
@@ -159,4 +220,55 @@ async function expectExists(file: string): Promise<void> {
 
 async function expectMissing(file: string): Promise<void> {
   await expect(stat(file)).rejects.toThrow();
+}
+
+async function buildCore(): Promise<void> {
+  await execFileAsync('pnpm', ['--filter', '@drift-lock/core', 'run', 'build'], { cwd: repoRoot });
+}
+
+async function runCli(args: string[]): Promise<{ stdout: string; stderr: string; code: number }> {
+  try {
+    const result = await execFileAsync(process.execPath, ['--import', 'tsx', cliSource, ...args], { cwd: repoRoot });
+    return { stdout: result.stdout, stderr: result.stderr, code: 0 };
+  } catch (error) {
+    const result = error as { stdout?: string; stderr?: string; code?: number };
+    return { stdout: result.stdout ?? '', stderr: result.stderr ?? '', code: result.code ?? 1 };
+  }
+}
+
+function missingSinkSource(id = 'billing.create-checkout-session'): string {
+  return validFlowSource(id).replace('amount: price.monthlyAmount,', 'total: price.monthlyAmount,');
+}
+
+function validFlowSource(id = 'billing.create-checkout-session'): string {
+  return `import { BILLING_PRICES } from '@/features/billing/pricing';
+
+/* @drift
+version: 1
+id: ${id}
+scope: declaration
+stability: locked
+
+intent: >
+  Create a checkout response while proving return values come from pricing.
+
+ssot:
+  pricing: "@/features/billing/pricing.ts"
+
+invariants:
+  - id: checkout-price-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.priceId
+      - return.amount
+*/
+export function createCheckoutSession(input: { plan: 'pro' }) {
+  const price = BILLING_PRICES[input.plan];
+  return {
+    priceId: price.priceId,
+    amount: price.monthlyAmount,
+  };
+}
+`;
 }

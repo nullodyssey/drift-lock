@@ -75,6 +75,27 @@ export type DriftError = {
   details?: Record<string, unknown>;
 };
 
+export type DriftExplanation = {
+  code: DriftErrorCode;
+  message: string;
+  file: string;
+  line?: number;
+  column?: number;
+  contractId?: string;
+  contract?: {
+    id: string;
+    file: string;
+    stability: DriftStability;
+  };
+  invariantId?: string;
+  sink?: string;
+  ssot?: string;
+  reason?: string;
+  expected: string;
+  found: string;
+  suggestedFix: string;
+};
+
 export type DriftResult<T> = {
   value?: T;
   errors: DriftError[];
