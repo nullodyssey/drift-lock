@@ -3,7 +3,15 @@ import type { DriftContract } from '../types.js';
 
 export function contentHash(contract: DriftContract): string {
   const canonical = canonicalize(contract);
-  return `sha256:${createHash('sha256').update(canonical).digest('hex')}`;
+  return sha256(canonical);
+}
+
+export function bodyHash(body: string): string {
+  return sha256(body);
+}
+
+function sha256(value: string): string {
+  return `sha256:${createHash('sha256').update(value).digest('hex')}`;
 }
 
 // Canonicalization defines what "same locked contract" means. It ignores YAML

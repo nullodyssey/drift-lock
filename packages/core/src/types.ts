@@ -37,6 +37,7 @@ export type DriftExtractedContract = DriftContract & {
   file: string;
   anchor: DriftAnchor;
   contentHash: string;
+  bodyHash: string;
   line: number;
   column: number;
   raw: string;
@@ -53,7 +54,7 @@ export type DriftIndexedContract = DriftContractsIndex['contracts'][number];
 
 export type DriftContractChangeKind = 'added' | 'changed' | 'removed';
 
-export type DriftContractChangeField = 'intent' | 'stability' | 'scope' | 'anchor' | 'ssot' | 'invariants' | 'llm' | 'file';
+export type DriftContractChangeField = 'intent' | 'stability' | 'scope' | 'anchor' | 'ssot' | 'invariants' | 'llm' | 'file' | 'body';
 
 export type DriftContractChange = {
   id: string;

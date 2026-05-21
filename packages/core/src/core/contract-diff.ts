@@ -58,7 +58,7 @@ export function diffContractSets(current: DriftIndexedContract[], previous: Drif
     }
 
     const fields = changedFields(contract, prior);
-    if (fields.length > 0 || contract.contentHash !== prior.contentHash) {
+    if (fields.length > 0 || contract.contentHash !== prior.contentHash || contract.bodyHash !== prior.bodyHash) {
       changes.push({
         id: contract.id,
         kind: 'changed',
@@ -126,6 +126,7 @@ function changedFields(current: DriftIndexedContract, previous: DriftIndexedCont
   for (const field of ['intent', 'stability', 'scope', 'anchor', 'ssot', 'invariants', 'llm', 'file'] as const) {
     if (!sameValue(current[field], previous[field])) fields.push(field);
   }
+  if (current.bodyHash !== previous.bodyHash) fields.push('body');
   return fields;
 }
 

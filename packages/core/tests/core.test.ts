@@ -655,6 +655,7 @@ if (true) {}
     const index = await readFile(path.join(root, '.drift/contracts.generated.json'), 'utf8');
     expect(index).not.toContain('generatedAt');
     expect(JSON.parse(index).contracts[0]).not.toHaveProperty('raw');
+    expect(JSON.parse(index).contracts[0].bodyHash).toMatch(/^sha256:[a-f0-9]{64}$/);
   });
 
   it('summarizes added changed and removed contracts against the Drift index', async () => {
@@ -687,29 +688,50 @@ if (true) {}
     expect(summary).toContain('fields: intent, ssot');
   });
 
-  it('checks only changed contracts when changedOnly is enabled', async () => {
+  it('checks code-only regressions when changedOnly is enabled', async () => {
     const root = await createProject({
       'src/unchanged.ts': validActionsSource('billing.unchanged').replace(
         "import { PRO_PRICE_ID } from '@/features/billing/pricing';\n",
         '',
       ),
-      'src/changed.ts': validActionsSource('billing.changed').replace('stability: locked', 'stability: draft'),
+      'src/changed.ts': validFlowSource('billing.changed'),
     });
     const extracted = await extractContracts({ root });
     await writeIndex(root, undefined, toIndex(extracted.contracts));
     await writeFile(
       path.join(root, 'src/changed.ts'),
-      validActionsSource('billing.changed')
-        .replace('stability: locked', 'stability: draft')
-        .replace('the Pro subscription.', 'the Enterprise subscription.'),
+      validFlowSource('billing.changed').replace('priceId: price.priceId,', "priceId: 'price_hardcoded',"),
       'utf8',
     );
 
     const changedOnly = await checkContracts({ root, changedOnly: true });
-    const full = await checkContracts({ root });
+    const diff = await diffContracts({ root });
 
-    expect(changedOnly.errors).toEqual([]);
-    expect(full.errors.map((error) => error.code)).toContain('DRIFT010_SSOT_NOT_USED');
+    expect(diff.diff.changes).toEqual([
+      expect.objectContaining({ id: 'billing.changed', fields: ['body'] }),
+    ]);
+    expect(changedOnly.errors.map((error) => error.code)).toContain('DRIFT013_SSOT_FLOW_NOT_PROVEN');
+    expect(changedOnly.errors.some((error) => error.contractId === 'billing.unchanged')).toBe(false);
+  });
+
+  it('treats contracts from legacy indexes without bodyHash as changed', async () => {
+    const root = await createProject({ 'src/actions.ts': validFlowSource() });
+    const extracted = await extractContracts({ root });
+    const index = toIndex(extracted.contracts);
+    await writeIndex(root, undefined, {
+      ...index,
+      contracts: index.contracts.map((contract) => {
+        const legacy = { ...contract } as Record<string, unknown>;
+        delete legacy.bodyHash;
+        return legacy as (typeof index.contracts)[number];
+      }),
+    });
+
+    const result = await diffContracts({ root });
+
+    expect(result.diff.changes).toEqual([
+      expect.objectContaining({ id: 'billing.create-checkout-session', fields: ['body'] }),
+    ]);
   });
 
   it('keeps locked removals blocking when changedOnly is enabled', async () => {

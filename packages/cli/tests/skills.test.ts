@@ -201,7 +201,7 @@ describe('drift-lock explain command', () => {
 });
 
 describe('drift-lock changed workflow commands', () => {
-  it('checks only changed contracts', async () => {
+  it('checks code-only regressions in changed contracts', async () => {
     await buildCore();
     const root = await tempProject();
     await writeFile(
@@ -209,21 +209,20 @@ describe('drift-lock changed workflow commands', () => {
       validUsageSource('billing.unchanged').replace("import { PRO_PRICE_ID } from '@/features/billing/pricing';\n", ''),
       'utf8',
     );
-    await writeFile(path.join(root, 'src/changed.ts'), validUsageSource('billing.changed').replace('stability: locked', 'stability: draft'), 'utf8');
+    await writeFile(path.join(root, 'src/changed.ts'), validFlowSource('billing.changed'), 'utf8');
     await runCli(['extract', '--root', root, '--source', 'src']);
     await writeFile(
       path.join(root, 'src/changed.ts'),
-      validUsageSource('billing.changed')
-        .replace('stability: locked', 'stability: draft')
-        .replace('the Pro subscription.', 'the Enterprise subscription.'),
+      validFlowSource('billing.changed').replace('priceId: price.priceId,', "priceId: 'price_hardcoded',"),
       'utf8',
     );
 
     const changed = await runCli(['check', '--changed', '--root', root, '--source', 'src']);
     const full = await runCli(['check', '--root', root, '--source', 'src']);
 
-    expect(changed.code).toBe(0);
-    expect(changed.stdout).toContain('with changed-only filtering');
+    expect(changed.code).toBe(1);
+    expect(changed.stderr).toContain('DRIFT013');
+    expect(changed.stderr).not.toContain('billing.unchanged');
     expect(full.code).toBe(1);
     expect(full.stderr).toContain('DRIFT010');
   });
@@ -231,11 +230,11 @@ describe('drift-lock changed workflow commands', () => {
   it('prints diff summaries and JSON', async () => {
     await buildCore();
     const root = await tempProject();
-    await writeFile(path.join(root, 'src/actions.ts'), validUsageSource('billing.changed'), 'utf8');
+    await writeFile(path.join(root, 'src/actions.ts'), validFlowSource('billing.changed'), 'utf8');
     await runCli(['extract', '--root', root, '--source', 'src']);
     await writeFile(
       path.join(root, 'src/actions.ts'),
-      validUsageSource('billing.changed').replace('the Pro subscription.', 'the Enterprise subscription.'),
+      validFlowSource('billing.changed').replace('amount: price.monthlyAmount,', 'amount: price.monthlyAmount * 2,'),
       'utf8',
     );
     await writeFile(path.join(root, 'src/added.ts'), validUsageSource('billing.added'), 'utf8');
@@ -246,12 +245,13 @@ describe('drift-lock changed workflow commands', () => {
 
     expect(summary.code).toBe(0);
     expect(summary.stdout).toContain('billing.changed (changed)');
+    expect(summary.stdout).toContain('fields: body');
     expect(summary.stdout).toContain('billing.added (added)');
     expect(jsonResult.code).toBe(0);
-    expect(json.changes).toEqual([
-      expect.objectContaining({ id: 'billing.changed', kind: 'changed' }),
+    expect(json.changes).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'billing.changed', kind: 'changed', fields: ['body'] }),
       expect.objectContaining({ id: 'billing.added', kind: 'added' }),
-    ]);
+    ]));
   });
 
   it('creates acceptance files and supports force', async () => {

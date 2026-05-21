@@ -5,7 +5,7 @@ import { parseDocument } from 'yaml';
 import type { DriftAnchor, DriftError, DriftExtractedContract } from '../types.js';
 import { driftError } from './errors.js';
 import { discoverSourceFiles, normalizePath } from './files.js';
-import { contentHash } from './hash.js';
+import { bodyHash, contentHash } from './hash.js';
 import { validateContractObject } from './validator.js';
 
 type ContractBlock = {
@@ -89,6 +89,7 @@ export function extractContractsFromSource(
       file,
       anchor: anchor.anchor,
       contentHash: contentHash(validated.contract),
+      bodyHash: bodyHash(text.slice(anchor.bodyStart, anchor.bodyEnd)),
       line: block.line,
       column: block.column,
       raw: block.raw,
