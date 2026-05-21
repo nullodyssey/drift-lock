@@ -52,11 +52,25 @@ jobs:
           pnpm --filter @drift-lock/cli pack --pack-destination /tmp/drift-lock-packs
           pnpm --filter @drift-lock/eslint-plugin pack --pack-destination /tmp/drift-lock-packs
 
+      - name: Resolve npm dist-tag
+        id: npm-tag
+        run: |
+          version=$(node -p "require('./packages/core/package.json').version")
+          if [[ "$version" == *"-alpha"* ]]; then
+            echo "tag=alpha" >> "$GITHUB_OUTPUT"
+          elif [[ "$version" == *"-beta"* ]]; then
+            echo "tag=beta" >> "$GITHUB_OUTPUT"
+          elif [[ "$version" == *"-rc"* ]]; then
+            echo "tag=rc" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish core
-        run: npm publish /tmp/drift-lock-packs/drift-lock-core-*.tgz --access public --provenance
+        run: npm publish /tmp/drift-lock-packs/drift-lock-core-*.tgz --access public --tag ${{ steps.npm-tag.outputs.tag }} --provenance
 
       - name: Publish CLI
-        run: npm publish /tmp/drift-lock-packs/drift-lock-cli-*.tgz --access public --provenance
+        run: npm publish /tmp/drift-lock-packs/drift-lock-cli-*.tgz --access public --tag ${{ steps.npm-tag.outputs.tag }} --provenance
 
       - name: Publish ESLint plugin
-        run: npm publish /tmp/drift-lock-packs/drift-lock-eslint-plugin-*.tgz --access public --provenance
+        run: npm publish /tmp/drift-lock-packs/drift-lock-eslint-plugin-*.tgz --access public --tag ${{ steps.npm-tag.outputs.tag }} --provenance
