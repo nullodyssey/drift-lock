@@ -282,6 +282,45 @@ describe('drift-lock changed workflow commands', () => {
     ]));
   });
 
+  it('prints rich invariant changes in summaries and JSON', async () => {
+    await buildCore();
+    const root = await tempProject();
+    await writeFile(path.join(root, 'src/actions.ts'), validFlowSource('billing.changed'), 'utf8');
+    await runCli(['extract', '--root', root, '--source', 'src']);
+    await writeFile(
+      path.join(root, 'src/actions.ts'),
+      validFlowSource('billing.changed').replace(`      - return.priceId
+      - return.amount`, `      - return.priceId
+      - return.currency`),
+      'utf8',
+    );
+
+    const summary = await runCli(['diff', '--summary', '--root', root, '--source', 'src']);
+    const jsonResult = await runCli(['diff', '--summary', '--json', '--root', root, '--source', 'src']);
+    const json = JSON.parse(jsonResult.stdout) as { changes: Array<Record<string, unknown>> };
+
+    expect(summary.code).toBe(0);
+    expect(summary.stdout).toContain('  invariants:');
+    expect(summary.stdout).toContain('    ~ checkout-price-from-pricing');
+    expect(summary.stdout).toContain('      sinks added:');
+    expect(summary.stdout).toContain('        + return.currency');
+    expect(summary.stdout).toContain('      sinks removed:');
+    expect(summary.stdout).toContain('        - return.amount');
+    expect(jsonResult.code).toBe(0);
+    expect(json.changes[0]).toMatchObject({
+      id: 'billing.changed',
+      invariantChanges: [
+        {
+          id: 'checkout-price-from-pricing',
+          kind: 'changed',
+          fields: ['sinks'],
+          sinksAdded: ['return.currency'],
+          sinksRemoved: ['return.amount'],
+        },
+      ],
+    });
+  });
+
   it('limits changed checks and diffs to a Git base', async () => {
     await buildCore();
     const root = await tempProject();

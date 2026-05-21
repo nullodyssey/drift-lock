@@ -7,6 +7,9 @@ import type {
   DriftContractsIndex,
   DriftError,
   DriftExtractedContract,
+  DriftInvariant,
+  DriftInvariantChange,
+  DriftInvariantChangeField,
   DriftIndexedContract,
 } from '../types.js';
 import { extractContracts, type ExtractOptions } from './extractor.js';
@@ -64,7 +67,8 @@ export function diffContractSets(current: DriftIndexedContract[], previous: Drif
       continue;
     }
 
-    const fields = changedFields(contract, prior);
+    const invariantChanges = diffInvariants(contract.invariants ?? [], prior.invariants ?? []);
+    const fields = changedFields(contract, prior, invariantChanges);
     if (fields.length > 0 || contract.contentHash !== prior.contentHash || contract.bodyHash !== prior.bodyHash) {
       changes.push({
         id: contract.id,
@@ -72,6 +76,7 @@ export function diffContractSets(current: DriftIndexedContract[], previous: Drif
         file: contract.file,
         stability: contract.stability,
         fields,
+        invariantChanges: invariantChanges.length > 0 ? invariantChanges : undefined,
         previous: prior,
         current: contract,
       });
@@ -102,6 +107,12 @@ export function formatContractDiffSummary(diff: DriftContractDiff): string {
     lines.push(`  file: ${change.file}`);
     if (change.stability) lines.push(`  stability: ${change.stability}`);
     if (change.fields.length > 0) lines.push(`  fields: ${change.fields.join(', ')}`);
+    if (change.invariantChanges && change.invariantChanges.length > 0) {
+      lines.push('  invariants:');
+      for (const invariantChange of change.invariantChanges) {
+        lines.push(...formatInvariantChange(invariantChange));
+      }
+    }
   }
   return lines.join('\n');
 }
@@ -129,10 +140,18 @@ export async function writeAcceptanceFile(options: AcceptContractChangeOptions):
   return { path: relativePath };
 }
 
-function changedFields(current: DriftIndexedContract, previous: DriftIndexedContract): DriftContractChangeField[] {
+function changedFields(
+  current: DriftIndexedContract,
+  previous: DriftIndexedContract,
+  invariantChanges: DriftInvariantChange[],
+): DriftContractChangeField[] {
   const fields: DriftContractChangeField[] = [];
   for (const field of ['intent', 'stability', 'scope', 'anchor', 'ssot', 'invariants', 'llm', 'file'] as const) {
-    if (!sameValue(current[field], previous[field])) fields.push(field);
+    if (field === 'invariants') {
+      if (invariantChanges.length > 0) fields.push(field);
+    } else if (!sameValue(current[field], previous[field])) {
+      fields.push(field);
+    }
   }
   if (current.bodyHash !== previous.bodyHash) fields.push('body');
   return fields;
@@ -140,4 +159,109 @@ function changedFields(current: DriftIndexedContract, previous: DriftIndexedCont
 
 function sameValue(left: unknown, right: unknown): boolean {
   return canonicalize(left ?? null) === canonicalize(right ?? null);
+}
+
+function diffInvariants(current: DriftInvariant[], previous: DriftInvariant[]): DriftInvariantChange[] {
+  const changes: DriftInvariantChange[] = [];
+  const currentById = new Map(current.map((invariant) => [invariant.id, invariant]));
+  const previousById = new Map(previous.map((invariant) => [invariant.id, invariant]));
+
+  for (const invariant of current) {
+    const prior = previousById.get(invariant.id);
+    if (!prior) {
+      changes.push({
+        id: invariant.id,
+        kind: 'added',
+        enforce: invariant.enforce,
+        fields: [],
+        current: invariant,
+        sinksAdded: sortedSinks(invariant.sinks),
+      });
+      continue;
+    }
+
+    const fields: DriftInvariantChangeField[] = [];
+    if (invariant.enforce !== prior.enforce) fields.push('enforce');
+    if ((invariant.ssot ?? '') !== (prior.ssot ?? '')) fields.push('ssot');
+    const sinksAdded = difference(sortedSinks(invariant.sinks), sortedSinks(prior.sinks));
+    const sinksRemoved = difference(sortedSinks(prior.sinks), sortedSinks(invariant.sinks));
+    if (sinksAdded.length > 0 || sinksRemoved.length > 0) fields.push('sinks');
+    if (fields.length === 0) continue;
+
+    changes.push({
+      id: invariant.id,
+      kind: 'changed',
+      enforce: invariant.enforce,
+      fields,
+      previous: prior,
+      current: invariant,
+      sinksAdded: sinksAdded.length > 0 ? sinksAdded : undefined,
+      sinksRemoved: sinksRemoved.length > 0 ? sinksRemoved : undefined,
+    });
+  }
+
+  for (const invariant of previous) {
+    if (currentById.has(invariant.id)) continue;
+    changes.push({
+      id: invariant.id,
+      kind: 'removed',
+      enforce: invariant.enforce,
+      fields: [],
+      previous: invariant,
+      sinksRemoved: sortedSinks(invariant.sinks),
+    });
+  }
+
+  return changes;
+}
+
+function formatInvariantChange(change: DriftInvariantChange): string[] {
+  const lines: string[] = [];
+  const marker = change.kind === 'added' ? '+' : change.kind === 'removed' ? '-' : '~';
+  lines.push(`    ${marker} ${change.id}`);
+
+  if (change.kind === 'changed' && change.fields.includes('enforce')) {
+    lines.push(`      enforce: ${change.previous?.enforce ?? 'none'} -> ${change.current?.enforce ?? 'none'}`);
+  } else if (change.enforce) {
+    lines.push(`      enforce: ${change.enforce}`);
+  }
+
+  if (change.kind === 'changed' && change.fields.includes('ssot')) {
+    lines.push(`      ssot: ${change.previous?.ssot ?? 'none'} -> ${change.current?.ssot ?? 'none'}`);
+  } else {
+    const ssot = change.current?.ssot ?? change.previous?.ssot;
+    if (ssot) lines.push(`      ssot: ${ssot}`);
+  }
+
+  if (change.kind === 'added' && change.sinksAdded && change.sinksAdded.length > 0) {
+    lines.push('      sinks:');
+    for (const sink of change.sinksAdded) lines.push(`        + ${sink}`);
+  }
+
+  if (change.kind === 'removed' && change.sinksRemoved && change.sinksRemoved.length > 0) {
+    lines.push('      sinks:');
+    for (const sink of change.sinksRemoved) lines.push(`        - ${sink}`);
+  }
+
+  if (change.kind === 'changed') {
+    if (change.sinksAdded && change.sinksAdded.length > 0) {
+      lines.push('      sinks added:');
+      for (const sink of change.sinksAdded) lines.push(`        + ${sink}`);
+    }
+    if (change.sinksRemoved && change.sinksRemoved.length > 0) {
+      lines.push('      sinks removed:');
+      for (const sink of change.sinksRemoved) lines.push(`        - ${sink}`);
+    }
+  }
+
+  return lines;
+}
+
+function sortedSinks(sinks: string[] | undefined): string[] {
+  return [...new Set(sinks ?? [])].sort();
+}
+
+function difference(left: string[], right: string[]): string[] {
+  const rightSet = new Set(right);
+  return left.filter((item) => !rightSet.has(item));
 }

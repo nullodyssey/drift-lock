@@ -56,12 +56,28 @@ export type DriftContractChangeKind = 'added' | 'changed' | 'removed';
 
 export type DriftContractChangeField = 'intent' | 'stability' | 'scope' | 'anchor' | 'ssot' | 'invariants' | 'llm' | 'file' | 'body';
 
+export type DriftInvariantChangeKind = 'added' | 'changed' | 'removed';
+
+export type DriftInvariantChangeField = 'enforce' | 'ssot' | 'sinks';
+
+export type DriftInvariantChange = {
+  id: string;
+  kind: DriftInvariantChangeKind;
+  enforce?: DriftInvariant['enforce'];
+  fields: DriftInvariantChangeField[];
+  previous?: DriftInvariant;
+  current?: DriftInvariant;
+  sinksAdded?: string[];
+  sinksRemoved?: string[];
+};
+
 export type DriftContractChange = {
   id: string;
   kind: DriftContractChangeKind;
   file: string;
   stability?: DriftStability;
   fields: DriftContractChangeField[];
+  invariantChanges?: DriftInvariantChange[];
   previous?: DriftIndexedContract;
   current?: DriftIndexedContract;
 };

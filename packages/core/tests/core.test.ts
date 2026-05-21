@@ -737,6 +737,110 @@ if (true) {}
     expect(summary).toContain('fields: intent, ssot');
   });
 
+  it('summarizes invariant ssot and sink changes semantically', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource('billing.changed'),
+    });
+    const extracted = await extractContracts({ root });
+    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeFile(
+      path.join(root, 'src/actions.ts'),
+      validFlowSource('billing.changed')
+        .replace('    ssot: pricing', '    ssot: schema')
+        .replace(`      - return.priceId
+      - return.amount
+      - return.currency`, `      - return.currency
+      - return.priceId
+      - return.tax`),
+      'utf8',
+    );
+
+    const result = await diffContracts({ root });
+    const summary = formatContractDiffSummary(result.diff);
+
+    expect(result.diff.changes).toEqual([
+      expect.objectContaining({
+        id: 'billing.changed',
+        fields: expect.arrayContaining(['invariants']),
+        invariantChanges: [
+          expect.objectContaining({
+            id: 'checkout-price-from-pricing',
+            kind: 'changed',
+            fields: ['ssot', 'sinks'],
+            sinksAdded: ['return.tax'],
+            sinksRemoved: ['return.amount'],
+          }),
+        ],
+      }),
+    ]);
+    expect(summary).toContain('  invariants:');
+    expect(summary).toContain('    ~ checkout-price-from-pricing');
+    expect(summary).toContain('      ssot: pricing -> schema');
+    expect(summary).toContain('      sinks added:');
+    expect(summary).toContain('        + return.tax');
+    expect(summary).toContain('      sinks removed:');
+    expect(summary).toContain('        - return.amount');
+  });
+
+  it('summarizes added and removed invariants semantically', async () => {
+    const root = await createProject({
+      'src/actions.ts': validActionsSource('billing.changed'),
+    });
+    const extracted = await extractContracts({ root });
+    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeFile(
+      path.join(root, 'src/actions.ts'),
+      validActionsSource('billing.changed')
+        .replace(`  - id: validates-input
+    enforce: drift/ssot-usage
+    ssot: schema
+`, `  - id: validates-output
+    enforce: drift/ssot-usage
+    ssot: pricing
+`),
+      'utf8',
+    );
+
+    const result = await diffContracts({ root });
+    const summary = formatContractDiffSummary(result.diff);
+
+    expect(result.diff.changes[0]).toMatchObject({
+      invariantChanges: [
+        { id: 'validates-output', kind: 'added', enforce: 'drift/ssot-usage' },
+        { id: 'validates-input', kind: 'removed', enforce: 'drift/ssot-usage' },
+      ],
+    });
+    expect(summary).toContain('    + validates-output');
+    expect(summary).toContain('      ssot: pricing');
+    expect(summary).toContain('    - validates-input');
+    expect(summary).toContain('      ssot: schema');
+  });
+
+  it('does not report invariant changes when sinks are reordered', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource('billing.changed'),
+    });
+    const extracted = await extractContracts({ root });
+    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeFile(
+      path.join(root, 'src/actions.ts'),
+      validFlowSource('billing.changed').replace(`      - return.priceId
+      - return.amount
+      - return.currency`, `      - return.currency
+      - return.amount
+      - return.priceId`),
+      'utf8',
+    );
+
+    const result = await diffContracts({ root });
+
+    expect(result.diff.changes[0]).toMatchObject({
+      id: 'billing.changed',
+      fields: [],
+    });
+    expect(result.diff.changes[0]?.invariantChanges).toBeUndefined();
+  });
+
   it('does not report semantic no-op diffs when ssot keys are reordered', async () => {
     const root = await createProject({ 'src/actions.ts': validActionsSource() });
     const extracted = await extractContracts({ root });
