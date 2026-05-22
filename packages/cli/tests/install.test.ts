@@ -1,0 +1,112 @@
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { installProject } from '../src/install.js';
+import { expectExists, expectMissing, runCli, tempProject, writePackage } from './helpers/cli-test-utils.js';
+
+describe('drift-lock project installer', () => {
+  it('prints a dry-run plan without writing files', async () => {
+    const root = await tempProject();
+    await writePackage(root);
+
+    const summary = await installProject({
+      root,
+      source: 'src',
+      packageManager: 'pnpm',
+      dryRun: true,
+      ci: 'github',
+    });
+
+    expect(summary.created).toContain('.drift/config.json');
+    expect(summary.created).toContain('.drift/contracts.generated.json');
+    expect(summary.updated).toContain('package.json');
+    expect(summary.created).toContain('eslint.config.js');
+    expect(summary.created).toContain('.github/workflows/drift-lock.yml');
+    expect(summary.commands).toContain('pnpm add -D @drift-lock/cli @drift-lock/eslint-plugin');
+    await expectMissing(path.join(root, '.drift/config.json'));
+  });
+
+  it.each([
+    ['npm', 'npm install -D @drift-lock/cli @drift-lock/eslint-plugin'],
+    ['pnpm', 'pnpm add -D @drift-lock/cli @drift-lock/eslint-plugin'],
+    ['bun', 'bun add -d @drift-lock/cli @drift-lock/eslint-plugin'],
+    ['yarn', 'yarn add -D @drift-lock/cli @drift-lock/eslint-plugin'],
+  ] as const)('plans dependency installation for %s', async (packageManager, command) => {
+    const root = await tempProject();
+    await writePackage(root);
+
+    const summary = await installProject({
+      root,
+      packageManager,
+      dryRun: true,
+      ci: false,
+      agent: false,
+    });
+
+    expect(summary.commands).toContain(command);
+  });
+
+  it('installs agent skills with the detected local DriftLock command', async () => {
+    const root = await tempProject();
+    await writePackage(root);
+    await mkdir(path.join(root, 'src'), { recursive: true });
+
+    await installProject({
+      root,
+      source: 'src',
+      packageManager: 'npm',
+      agent: 'openai',
+      ci: false,
+      installDependencies: false,
+    });
+
+    const skill = await readFile(path.join(root, '.agents/skills/drift-safe-edit/SKILL.md'), 'utf8');
+    expect(skill).toContain('npm exec drift-lock -- context --task "<user prompt>"');
+    expect(skill).toContain('npm exec drift-lock -- check');
+  });
+
+  it('runs install dry-run without prompting in non-TTY execution', async () => {
+    const root = await tempProject();
+    await writePackage(root);
+
+    const result = await runCli(['install', '--root', root, '--dry-run']);
+
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain('DriftLock install dry run.');
+    expect(result.stdout).toContain('npm install -D @drift-lock/cli @drift-lock/eslint-plugin');
+    expect(result.stdout).not.toContain('Package manager');
+  });
+
+  it('installs managed project files idempotently without dependency install when disabled', async () => {
+    const root = await tempProject();
+    await writePackage(root);
+    await mkdir(path.join(root, 'src'), { recursive: true });
+    await writeFile(path.join(root, 'src/index.ts'), 'export const ok = true;\n', 'utf8');
+
+    const first = await installProject({
+      root,
+      source: 'src',
+      packageManager: 'pnpm',
+      ci: 'github',
+      installDependencies: false,
+    });
+    const second = await installProject({
+      root,
+      source: 'src',
+      packageManager: 'pnpm',
+      ci: 'github',
+      installDependencies: false,
+    });
+
+    await expectExists(path.join(root, '.drift/config.json'));
+    await expectExists(path.join(root, '.drift/contracts.generated.json'));
+    await expectExists(path.join(root, 'eslint.config.js'));
+    await expectExists(path.join(root, '.github/workflows/drift-lock.yml'));
+
+    const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8')) as { scripts: Record<string, string> };
+    expect(packageJson.scripts['drift-lock:check']).toBe('drift-lock check');
+    expect(packageJson.scripts['drift-lock:coverage']).toBe('drift-lock coverage');
+    expect(first.updated).toContain('package.json');
+    expect(second.skipped).toContain('package.json');
+  });
+});
