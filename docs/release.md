@@ -16,7 +16,7 @@ The public CLI binary is:
 drift-lock
 ```
 
-Use Node 24 or newer:
+Use Node 22 or newer:
 
 ```bash
 nvm use
