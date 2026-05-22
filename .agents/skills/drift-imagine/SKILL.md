@@ -1,9 +1,9 @@
 ---
-name: dogfood-imagine
+name: drift-imagine
 description: Imagine and evaluate new DriftLock rules from real dogfood friction in this repository. Use when the user asks for new @drift rules, emergent dogfood rules, AI-assisted failure modes, product innovation, enforcement ideas, coverage metrics, diagnostics, ESLint rules, or ways DriftLock can use itself to discover better protections for users.
 ---
 
-# Dogfood Imagine
+# Drift Imagine
 
 Use this repo-local skill to turn DriftLock dogfooding into product discovery. The goal is not to apply existing contracts; use `$drift-dogfood` for that. The goal here is to find new rules that DriftLock should eventually support because this repository exposes a real AI-assisted drift risk.
 

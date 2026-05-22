@@ -1,0 +1,4 @@
+interface:
+  display_name: "Drift Imagine"
+  short_description: "Invent Drift dogfood rules"
+  default_prompt: "Use $drift-imagine to propose new DriftLock rules from real dogfood friction in this repository."
