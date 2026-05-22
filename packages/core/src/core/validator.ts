@@ -1,6 +1,30 @@
 import type { DriftContract, DriftError, DriftInvariant } from '../types.js';
 import { driftError } from './errors.js';
 
+/* @drift
+version: 1
+id: core.validator
+scope: file
+stability: locked
+
+intent: >
+  Validate and normalize Drift contract schema objects before extraction,
+  hashing, checking, or indexing can trust them.
+
+ssot:
+  errors: "./errors.ts"
+
+invariants:
+  - id: validation-reports-shared-errors
+    enforce: drift/ssot-usage
+    ssot: errors
+
+llm:
+  must_not_change:
+    - Unknown fields must be rejected so ignored data cannot look enforceable.
+    - Supported invariant schemas must stay strict.
+    - Normalization must happen before contract hashing.
+*/
 const rootFields = new Set(['version', 'id', 'scope', 'stability', 'intent', 'ssot', 'invariants', 'llm']);
 const requiredRootFields = ['version', 'id', 'scope', 'stability', 'intent'];
 const invariantFields = new Set(['id', 'enforce', 'ssot', 'sinks']);

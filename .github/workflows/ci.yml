@@ -55,6 +55,9 @@ jobs:
       - name: Test workspace
         run: pnpm test
 
+      - name: Check root DriftLock lint
+        run: pnpm lint
+
       - name: Check Next demo lint
         run: pnpm --filter next-v1 lint
 
@@ -68,6 +71,9 @@ jobs:
 
       - name: Check root DriftLock contracts
         run: pnpm drift-lock:check
+
+      - name: Report root DriftLock coverage
+        run: pnpm drift-lock:coverage
 
       - name: Verify root DriftLock index is current
         run: |

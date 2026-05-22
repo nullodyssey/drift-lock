@@ -22,6 +22,14 @@ intent: >
   Validate extracted Drift contracts against executable invariants, required-file
   coverage, and locked-contract baselines.
 
+ssot:
+  extractor: "./extractor.ts"
+
+invariants:
+  - id: checks-extracted-contracts
+    enforce: drift/ssot-usage
+    ssot: extractor
+
 llm:
   must_not_change:
     - Locked contracts must compare against the committed index before passing.

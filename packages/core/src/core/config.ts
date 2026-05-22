@@ -12,6 +12,14 @@ stability: locked
 intent: >
   Define and validate the DriftLock project config schema used by every CLI command.
 
+ssot:
+  index-file: "./index-file.ts"
+
+invariants:
+  - id: default-index-path-from-index-file
+    enforce: drift/ssot-usage
+    ssot: index-file
+
 llm:
   must_not_change:
     - Preserve default config compatibility for projects without .drift/config.json.
@@ -39,13 +47,42 @@ export type DriftConfig = {
   };
 };
 
-export const defaultDriftConfig: DriftConfig = {
-  version: 1,
-  source: 'src',
-  index: defaultIndexPath,
-  requireContracts: [],
-  adoption: { mode: 'enforce' },
-};
+export const defaultDriftConfig: DriftConfig = createDefaultDriftConfig();
+
+/* @drift
+version: 1
+id: core.config.default-index-flow
+scope: declaration
+stability: locked
+
+intent: >
+  Build the default DriftLock config from the shared default index path so CLI
+  defaults cannot drift away from index-file behavior.
+
+ssot:
+  index-file: "./index-file.ts"
+
+invariants:
+  - id: default-index-from-index-file
+    enforce: drift/ssot-flow
+    ssot: index-file
+    sinks:
+      - return.index
+
+llm:
+  must_not_change:
+    - Default config index must come from defaultIndexPath.
+    - Missing config files must keep using enforce adoption mode.
+*/
+function createDefaultDriftConfig(): DriftConfig {
+  return {
+    version: 1,
+    source: 'src',
+    index: defaultIndexPath,
+    requireContracts: [],
+    adoption: { mode: 'enforce' },
+  };
+}
 
 export async function readDriftConfig(root: string, input = defaultConfigPath): Promise<DriftConfig> {
   const absoluteInput = path.resolve(root, input);

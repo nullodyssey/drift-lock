@@ -2,6 +2,30 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import type { DriftError } from '@drift-lock/core';
 
+/* @drift
+version: 1
+id: eslint.utils
+scope: file
+stability: locked
+
+intent: >
+  Share ESLint rule helpers for DriftLock root resolution, config index lookup,
+  normalized filenames, and diagnostic reporting.
+
+ssot:
+  core: "@drift-lock/core"
+
+invariants:
+  - id: reporter-uses-core-errors
+    enforce: drift/ssot-usage
+    ssot: core
+
+llm:
+  must_not_change:
+    - Rules must normalize filenames relative to the configured root.
+    - ESLint reporting must preserve Drift diagnostic messages and locations.
+    - Missing config must keep the default generated index path.
+*/
 export type RuleOptions = {
   root?: string;
   indexPath?: string;

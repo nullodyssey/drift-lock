@@ -105,4 +105,3 @@ The repository should therefore remain strict enough to catch real AI-induced
 drift, but flexible enough to keep product development moving. The right
 pressure is not maximum bureaucracy. It is visible, local, executable intent
 that teaches humans and agents what must not be lost.
-

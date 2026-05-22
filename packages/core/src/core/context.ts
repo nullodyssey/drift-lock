@@ -13,6 +13,14 @@ intent: >
   Render concise Drift contract context for a target file or task so agents can
   plan edits against declared constraints.
 
+ssot:
+  extractor: "./extractor.ts"
+
+invariants:
+  - id: context-from-extracted-contracts
+    enforce: drift/ssot-usage
+    ssot: extractor
+
 llm:
   must_not_change:
     - File context must stay scoped to the requested file.

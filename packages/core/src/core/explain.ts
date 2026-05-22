@@ -2,6 +2,30 @@ import type { CheckOptions } from './checker.js';
 import { checkContracts } from './checker.js';
 import type { DriftError, DriftExtractedContract, DriftExplanation } from '../types.js';
 
+/* @drift
+version: 1
+id: core.explain
+scope: file
+stability: locked
+
+intent: >
+  Convert current Drift violations into explanations that describe the expected
+  behavior, observed drift, and actionable fix for humans and agents.
+
+ssot:
+  checker: "./checker.ts"
+
+invariants:
+  - id: explanations-from-check-results
+    enforce: drift/ssot-usage
+    ssot: checker
+
+llm:
+  must_not_change:
+    - Explanations must derive from current check results.
+    - SSOT flow explanations must include sink, reason, and suggested fix when available.
+    - Empty explanation output must remain explicit.
+*/
 export type ExplainOptions = CheckOptions & {
   contractId?: string;
 };

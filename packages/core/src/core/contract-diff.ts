@@ -28,6 +28,14 @@ intent: >
   Compare current Drift contracts with the committed index and format reviewer
   summaries for intentional contract changes.
 
+ssot:
+  index-file: "./index-file.ts"
+
+invariants:
+  - id: diff-uses-committed-index
+    enforce: drift/ssot-usage
+    ssot: index-file
+
 llm:
   must_not_change:
     - Diff output must distinguish added, changed, and removed contracts.

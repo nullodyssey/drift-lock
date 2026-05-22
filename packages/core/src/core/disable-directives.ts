@@ -2,6 +2,22 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { normalizePath } from './files.js';
 
+/* @drift
+version: 1
+id: core.disable-directives
+scope: file
+stability: draft
+
+intent: >
+  Scan local DriftLock disable directives so temporary adoption exceptions stay
+  visible in coverage reporting.
+
+llm:
+  must_not_change:
+    - Disable directives must be reporting-only until enforcement is explicit.
+    - Malformed and expired directives must stay visible in coverage.
+    - File paths must be normalized before directive scanning.
+*/
 export type DriftDisableDirectiveKind = 'next-line' | 'file';
 
 export type DriftDisableDirective = {

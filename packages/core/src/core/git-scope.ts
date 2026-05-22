@@ -6,6 +6,34 @@ import type { DriftContractsIndex, DriftSource } from '../types.js';
 import { normalizePath, normalizeSourceDirs } from './files.js';
 import { moduleSpecifierCandidates } from './module-specifier.js';
 
+/* @drift
+version: 1
+id: core.git-scope
+scope: file
+stability: locked
+
+intent: >
+  Resolve Git changed-file scope for Drift checks while expanding impacted
+  contracts when declared sources of truth change.
+
+ssot:
+  files: "./files.ts"
+  module-specifier: "./module-specifier.ts"
+
+invariants:
+  - id: git-scope-normalizes-source-files
+    enforce: drift/ssot-usage
+    ssot: files
+  - id: git-scope-expands-ssot-candidates
+    enforce: drift/ssot-usage
+    ssot: module-specifier
+
+llm:
+  must_not_change:
+    - Changed source files must define the extraction scope.
+    - SSOT file changes must include impacted contract files.
+    - Deleted files must scope the index without being extracted.
+*/
 const execFileAsync = promisify(execFile);
 
 export type GitFileScope = {

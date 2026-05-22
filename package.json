@@ -10,6 +10,7 @@
   "scripts": {
     "build": "pnpm -r run build",
     "check": "pnpm -r run check",
+    "lint": "pnpm drift-lock:build && pnpm --filter @drift-lock/eslint-plugin run build && eslint packages/core/src packages/cli/src packages/eslint-plugin/src",
     "test": "pnpm --filter @drift-lock/core run test && pnpm -r --filter '!@drift-lock/core' run test",
     "drift-lock:build": "pnpm --filter @drift-lock/core run build && pnpm --filter @drift-lock/cli run build",
     "drift-lock:extract": "pnpm drift-lock:build && drift-lock extract",
@@ -20,6 +21,7 @@
   },
   "devDependencies": {
     "@drift-lock/cli": "workspace:*",
+    "@drift-lock/eslint-plugin": "workspace:*",
     "@types/node": "^24.10.1",
     "@typescript-eslint/parser": "^8.50.0",
     "eslint": "^9.39.2",

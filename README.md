@@ -26,8 +26,9 @@ for the local product and engineering intent that agents often miss.
 
 DriftLock is developed under the same constraints it creates for other
 AI-assisted TypeScript projects. This repository uses its own contracts,
-committed index, CI checks, and agent-facing workflows so product friction is
-discovered here before it reaches users.
+committed index, executable invariants, ESLint plugin, CI checks, and
+agent-facing workflows so product friction is discovered here before it reaches
+users.
 
 See [docs/dogfood.md](./docs/dogfood.md) for the public dogfooding philosophy
 and the target state for making this repository DriftLock's most complete

@@ -3,6 +3,22 @@ import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { DriftSource } from '../types.js';
 
+/* @drift
+version: 1
+id: core.files
+scope: file
+stability: locked
+
+intent: >
+  Discover configured TypeScript source files deterministically while respecting
+  project ignores and normalized Drift source roots.
+
+llm:
+  must_not_change:
+    - Discovery must ignore generated, dependency, git, and Drift metadata folders.
+    - Source roots must support strings and arrays.
+    - Returned file paths must stay sorted and project-relative.
+*/
 const alwaysIgnoredDirs = new Set(['.git', '.next', '.drift', 'dist', 'node_modules']);
 type IgnoreMatcher = ReturnType<typeof ignore>;
 

@@ -1,5 +1,29 @@
 import type { DriftDiagnostic, DriftDiagnosticSeverity, DriftErrorCode, DriftError } from '../types.js';
 
+/* @drift
+version: 1
+id: core.errors
+scope: file
+stability: locked
+
+intent: >
+  Format stable Drift diagnostics so CLI, ESLint, CI, and agents receive
+  consistent error codes, locations, and severity prefixes.
+
+ssot:
+  types: "../types.ts"
+
+invariants:
+  - id: formats-shared-diagnostic-types
+    enforce: drift/ssot-usage
+    ssot: types
+
+llm:
+  must_not_change:
+    - DRIFTxxx codes must remain stable and human-readable.
+    - Diagnostic severity formatting must preserve info, warning, and error levels.
+    - Error locations must include file and line when available.
+*/
 const messages: Record<DriftErrorCode, (details: Record<string, unknown>) => string> = {
   DRIFT001_INVALID_YAML: () => 'DRIFT001: Invalid @drift YAML.',
   DRIFT002_UNKNOWN_FIELD: ({ field }) =>

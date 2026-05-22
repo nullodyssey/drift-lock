@@ -11,6 +11,9 @@ importers:
       '@drift-lock/cli':
         specifier: workspace:*
         version: link:packages/cli
+      '@drift-lock/eslint-plugin':
+        specifier: workspace:*
+        version: link:packages/eslint-plugin
       '@types/node':
         specifier: ^24.10.1
         version: 24.12.4

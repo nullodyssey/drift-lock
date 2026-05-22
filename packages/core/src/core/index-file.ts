@@ -2,6 +2,22 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { DriftContractsIndex, DriftExtractedContract } from '../types.js';
 
+/* @drift
+version: 1
+id: core.index-file
+scope: file
+stability: locked
+
+intent: >
+  Read, write, and serialize the committed Drift contract index used as the
+  baseline for locked contract checks.
+
+llm:
+  must_not_change:
+    - Runtime-only extraction fields must not be written to the committed index.
+    - Missing index files must be treated as absent, not invalid.
+    - Generated indexes must remain stable pretty-printed JSON with a trailing newline.
+*/
 export const defaultIndexPath = '.drift/contracts.generated.json';
 
 export function toIndex(contracts: DriftExtractedContract[]): DriftContractsIndex {

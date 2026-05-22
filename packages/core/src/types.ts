@@ -1,3 +1,19 @@
+/* @drift
+version: 1
+id: core.types
+scope: file
+stability: locked
+
+intent: >
+  Define the shared DriftLock schema, diagnostic, diff, and explanation types
+  used across core, CLI, and ESLint packages.
+
+llm:
+  must_not_change:
+    - Drift schema version 1 types must remain strict and explicit.
+    - Diagnostic codes must stay stable for CLI, ESLint, and agent workflows.
+    - Indexed contracts must omit runtime-only extraction fields.
+*/
 export type DriftContractId = string;
 
 export type DriftSource = string | string[];

@@ -1,6 +1,22 @@
 import { createHash } from 'node:crypto';
 import type { DriftContract } from '../types.js';
 
+/* @drift
+version: 1
+id: core.hash
+scope: file
+stability: locked
+
+intent: >
+  Produce stable Drift contract hashes from canonical contract content and raw
+  anchored body text.
+
+llm:
+  must_not_change:
+    - Content hashes must ignore harmless YAML formatting noise.
+    - Body hashes must preserve anchored implementation text changes.
+    - Array order must remain authorial and hash-relevant.
+*/
 export function contentHash(contract: DriftContract): string {
   const canonical = canonicalize(contract);
   return sha256(canonical);

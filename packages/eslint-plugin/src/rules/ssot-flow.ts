@@ -11,6 +11,18 @@ intent: >
   Report Drift SSOT flow violations through ESLint for contracts extracted from
   the file currently being linted.
 
+ssot:
+  core: "@drift-lock/core"
+  utils: "../utils.ts"
+
+invariants:
+  - id: delegates-flow-checks-to-core
+    enforce: drift/ssot-usage
+    ssot: core
+  - id: uses-shared-eslint-reporter
+    enforce: drift/ssot-usage
+    ssot: utils
+
 llm:
   must_not_change:
     - The rule must only evaluate contracts extracted from the current file.

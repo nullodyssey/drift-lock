@@ -11,6 +11,18 @@ intent: >
   Report Drift contract syntax, schema, and anchoring errors through ESLint for
   the file currently being linted.
 
+ssot:
+  core: "@drift-lock/core"
+  utils: "../utils.ts"
+
+invariants:
+  - id: reports-core-extraction-errors
+    enforce: drift/ssot-usage
+    ssot: core
+  - id: uses-shared-eslint-reporter
+    enforce: drift/ssot-usage
+    ssot: utils
+
 llm:
   must_not_change:
     - The rule must report every extractor error for the current file.

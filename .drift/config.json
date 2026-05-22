@@ -7,18 +7,8 @@
   ],
   "index": ".drift/contracts.generated.json",
   "requireContracts": [
-    "packages/core/src/core/extractor.ts",
-    "packages/core/src/core/checker.ts",
-    "packages/core/src/core/contract-diff.ts",
-    "packages/core/src/core/context.ts",
-    "packages/core/src/core/config.ts",
-    "packages/cli/src/cli.ts",
-    "packages/cli/src/install.ts",
-    "packages/cli/src/skills.ts",
-    "packages/eslint-plugin/src/index.ts",
-    "packages/eslint-plugin/src/rules/valid-contract.ts",
-    "packages/eslint-plugin/src/rules/no-locked-contract-change.ts",
-    "packages/eslint-plugin/src/rules/ssot-usage.ts",
-    "packages/eslint-plugin/src/rules/ssot-flow.ts"
+    "packages/core/src/**/*.ts",
+    "packages/cli/src/**/*.ts",
+    "packages/eslint-plugin/src/**/*.ts"
   ]
 }

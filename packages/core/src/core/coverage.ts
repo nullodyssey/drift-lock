@@ -4,6 +4,34 @@ import { scanDisableDirectives, type DriftDisableDirectiveCoverage, type DriftDi
 import { extractContracts, type ExtractOptions } from './extractor.js';
 import { discoverSourceFiles, normalizePath } from './files.js';
 
+/* @drift
+version: 1
+id: core.coverage
+scope: file
+stability: draft
+
+intent: >
+  Report DriftLock adoption coverage across contracts, required files,
+  executable invariants, and visible disable directives.
+
+ssot:
+  extractor: "./extractor.ts"
+  disable-directives: "./disable-directives.ts"
+
+invariants:
+  - id: coverage-from-extracted-contracts
+    enforce: drift/ssot-usage
+    ssot: extractor
+  - id: coverage-includes-disable-directives
+    enforce: drift/ssot-usage
+    ssot: disable-directives
+
+llm:
+  must_not_change:
+    - Coverage must remain informational and not decide check exit codes.
+    - Required uncovered files must be listed for adoption planning.
+    - Disable directive totals must stay visible in coverage output.
+*/
 export type DriftCoverageOptions = ExtractOptions & {
   requireContracts?: string[];
 };

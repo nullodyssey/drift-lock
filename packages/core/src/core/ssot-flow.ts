@@ -3,6 +3,30 @@ import type { DriftError, DriftExtractedContract, DriftInvariant } from '../type
 import { driftError } from './errors.js';
 import { moduleSpecifierCandidates } from './module-specifier.js';
 
+/* @drift
+version: 1
+id: core.ssot-flow
+scope: file
+stability: locked
+
+intent: >
+  Validate supported declaration-scoped return flows so configured sinks derive
+  from declared sources of truth.
+
+ssot:
+  module-specifier: "./module-specifier.ts"
+
+invariants:
+  - id: flow-resolves-ssot-import-candidates
+    enforce: drift/ssot-usage
+    ssot: module-specifier
+
+llm:
+  must_not_change:
+    - Unsupported flow patterns must fail clearly instead of passing silently.
+    - Return sinks must be explicit object paths.
+    - Trusted values must originate from declared SSOT imports.
+*/
 type FlowValue = {
   trusted: boolean;
   unsupported: boolean;

@@ -13,6 +13,18 @@ intent: >
   Report silent edits to locked Drift contracts by comparing the current file
   against the committed Drift index during ESLint runs.
 
+ssot:
+  core: "@drift-lock/core"
+  utils: "../utils.ts"
+
+invariants:
+  - id: delegates-locked-checks-to-core
+    enforce: drift/ssot-usage
+    ssot: core
+  - id: uses-shared-eslint-reporter
+    enforce: drift/ssot-usage
+    ssot: utils
+
 llm:
   must_not_change:
     - Missing indexes must be ignored so projects can lint before extraction.
