@@ -1,6 +1,6 @@
 {
   "name": "@drift-lock/eslint-plugin",
-  "version": "0.1.3-alpha",
+  "version": "0.1.4-alpha",
   "description": "ESLint 9 flat config plugin for DriftLock contracts and invariants.",
   "license": "MIT",
   "type": "module",
