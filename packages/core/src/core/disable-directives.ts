@@ -43,7 +43,7 @@ async function scanFile(root: string, file: string): Promise<DriftDisableDirecti
 }
 
 function parseDirectiveLine(file: string, line: number, text: string): DriftDisableDirective | undefined {
-  const match = text.match(/\b(drift-lock-disable-next-line|drift-lock-disable-file)\b(.*)$/);
+  const match = text.match(/^\s*\/\/\s*(drift-lock-disable-next-line|drift-lock-disable-file)\b(.*)$/);
   if (!match) return undefined;
 
   const command = match[1];

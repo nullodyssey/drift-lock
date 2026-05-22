@@ -36,6 +36,7 @@ describe('drift coverage', () => {
       'src/actions.ts': '// drift-lock-disable-next-line drift/ssot-flow -- reason: migration billing-v2, expires: 2999-01-01\nexport const checkoutAction = true;\n',
       'src/legacy.ts': '// drift-lock-disable-file drift/import-boundary -- reason: legacy adapter, expires: 2000-01-01\nexport const legacy = true;\n',
       'src/malformed.ts': '// drift-lock-disable-next-line drift/ssot-flow\nexport const malformed = true;\n',
+      'src/examples.ts': 'export const help = "drift-lock-disable-file drift/ssot-flow -- reason: example only";\nexport const docs = `// drift-lock-disable-next-line drift/import-boundary -- reason: docs only`;\n',
       'tests/not-source.ts': '// drift-lock-disable-file drift/ssot-flow -- reason: ignored test fixture\n',
     });
 
