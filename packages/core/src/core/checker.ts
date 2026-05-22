@@ -10,7 +10,7 @@ import { discoverSourceFiles } from './files.js';
 import { filterIndexByFiles, resolveGitFileScope } from './git-scope.js';
 import { readIndex, toIndex } from './index-file.js';
 import { moduleSpecifierCandidates } from './module-specifier.js';
-import { checkSsotFlow } from './ssot-flow.js';
+import { checkSsotFlow } from './rules/ssot-flow/index.js';
 
 /* @drift
 version: 1

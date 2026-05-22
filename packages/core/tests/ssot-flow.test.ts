@@ -273,6 +273,71 @@ describe('drift ssot flow', () => {
     expect(result.errors.map((error) => error.code)).toContain('DRIFT014_UNSUPPORTED_FLOW_PATTERN');
   });
 
+  it('rejects derived expressions that mix trusted values with unsupported helper calls', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource().replace('amount: price.monthlyAmount * payload.seats,', 'amount: price.monthlyAmount + resolveFee(payload),'),
+    });
+
+    const result = await checkContracts({ root });
+    const amountError = result.errors.find((error) => error.details?.sink === 'return.amount');
+    expect(amountError).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unsupported-call',
+        foundExpression: 'price.monthlyAmount + resolveFee(payload)',
+        foundNodeKind: 'BinaryExpression',
+      },
+    });
+  });
+
+  it('rejects template expressions that mix trusted values with unsupported helper calls', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource().replace('priceId: price.priceId,', 'priceId: `${price.priceId} ${resolveLabel(payload)}`,'),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.priceId')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unsupported-call',
+        foundExpression: '`${price.priceId} ${resolveLabel(payload)}`',
+        foundNodeKind: 'TemplateExpression',
+      },
+    });
+  });
+
+  it('rejects derived expressions that mix trusted values with awaited helper calls', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource().replace('amount: price.monthlyAmount * payload.seats,', 'amount: price.monthlyAmount + await resolveFee(payload),'),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.amount')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unsupported-call',
+        foundExpression: 'price.monthlyAmount + await resolveFee(payload)',
+        foundNodeKind: 'BinaryExpression',
+      },
+    });
+  });
+
+  it('keeps purely local derived expressions untrusted instead of unsupported', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource().replace('amount: price.monthlyAmount * payload.seats,', 'amount: payload.seats * 10,'),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.amount')).toMatchObject({
+      code: 'DRIFT013_SSOT_FLOW_NOT_PROVEN',
+      details: {
+        reason: 'untrusted-value',
+        foundExpression: 'payload.seats * 10',
+        foundNodeKind: 'BinaryExpression',
+      },
+    });
+  });
+
   it('rejects ssot flow expressions that can discard the trusted value', async () => {
     const root = await createProject({
       'src/actions.ts': validFlowSource()

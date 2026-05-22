@@ -1,0 +1,153 @@
+import ts from 'typescript';
+import type { FlowEnv, FlowReason, FlowValue } from './types.js';
+import { trusted, untrusted, unsupported } from './types.js';
+
+/* @drift
+version: 1
+id: core.ssot-flow.env
+scope: file
+stability: draft
+
+intent: >
+  Track local SSOT flow provenance through trusted imports, parameters, const
+  aliases, and supported derived expressions.
+
+llm:
+  must_not_change:
+    - Unsupported expression dependencies must not be treated as trusted.
+    - Parameters must shadow trusted imports as untrusted local values.
+    - Only supported immutable local patterns may propagate provenance.
+*/
+export function createInitialEnv(trustedImports: Set<string>, parameters: ts.NodeArray<ts.ParameterDeclaration>): FlowEnv {
+  const env = new Map<string, FlowValue>();
+  for (const name of trustedImports) env.set(name, trusted);
+  for (const parameter of parameters) {
+    for (const name of bindingNames(parameter.name)) env.set(name, untrusted);
+  }
+  return env;
+}
+
+export function cloneEnv(env: FlowEnv): FlowEnv {
+  return new Map(env);
+}
+
+export function applyVariableStatement(statement: ts.VariableStatement, env: FlowEnv): void {
+  const isConst = (statement.declarationList.flags & ts.NodeFlags.Const) !== 0;
+
+  for (const declaration of statement.declarationList.declarations) {
+    if (!ts.isIdentifier(declaration.name)) {
+      for (const name of bindingNames(declaration.name)) env.set(name, unsupported);
+      continue;
+    }
+
+    if (!isConst || !declaration.initializer) {
+      env.set(declaration.name.text, unsupported);
+      continue;
+    }
+
+    if (isInputParserCall(declaration.initializer)) {
+      env.set(declaration.name.text, untrusted);
+      continue;
+    }
+
+    env.set(declaration.name.text, expressionFlow(declaration.initializer, env));
+  }
+}
+
+export function expressionFlow(expression: ts.Expression, env: FlowEnv): FlowValue {
+  if (ts.isIdentifier(expression)) {
+    return env.get(expression.text) ?? untrusted;
+  }
+
+  if (ts.isPropertyAccessExpression(expression)) {
+    return expressionFlow(expression.expression, env);
+  }
+
+  if (ts.isElementAccessExpression(expression)) {
+    return expressionFlow(expression.expression, env);
+  }
+
+  if (ts.isParenthesizedExpression(expression) || ts.isNonNullExpression(expression)) {
+    return expressionFlow(expression.expression, env);
+  }
+
+  if (ts.isAsExpression(expression) || ts.isTypeAssertionExpression(expression) || ts.isSatisfiesExpression(expression)) {
+    return expressionFlow(expression.expression, env);
+  }
+
+  if (ts.isBinaryExpression(expression)) {
+    if (!isDerivedBinaryOperator(expression.operatorToken.kind)) return unsupportedFlow('unsupported-pattern', expression);
+    return combineDerived([expressionFlow(expression.left, env), expressionFlow(expression.right, env)]);
+  }
+
+  if (ts.isTemplateExpression(expression)) {
+    return combineDerived(expression.templateSpans.map((span) => expressionFlow(span.expression, env)));
+  }
+
+  if (ts.isNoSubstitutionTemplateLiteral(expression) || ts.isStringLiteral(expression) || ts.isNumericLiteral(expression)) {
+    return untrusted;
+  }
+
+  if (expression.kind === ts.SyntaxKind.TrueKeyword || expression.kind === ts.SyntaxKind.FalseKeyword || expression.kind === ts.SyntaxKind.NullKeyword) {
+    return untrusted;
+  }
+
+  if (ts.isObjectLiteralExpression(expression) || ts.isArrayLiteralExpression(expression)) {
+    return untrusted;
+  }
+
+  if (ts.isCallExpression(expression) || ts.isNewExpression(expression) || ts.isAwaitExpression(expression)) {
+    return unsupportedFlow('unsupported-call', expression);
+  }
+
+  return unsupportedFlow('unsupported-pattern', expression);
+}
+
+export function combineDerived(values: FlowValue[]): FlowValue {
+  const unsupportedValue = values.find((value) => value.trust === 'unsupported');
+  if (unsupportedValue) return unsupportedValue;
+  if (values.some((value) => value.trust === 'trusted')) return trusted;
+  return untrusted;
+}
+
+function unsupportedFlow(reason: FlowReason, node: ts.Node): FlowValue {
+  return { trust: 'unsupported', reason, nodeKind: ts.SyntaxKind[node.kind] };
+}
+
+function isDerivedBinaryOperator(kind: ts.SyntaxKind): boolean {
+  return (
+    kind === ts.SyntaxKind.AsteriskToken ||
+    kind === ts.SyntaxKind.AsteriskAsteriskToken ||
+    kind === ts.SyntaxKind.SlashToken ||
+    kind === ts.SyntaxKind.PercentToken ||
+    kind === ts.SyntaxKind.PlusToken ||
+    kind === ts.SyntaxKind.MinusToken
+  );
+}
+
+function isInputParserCall(expression: ts.Expression): boolean {
+  const unwrapped = unwrapExpression(expression);
+  if (!ts.isCallExpression(unwrapped)) return false;
+  const calleeName = callName(unwrapped.expression);
+  return calleeName !== undefined && /^(parse|validate|safeParse)/.test(calleeName);
+}
+
+function unwrapExpression(expression: ts.Expression): ts.Expression {
+  if (ts.isParenthesizedExpression(expression) || ts.isNonNullExpression(expression)) return unwrapExpression(expression.expression);
+  if (ts.isAsExpression(expression) || ts.isTypeAssertionExpression(expression) || ts.isSatisfiesExpression(expression)) return unwrapExpression(expression.expression);
+  return expression;
+}
+
+function callName(expression: ts.Expression): string | undefined {
+  if (ts.isIdentifier(expression)) return expression.text;
+  if (ts.isPropertyAccessExpression(expression)) return expression.name.text;
+  return undefined;
+}
+
+function bindingNames(name: ts.BindingName): string[] {
+  if (ts.isIdentifier(name)) return [name.text];
+  return name.elements.flatMap((element) => {
+    if (ts.isOmittedExpression(element)) return [];
+    return bindingNames(element.name);
+  });
+}
