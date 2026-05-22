@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import path from 'node:path';
+import { createInterface } from 'node:readline/promises';
 import {
   checkContracts,
   diffContracts,
@@ -18,7 +19,14 @@ import {
   writeAcceptanceFile,
   writeIndex,
 } from '@drift-lock/core';
-import { installProject, type CiProvider, type InstallProjectSummary, type PackageManager } from './install.js';
+import {
+  detectPackageManager,
+  detectSource,
+  installProject,
+  type CiProvider,
+  type InstallProjectSummary,
+  type PackageManager,
+} from './install.js';
 import { installSkills, listBundledSkills, type SkillProvider } from './skills.js';
 
 const program = new Command();
@@ -40,17 +48,18 @@ program
   .option('--example <name>', 'add an example project')
   .option('--dry-run', 'print changes without writing files or installing packages', false)
   .option('--force', 'overwrite DriftLock managed files and scripts', false)
-  .action(async (options: InstallCommandOptions) => {
+  .action(async (options: InstallCommandOptions, command: Command) => {
+    const resolved = await resolveInstallCommandOptions(options, command);
     const summary = await installProject({
-      root: path.resolve(options.root),
-      source: options.source,
-      packageManager: options.packageManager ? parsePackageManager(options.packageManager) : undefined,
-      eslint: options.eslint,
-      ci: parseCiOption(options.ci),
-      agent: parseAgentOption(options.agent),
-      example: options.example,
-      dryRun: options.dryRun,
-      force: options.force,
+      root: path.resolve(resolved.root),
+      source: resolved.source,
+      packageManager: resolved.packageManager,
+      eslint: resolved.eslint,
+      ci: resolved.ci,
+      agent: resolved.agent,
+      example: resolved.example,
+      dryRun: resolved.dryRun,
+      force: resolved.force,
     });
     printInstallSummary(summary);
   });
@@ -291,6 +300,108 @@ type InstallCommandOptions = {
   force: boolean;
 };
 
+type ResolvedInstallCommandOptions = Omit<InstallCommandOptions, 'packageManager' | 'ci' | 'agent'> & {
+  packageManager?: PackageManager;
+  ci: CiProvider | false;
+  agent: SkillProvider | false;
+};
+
+async function resolveInstallCommandOptions(
+  options: InstallCommandOptions,
+  command: Command,
+): Promise<ResolvedInstallCommandOptions> {
+  let packageManager = options.packageManager ? parsePackageManager(options.packageManager) : undefined;
+  let source = options.source;
+  let eslint = options.eslint;
+  let ci = parseCiOption(options.ci);
+  let agent = parseAgentOption(options.agent);
+
+  if (shouldPromptInstall(command)) {
+    const root = path.resolve(options.root);
+    const defaultPackageManager = packageManager ?? (await detectPackageManager(root));
+    const defaultSource = source ?? (await detectSource(root));
+    const prompts = createInterface({ input: process.stdin, output: process.stdout });
+    try {
+      packageManager ??= parsePackageManager(
+        await promptChoice(prompts, 'Package manager', ['npm', 'pnpm', 'yarn', 'bun'], defaultPackageManager),
+      );
+      source ??= await promptText(prompts, 'Source directory', defaultSource);
+
+      if (command.getOptionValueSource('eslint') !== 'cli') {
+        eslint = await promptConfirm(prompts, 'Configure ESLint with @drift-lock/eslint-plugin?', true);
+      }
+      if (command.getOptionValueSource('ci') !== 'cli') {
+        ci = (await promptConfirm(prompts, 'Add GitHub Actions CI workflow?', false)) ? 'github' : false;
+      }
+      if (command.getOptionValueSource('agent') !== 'cli') {
+        const provider = await promptChoice(prompts, 'Install agent skills', ['none', 'openai', 'claude', 'cursor'], 'none');
+        agent = provider === 'none' ? false : parseProvider(provider);
+      }
+    } finally {
+      prompts.close();
+    }
+  }
+
+  return {
+    root: options.root,
+    source,
+    packageManager,
+    eslint,
+    ci,
+    agent,
+    example: options.example,
+    dryRun: options.dryRun,
+    force: options.force,
+  };
+}
+
+function shouldPromptInstall(command: Command): boolean {
+  if (process.env.CI) return false;
+  if (!process.stdin.isTTY || !process.stdout.isTTY) return false;
+  if (command.getOptionValueSource('packageManager') !== 'cli') return true;
+  if (command.getOptionValueSource('source') !== 'cli') return true;
+  if (command.getOptionValueSource('eslint') !== 'cli') return true;
+  if (command.getOptionValueSource('ci') !== 'cli') return true;
+  if (command.getOptionValueSource('agent') !== 'cli') return true;
+  return false;
+}
+
+async function promptChoice(
+  prompts: ReturnType<typeof createInterface>,
+  label: string,
+  values: readonly string[],
+  defaultValue: string,
+): Promise<string> {
+  const answer = (await prompts.question(`${label} (${values.join('/')}) [${defaultValue}]: `)).trim().toLowerCase();
+  const value = answer || defaultValue;
+  if (values.includes(value)) return value;
+  console.log(`Unsupported value \"${value}\". Expected one of: ${values.join(', ')}.`);
+  return promptChoice(prompts, label, values, defaultValue);
+}
+
+async function promptText(
+  prompts: ReturnType<typeof createInterface>,
+  label: string,
+  defaultValue: string,
+): Promise<string> {
+  const answer = (await prompts.question(`${label} [${defaultValue}]: `)).trim();
+  return answer || defaultValue;
+}
+
+async function promptConfirm(
+  prompts: ReturnType<typeof createInterface>,
+  label: string,
+  defaultValue: boolean,
+): Promise<boolean> {
+  const suffix = defaultValue ? 'Y/n' : 'y/N';
+  const answer = (await prompts.question(`${label} [${suffix}]: `)).trim().toLowerCase();
+  if (!answer) return defaultValue;
+  if (answer === 'y' || answer === 'yes') return true;
+  if (answer === 'n' || answer === 'no') return false;
+  console.log('Answer yes or no.');
+  return promptConfirm(prompts, label, defaultValue);
+}
+
 function parsePackageManager(value: string): PackageManager {
   if (value === 'npm' || value === 'pnpm' || value === 'yarn' || value === 'bun') return value;
   throw new Error(`Unsupported package manager "${value}". Expected npm, pnpm, yarn, or bun.`);
@@ -321,7 +432,7 @@ function printInstallSummary(summary: InstallProjectSummary): void {
   }
   console.log('\nNext:');
   console.log(`- ${scriptCommand(summary.packageManager, 'drift-lock:check')}`);
-  console.log('- drift-lock context <file>');
+  console.log(`- ${binaryCommand(summary.packageManager, 'context <file>')}`);
 }
 
 function printList(title: string, items: string[]): void {
@@ -330,6 +441,12 @@ function printList(title: string, items: string[]): void {
   for (const item of items) console.log(`- ${item}`);
 }
 
+function binaryCommand(packageManager: PackageManager, command: string): string {
+  if (packageManager === 'npm') return `npm exec drift-lock -- ${command}`;
+  if (packageManager === 'pnpm') return `pnpm exec drift-lock ${command}`;
+  if (packageManager === 'bun') return `bunx drift-lock ${command}`;
+  return `yarn drift-lock ${command}`;
+}
 function scriptCommand(packageManager: PackageManager, script: string): string {
   if (packageManager === 'npm') return `npm run ${script}`;
   return `${packageManager} ${script}`;

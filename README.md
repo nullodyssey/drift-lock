@@ -24,23 +24,82 @@ for the local product and engineering intent that agents often miss.
 
 ## Install
 
-Install DriftLock into a TypeScript project:
+DriftLock requires Node.js 22 or newer.
+
+Run the interactive installer from the package manager you use in the project:
 
 ```bash
-npx --yes @drift-lock/cli install
+# npm
+npx --yes @drift-lock/cli@latest install
+
+# pnpm
+pnpm dlx @drift-lock/cli@latest install
+
+# bun
+bunx @drift-lock/cli@latest install
+
+# yarn
+yarn dlx -p @drift-lock/cli@latest drift-lock install
 ```
 
-Useful install options:
+The installer detects your package manager, creates `.drift/config.json`,
+generates `.drift/contracts.generated.json`, adds DriftLock scripts, installs
+`@drift-lock/cli` and `@drift-lock/eslint-plugin` as dev dependencies, and can
+configure ESLint, GitHub Actions, and agent skills.
+
+If you prefer to install the package first, add the CLI as a dev dependency and
+then run the local command:
 
 ```bash
-npx --yes @drift-lock/cli install --source src
-npx --yes @drift-lock/cli install --ci github
-npx --yes @drift-lock/cli install --agent openai
-npx --yes @drift-lock/cli install --dry-run
+# npm
+npm install -D @drift-lock/cli
+npm exec drift-lock -- install
+
+# pnpm
+pnpm add -D @drift-lock/cli
+pnpm exec drift-lock install
+
+# bun
+bun add -d @drift-lock/cli
+bunx drift-lock install
+
+# yarn
+yarn add -D @drift-lock/cli
+yarn drift-lock install
 ```
 
-The installer adds DriftLock scripts, creates `.drift/config.json`, generates a
-contract index, and can configure ESLint and GitHub Actions when requested.
+Useful installer options:
+
+```bash
+# Scan a specific source directory
+npx --yes @drift-lock/cli@latest install --source src
+
+# Install bundled agent skills for a provider
+npx --yes @drift-lock/cli@latest install --agent openai
+npx --yes @drift-lock/cli@latest install --agent claude
+npx --yes @drift-lock/cli@latest install --agent cursor
+
+# Add GitHub Actions CI
+npx --yes @drift-lock/cli@latest install --ci github
+
+# Skip ESLint or CI when you do not want them
+npx --yes @drift-lock/cli@latest install --no-eslint --no-ci
+
+# Preview changes without writing files or installing packages
+npx --yes @drift-lock/cli@latest install --dry-run
+```
+
+After install, run DriftLock through your package manager's local binary runner:
+
+```bash
+npm exec drift-lock -- check
+pnpm exec drift-lock check
+bunx drift-lock check
+yarn drift-lock check
+```
+
+The installer also adds package scripts such as `drift-lock:check`, so `npm run
+drift-lock:check` and `pnpm drift-lock:check` work too.
 
 ## First Contract
 
@@ -105,6 +164,7 @@ detected in CI.
 ## Commands
 
 ```bash
+drift-lock install
 drift-lock context <file>
 drift-lock context --task "<user prompt>"
 drift-lock extract
@@ -113,19 +173,46 @@ drift-lock check --changed
 drift-lock coverage
 drift-lock diff --summary
 drift-lock explain [contract-id]
+drift-lock accept <contract-id> --reason "<reason>"
 drift-lock skills list
 drift-lock skills install --provider openai
 ```
 
-`context <file>` renders contract-aware context for a target file.
-`context --task` prepares pre-plan context for AI-assisted work from the user
-prompt, so the agent can see relevant contracts, SSOTs, invariants, and planning
-notes before implementation. `extract` updates the committed contract index.
-`check` validates contracts, locked baselines, and supported invariants.
-`coverage` reports contract adoption and files required to have contracts.
-`diff --summary` reviews contract changes for PRs. `explain` prints
-human-readable diagnostics for current violations and can be filtered to one
-contract id.
+`install` sets up DriftLock in the current project. It creates `.drift`, adds
+package scripts, installs the CLI and ESLint plugin, and can configure CI or
+agent skills.
+
+`context <file>` renders the contracts that matter for one file. Use it before
+editing risky code so an agent sees the local intent, sources of truth, and
+invariants.
+
+`context --task "<prompt>"` prepares contract-aware context for a planned AI
+change. It is the best starting point before asking an agent to implement a
+feature.
+
+`extract` scans the source directory and writes `.drift/contracts.generated.json`.
+Commit this file so locked contract changes can be detected later.
+
+`check` validates contract syntax, locked baselines, required-contract coverage,
+and supported invariants. Run it locally and in CI.
+
+`check --changed` focuses validation on contracts changed since the Drift index.
+Add `--git-base <ref>` in PR workflows to check files changed since a branch.
+
+`coverage` reports how many contracts exist and which required files are still
+missing contracts. Use `--json` for agent-readable output.
+
+`diff --summary` summarizes contract changes for review. It is useful before a
+PR or before accepting an intentional contract change.
+
+`explain [contract-id]` turns current failures into actionable diagnostics. Use
+`--json` when CI or an agent needs stable fields.
+
+`accept <contract-id> --reason "..."` records an intentional locked contract
+change. The reason must be explicit and should describe the product decision.
+
+`skills list` shows bundled DriftLock agent skills. `skills install --provider
+openai|claude|cursor` installs them for your agent environment.
 
 For the AI-assisted workflow, run context before planning:
 
@@ -214,7 +301,7 @@ drift-lock/ssot-flow
 Generate a GitHub Actions workflow during install:
 
 ```bash
-npx --yes @drift-lock/cli install --ci github
+npx --yes @drift-lock/cli@latest install --ci github
 ```
 
 Or add the checks manually:

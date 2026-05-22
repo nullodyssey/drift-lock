@@ -127,6 +127,58 @@ describe('drift-lock project installer', () => {
     await expectMissing(path.join(root, '.drift/config.json'));
   });
 
+  it.each([
+    ['npm', 'npm install -D @drift-lock/cli @drift-lock/eslint-plugin'],
+    ['pnpm', 'pnpm add -D @drift-lock/cli @drift-lock/eslint-plugin'],
+    ['bun', 'bun add -d @drift-lock/cli @drift-lock/eslint-plugin'],
+    ['yarn', 'yarn add -D @drift-lock/cli @drift-lock/eslint-plugin'],
+  ] as const)('plans dependency installation for %s', async (packageManager, command) => {
+    const root = await tempProject();
+    await writePackage(root);
+
+    const summary = await installProject({
+      root,
+      packageManager,
+      dryRun: true,
+      ci: false,
+      agent: false,
+    });
+
+    expect(summary.commands).toContain(command);
+  });
+
+  it('installs agent skills with the detected local DriftLock command', async () => {
+    const root = await tempProject();
+    await writePackage(root);
+    await mkdir(path.join(root, 'src'), { recursive: true });
+
+    await installProject({
+      root,
+      source: 'src',
+      packageManager: 'npm',
+      agent: 'openai',
+      ci: false,
+      installDependencies: false,
+    });
+
+    const skill = await readFile(path.join(root, '.agents/skills/drift-safe-edit/SKILL.md'), 'utf8');
+    expect(skill).toContain('npm exec drift-lock -- context --task "<user prompt>"');
+    expect(skill).toContain('npm exec drift-lock -- check');
+  });
+
+  it('runs install dry-run without prompting in non-TTY execution', async () => {
+    await buildCore();
+    const root = await tempProject();
+    await writePackage(root);
+
+    const result = await runCli(['install', '--root', root, '--dry-run']);
+
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain('DriftLock install dry run.');
+    expect(result.stdout).toContain('npm install -D @drift-lock/cli @drift-lock/eslint-plugin');
+    expect(result.stdout).not.toContain('Package manager');
+  });
+
   it('installs managed project files idempotently without dependency install when disabled', async () => {
     const root = await tempProject();
     await writePackage(root);

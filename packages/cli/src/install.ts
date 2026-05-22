@@ -92,7 +92,7 @@ export async function installProject(options: InstallProjectOptions): Promise<In
     if (dryRun) {
       summary.commands.push(`drift-lock skills install --provider ${options.agent}`);
     } else {
-      const installed = await installSkills({ provider: options.agent, root, driftCommand: 'npx --yes @drift-lock/cli', force });
+      const installed = await installSkills({ provider: options.agent, root, driftCommand: driftCommand(packageManager), force });
       for (const skill of installed) summary.created.push(path.relative(root, skill.path).split(path.sep).join('/'));
     }
   }
@@ -111,7 +111,7 @@ async function ensurePackageJsonExists(root: string): Promise<void> {
   }
 }
 
-async function detectPackageManager(root: string): Promise<PackageManager> {
+export async function detectPackageManager(root: string): Promise<PackageManager> {
   if (await exists(path.join(root, 'pnpm-lock.yaml'))) return 'pnpm';
   if ((await exists(path.join(root, 'bun.lock'))) || (await exists(path.join(root, 'bun.lockb')))) return 'bun';
   if (await exists(path.join(root, 'yarn.lock'))) return 'yarn';
@@ -119,7 +119,7 @@ async function detectPackageManager(root: string): Promise<PackageManager> {
   return 'npm';
 }
 
-async function detectSource(root: string): Promise<string> {
+export async function detectSource(root: string): Promise<string> {
   for (const candidate of ['src', 'app', 'pages']) {
     if (await exists(path.join(root, candidate))) return candidate;
   }
@@ -287,6 +287,13 @@ function packageInstallCommand(packageManager: PackageManager): string[] {
   if (packageManager === 'yarn') return ['yarn', 'add', '-D', ...packageNames];
   if (packageManager === 'bun') return ['bun', 'add', '-d', ...packageNames];
   return ['npm', 'install', '-D', ...packageNames];
+}
+
+function driftCommand(packageManager: PackageManager): string {
+  if (packageManager === 'npm') return 'npm exec drift-lock --';
+  if (packageManager === 'pnpm') return 'pnpm exec drift-lock';
+  if (packageManager === 'bun') return 'bunx drift-lock';
+  return 'yarn drift-lock';
 }
 
 function contextCommandNote(packageManager: PackageManager): string {

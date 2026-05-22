@@ -112,9 +112,9 @@ npm view @drift-lock/eslint-plugin version dist-tags
 Smoke test:
 
 ```bash
-npx --yes @drift-lock/cli --help
-npx --yes @drift-lock/cli skills list
-npx --yes @drift-lock/cli install --dry-run
+npx --yes @drift-lock/cli@latest --help
+npx --yes @drift-lock/cli@latest skills list
+npx --yes @drift-lock/cli@latest install --dry-run
 ```
 
 ## P2 - CI Release
@@ -206,8 +206,8 @@ npm view @drift-lock/eslint-plugin version dist-tags
 Smoke test:
 
 ```bash
-npx --yes @drift-lock/cli --help
-npx --yes @drift-lock/cli skills list
+npx --yes @drift-lock/cli@latest --help
+npx --yes @drift-lock/cli@latest skills list
 ```
 
 ## Notes
