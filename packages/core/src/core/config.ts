@@ -19,6 +19,16 @@ llm:
 */
 export const defaultConfigPath = '.drift/config.json';
 
+export type DriftConfigInput = {
+  version: 1;
+  source: DriftSource;
+  index: string;
+  requireContracts?: string[];
+  adoption?: {
+    mode: DriftAdoptionMode;
+  };
+};
+
 export type DriftConfig = {
   version: 1;
   source: DriftSource;
@@ -49,7 +59,7 @@ export async function readDriftConfig(root: string, input = defaultConfigPath): 
   }
 }
 
-export async function writeDriftConfig(root: string, config: DriftConfig = defaultDriftConfig, output = defaultConfigPath): Promise<void> {
+export async function writeDriftConfig(root: string, config: DriftConfigInput = defaultDriftConfig, output = defaultConfigPath): Promise<void> {
   const absoluteOutput = path.resolve(root, output);
   await mkdir(path.dirname(absoluteOutput), { recursive: true });
   await writeFile(absoluteOutput, `${JSON.stringify(config, null, 2)}\n`, 'utf8');
@@ -60,7 +70,7 @@ function validateConfig(value: unknown, file: string): DriftConfig {
     throw new Error(`Invalid DriftLock config at "${file}".`);
   }
 
-  const config = value as Partial<DriftConfig>;
+  const config = value as Partial<DriftConfigInput>;
   if (config.version !== 1 || !isValidSource(config.source) || typeof config.index !== 'string') {
     throw new Error(`Invalid DriftLock config at "${file}".`);
   }

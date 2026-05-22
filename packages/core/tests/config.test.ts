@@ -18,6 +18,21 @@ describe('drift config', () => {
 
     await writeDriftConfig(root, {
       version: 1,
+      source: 'src',
+      index: '.drift/contracts.generated.json',
+      requireContracts: [],
+    });
+
+    await expect(readDriftConfig(root)).resolves.toEqual({
+      version: 1,
+      source: 'src',
+      index: '.drift/contracts.generated.json',
+      requireContracts: [],
+      adoption: { mode: 'enforce' },
+    });
+
+    await writeDriftConfig(root, {
+      version: 1,
       source: 'app',
       index: '.drift/custom.generated.json',
       requireContracts: ['app/**/*.ts'],
