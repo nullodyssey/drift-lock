@@ -1,0 +1,4 @@
+interface:
+  display_name: "Drift Release"
+  short_description: "Prepare this repo release flow"
+  default_prompt: "Use $drift-release to prepare this repository release commit, tag, version bump, and push commands."
