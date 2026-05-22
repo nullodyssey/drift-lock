@@ -22,6 +22,17 @@ DriftLock makes those rules explicit and checkable:
 DriftLock does not replace tests or code review. It adds a deterministic layer
 for the local product and engineering intent that agents often miss.
 
+## Dogfooding
+
+DriftLock is developed under the same constraints it creates for other
+AI-assisted TypeScript projects. This repository uses its own contracts,
+committed index, CI checks, and agent-facing workflows so product friction is
+discovered here before it reaches users.
+
+See [docs/dogfood.md](./docs/dogfood.md) for the public dogfooding philosophy
+and the target state for making this repository DriftLock's most complete
+practical demo.
+
 ## Install
 
 DriftLock requires Node.js 22 or newer.
