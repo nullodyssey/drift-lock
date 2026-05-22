@@ -393,6 +393,23 @@ describe('drift-lock coverage command', () => {
     expect(result.stderr).toContain('DRIFT015');
     expect(result.stderr).toContain('src/features/billing/actions.ts');
   });
+
+  it('reads multiple source directories from config', async () => {
+    await buildCore();
+    const root = await tempProject();
+    await mkdir(path.join(root, 'packages/core/src'), { recursive: true });
+    await mkdir(path.join(root, 'packages/cli/src'), { recursive: true });
+    await writeFile(path.join(root, 'packages/core/src/actions.ts'), validUsageSource('core.actions'), 'utf8');
+    await writeFile(path.join(root, 'packages/cli/src/cli.ts'), validUsageSource('cli.actions').replaceAll('billing', 'cli'), 'utf8');
+    await writeDriftConfigFile(root, [], ['packages/core/src', 'packages/cli/src']);
+
+    const result = await runCli(['coverage', '--json', '--root', root]);
+    const json = JSON.parse(result.stdout) as { coverage: Record<string, any> };
+
+    expect(result.code).toBe(0);
+    expect(json.coverage.contracts.total).toBe(2);
+    expect(json.coverage.files.source).toBe(2);
+  });
 });
 
 describe('drift-lock changed workflow commands', () => {
@@ -660,11 +677,11 @@ async function writePackage(root: string): Promise<void> {
   );
 }
 
-async function writeDriftConfigFile(root: string, requireContracts: string[]): Promise<void> {
+async function writeDriftConfigFile(root: string, requireContracts: string[], source: string | string[] = 'src'): Promise<void> {
   await mkdir(path.join(root, '.drift'), { recursive: true });
   await writeFile(
     path.join(root, '.drift/config.json'),
-    `${JSON.stringify({ version: 1, source: 'src', index: '.drift/contracts.generated.json', requireContracts }, null, 2)}\n`,
+    `${JSON.stringify({ version: 1, source, index: '.drift/contracts.generated.json', requireContracts }, null, 2)}\n`,
     'utf8',
   );
 }

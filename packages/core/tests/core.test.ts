@@ -10,6 +10,7 @@ import { explainContracts, formatExplanations } from '@drift-lock/core';
 import { getCoverage } from '@drift-lock/core';
 import { renderContext, renderTaskContext } from '@drift-lock/core';
 import { extractContracts, extractContractsFromSource } from '@drift-lock/core';
+import { discoverSourceFiles } from '@drift-lock/core';
 import { isValidContractId, readDriftConfig, writeDriftConfig } from '@drift-lock/core';
 import { toIndex, writeIndex } from '@drift-lock/core';
 
@@ -38,6 +39,24 @@ describe('drift v1 core', () => {
     expect(result.errors).toEqual([]);
     expect(result.contracts).toHaveLength(1);
     expect(result.contracts[0]?.id).toBe('billing.create-checkout-session');
+  });
+
+  it('ignores drift-like blocks inside strings', () => {
+    const result = extractContractsFromSource(
+      'src/install.ts',
+      `const template = \`/* @drift
+version: 1
+id: billing.create-checkout-session
+scope: declaration
+stability: locked
+intent: Create a checkout session from pricing.
+*/
+export function createCheckoutSession() {}
+\`;
+`,
+    );
+
+    expect(result).toEqual({ contracts: [], errors: [] });
   });
 
   it('returns schema errors for unknown fields and missing required fields', () => {
@@ -107,9 +126,23 @@ if (true) {}
       index: '.drift/custom.generated.json',
       requireContracts: ['app/**/*.ts'],
     });
+
+    await writeDriftConfig(root, {
+      version: 1,
+      source: ['packages/core/src', 'packages/cli/src'],
+      index: '.drift/contracts.generated.json',
+      requireContracts: ['packages/core/src/**/*.ts'],
+    });
+
+    await expect(readDriftConfig(root)).resolves.toEqual({
+      version: 1,
+      source: ['packages/core/src', 'packages/cli/src'],
+      index: '.drift/contracts.generated.json',
+      requireContracts: ['packages/core/src/**/*.ts'],
+    });
   });
 
-  it('rejects invalid requireContracts config values', async () => {
+  it('rejects invalid config values', async () => {
     const root = await createProject({});
     await mkdir(path.join(root, '.drift'), { recursive: true });
     await writeFile(
@@ -119,6 +152,27 @@ if (true) {}
     );
 
     await expect(readDriftConfig(root)).rejects.toThrow(/Invalid DriftLock config/);
+
+    await writeFile(
+      path.join(root, '.drift/config.json'),
+      JSON.stringify({ version: 1, source: [], index: '.drift/contracts.generated.json', requireContracts: [] }),
+      'utf8',
+    );
+
+    await expect(readDriftConfig(root)).rejects.toThrow(/Invalid DriftLock config/);
+  });
+
+  it('discovers source files from multiple source directories', async () => {
+    const root = await createProject({
+      'packages/core/src/index.ts': 'export const core = true;\n',
+      'packages/core/tests/core.test.ts': 'export const test = true;\n',
+      'packages/cli/src/cli.ts': 'export const cli = true;\n',
+    });
+
+    await expect(discoverSourceFiles(root, ['packages/core/src', 'packages/cli/src', 'packages/core/src'])).resolves.toEqual([
+      'packages/cli/src/cli.ts',
+      'packages/core/src/index.ts',
+    ]);
   });
 
   it('detects missing ssot usage', async () => {

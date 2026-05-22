@@ -2,12 +2,28 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import ts from 'typescript';
 import { parseDocument } from 'yaml';
-import type { DriftAnchor, DriftError, DriftExtractedContract } from '../types.js';
+import type { DriftAnchor, DriftError, DriftExtractedContract, DriftSource } from '../types.js';
 import { driftError } from './errors.js';
 import { discoverSourceFiles, normalizePath } from './files.js';
 import { bodyHash, contentHash } from './hash.js';
 import { validateContractObject } from './validator.js';
 
+/* @drift
+version: 1
+id: core.extractor
+scope: file
+stability: locked
+
+intent: >
+  Extract valid @drift contracts from TypeScript source while reporting schema,
+  duplicate-id, and anchoring errors deterministically.
+
+llm:
+  must_not_change:
+    - Only real TypeScript comments may be interpreted as Drift contracts.
+    - Contract extraction must continue collecting errors across files.
+    - Contract ordering must remain deterministic for generated indexes.
+*/
 type ContractBlock = {
   body: string;
   raw: string;
@@ -19,7 +35,7 @@ type ContractBlock = {
 
 export type ExtractOptions = {
   root: string;
-  sourceDir?: string;
+  sourceDir?: DriftSource;
   files?: string[];
 };
 
@@ -103,23 +119,29 @@ export function extractContractsFromSource(
 
 function findContractBlocks(text: string): ContractBlock[] {
   const blocks: ContractBlock[] = [];
-  // The strict opening marker avoids accidentally treating generic comments or
-  // JSDoc as contracts. CRLF is accepted so Windows checkouts do not hide them.
-  const pattern = /\/\* @drift\r?\n([\s\S]*?)\*\//g;
-  let match: RegExpExecArray | null;
+  const sourceFile = ts.createSourceFile('drift.ts', text, ts.ScriptTarget.Latest, true);
+  const seen = new Set<string>();
 
-  while ((match = pattern.exec(text))) {
-    const raw = match[0];
-    const start = match.index;
-    const end = start + raw.length;
-    const position = lineColumnAt(text, start);
-    blocks.push({
-      body: match[1] ?? '',
-      raw,
-      start,
-      end,
-      line: position.line,
-      column: position.column,
+  for (const statement of sourceFile.statements) {
+    ts.forEachLeadingCommentRange(text, statement.pos, (start, end, kind) => {
+      if (kind !== ts.SyntaxKind.MultiLineCommentTrivia) return;
+      const key = `${start}:${end}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      const raw = text.slice(start, end);
+      // The strict opening marker avoids accidentally treating generic comments or
+      // JSDoc as contracts. CRLF is accepted so Windows checkouts do not hide them.
+      const body = raw.match(/^\/\* @drift\r?\n([\s\S]*?)\*\/$/)?.[1];
+      if (body === undefined) return;
+      const position = lineColumnAt(text, start);
+      blocks.push({
+        body,
+        raw,
+        start,
+        end,
+        line: position.line,
+        column: position.column,
+      });
     });
   }
 

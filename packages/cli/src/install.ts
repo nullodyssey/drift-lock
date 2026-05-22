@@ -11,6 +11,22 @@ import {
 } from '@drift-lock/core';
 import { installSkills, type SkillProvider } from './skills.js';
 
+/* @drift
+version: 1
+id: cli.install-project
+scope: file
+stability: locked
+
+intent: >
+  Install DriftLock into a target project by creating managed config, scripts,
+  dependency instructions, optional ESLint config, CI, skills, and examples.
+
+llm:
+  must_not_change:
+    - Dry runs must report planned changes without writing project files.
+    - Managed files must not overwrite existing files unless force is enabled.
+    - Installer-generated projects must keep using a simple single-source config.
+*/
 export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
 export type CiProvider = 'github';
 

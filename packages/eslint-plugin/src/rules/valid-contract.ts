@@ -1,6 +1,21 @@
 import { extractContractsFromSource } from '@drift-lock/core';
 import { getRuleOptions, relativeFilename, reportDriftError } from '../utils.js';
 
+/* @drift
+version: 1
+id: eslint.valid-contract-rule
+scope: file
+stability: locked
+
+intent: >
+  Report Drift contract syntax, schema, and anchoring errors through ESLint for
+  the file currently being linted.
+
+llm:
+  must_not_change:
+    - The rule must report every extractor error for the current file.
+    - Filenames must be normalized relative to the configured root.
+*/
 export const validContractRule = {
   meta: {
     type: 'problem',

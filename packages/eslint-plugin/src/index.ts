@@ -3,6 +3,22 @@ import { ssotFlowRule } from './rules/ssot-flow.js';
 import { ssotUsageRule } from './rules/ssot-usage.js';
 import { validContractRule } from './rules/valid-contract.js';
 
+/* @drift
+version: 1
+id: eslint.surface
+scope: file
+stability: locked
+
+intent: >
+  Publish the DriftLock ESLint plugin rule map and recommended flat-config
+  preset under the drift-lock namespace.
+
+llm:
+  must_not_change:
+    - The recommended preset must enable every exported rule as an error.
+    - Rule names must stay stable for downstream ESLint configs.
+    - The plugin object must reference itself in the recommended config.
+*/
 type DriftPlugin = {
   rules: {
     'valid-contract': typeof validContractRule;

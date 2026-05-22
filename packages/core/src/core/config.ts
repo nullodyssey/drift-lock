@@ -1,12 +1,27 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import type { DriftSource } from '../types.js';
 import { defaultIndexPath } from './index-file.js';
 
+/* @drift
+version: 1
+id: core.config
+scope: file
+stability: locked
+
+intent: >
+  Define and validate the DriftLock project config schema used by every CLI command.
+
+llm:
+  must_not_change:
+    - Preserve default config compatibility for projects without .drift/config.json.
+    - Keep config validation strict so ignored fields cannot look enforceable.
+*/
 export const defaultConfigPath = '.drift/config.json';
 
 export type DriftConfig = {
   version: 1;
-  source: string;
+  source: DriftSource;
   index: string;
   requireContracts: string[];
 };
@@ -42,11 +57,11 @@ function validateConfig(value: unknown, file: string): DriftConfig {
   }
 
   const config = value as Partial<DriftConfig>;
-  if (config.version !== 1 || typeof config.source !== 'string' || typeof config.index !== 'string') {
+  if (config.version !== 1 || !isValidSource(config.source) || typeof config.index !== 'string') {
     throw new Error(`Invalid DriftLock config at "${file}".`);
   }
 
-  if (!config.source.trim() || !config.index.trim()) {
+  if (!config.index.trim()) {
     throw new Error(`Invalid DriftLock config at "${file}".`);
   }
 
@@ -61,8 +76,19 @@ function validateConfig(value: unknown, file: string): DriftConfig {
 
   return {
     version: 1,
-    source: config.source,
+    source: normalizeSource(config.source),
     index: config.index,
     requireContracts: config.requireContracts?.map((pattern) => pattern.trim()) ?? [],
   };
+}
+
+function isValidSource(value: unknown): value is DriftSource {
+  if (typeof value === 'string') return value.trim().length > 0;
+  if (!Array.isArray(value) || value.length === 0) return false;
+  return value.every((source) => typeof source === 'string' && source.trim().length > 0);
+}
+
+function normalizeSource(source: DriftSource): DriftSource {
+  if (typeof source === 'string') return source.trim();
+  return source.map((entry) => entry.trim());
 }

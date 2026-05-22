@@ -29,6 +29,22 @@ import {
 } from './install.js';
 import { installSkills, listBundledSkills, type SkillProvider } from './skills.js';
 
+/* @drift
+version: 1
+id: cli.command-surface
+scope: file
+stability: locked
+
+intent: >
+  Expose the DriftLock command surface for install, extraction, context, checks,
+  coverage, diffs, explanations, acceptance, and bundled skills.
+
+llm:
+  must_not_change:
+    - Commands must read .drift/config.json before falling back to defaults.
+    - Extract must remain the only command that writes the committed contract index.
+    - --git-base must only be accepted together with --changed on check.
+*/
 const program = new Command();
 
 program.name('drift-lock').description('Contract anti LLM-drift CLI').version('0.1.0');

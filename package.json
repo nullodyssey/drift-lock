@@ -10,9 +10,16 @@
   "scripts": {
     "build": "pnpm -r run build",
     "check": "pnpm -r run check",
-    "test": "pnpm --filter @drift-lock/core run build && pnpm -r run test"
+    "test": "pnpm --filter @drift-lock/core run build && pnpm -r run test",
+    "drift-lock:build": "pnpm --filter @drift-lock/core run build && pnpm --filter @drift-lock/cli run build",
+    "drift-lock:extract": "pnpm drift-lock:build && drift-lock extract",
+    "drift-lock:check": "pnpm drift-lock:build && drift-lock check",
+    "drift-lock:coverage": "pnpm drift-lock:build && drift-lock coverage",
+    "drift-lock:diff": "pnpm drift-lock:build && drift-lock diff --summary",
+    "drift-lock:context": "pnpm drift-lock:build && drift-lock context"
   },
   "devDependencies": {
+    "@drift-lock/cli": "workspace:*",
     "@types/node": "^24.10.1",
     "@typescript-eslint/parser": "^8.50.0",
     "eslint": "^9.39.2",

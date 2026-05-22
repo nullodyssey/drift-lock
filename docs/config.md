@@ -14,7 +14,7 @@ DriftLock reads `.drift/config.json` from the project root.
 ## Fields
 
 - `version`: config schema version. Currently `1`.
-- `source`: source directory scanned by commands when `--source` is not passed.
+- `source`: source directory, or list of source directories, scanned by commands when `--source` is not passed.
 - `index`: committed contract index used by `extract`, `check`, `diff`, and `accept`.
 - `requireContracts`: optional list of project-relative glob patterns for files that must contain at least one valid `@drift` contract.
 
@@ -31,6 +31,22 @@ Use `requireContracts` to mark critical zones that should not stay undocumented.
     "src/features/**/actions.ts",
     "src/services/**/*.ts"
   ]
+}
+```
+
+For monorepos, use an array to scan several package source roots without also
+including tests or fixtures:
+
+```json
+{
+  "version": 1,
+  "source": [
+    "packages/core/src",
+    "packages/cli/src",
+    "packages/eslint-plugin/src"
+  ],
+  "index": ".drift/contracts.generated.json",
+  "requireContracts": []
 }
 ```
 

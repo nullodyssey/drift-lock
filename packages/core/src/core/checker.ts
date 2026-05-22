@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import ts from 'typescript';
-import type { DriftContractsIndex, DriftError, DriftExtractedContract } from '../types.js';
+import type { DriftContractsIndex, DriftError, DriftExtractedContract, DriftSource } from '../types.js';
 import { diffContractSets } from './contract-diff.js';
 import { filesMatchingRequireContractPatterns, firstMatchingRequireContractPattern } from './coverage.js';
 import { driftError } from './errors.js';
@@ -12,6 +12,22 @@ import { readIndex, toIndex } from './index-file.js';
 import { moduleSpecifierCandidates } from './module-specifier.js';
 import { checkSsotFlow } from './ssot-flow.js';
 
+/* @drift
+version: 1
+id: core.checker
+scope: file
+stability: locked
+
+intent: >
+  Validate extracted Drift contracts against executable invariants, required-file
+  coverage, and locked-contract baselines.
+
+llm:
+  must_not_change:
+    - Locked contracts must compare against the committed index before passing.
+    - Required contract checks must use the configured source files.
+    - Schema extraction errors must not prevent valid contracts from being checked.
+*/
 export type CheckOptions = ExtractOptions & {
   indexPath?: string;
   changedOnly?: boolean;
@@ -57,7 +73,7 @@ export async function checkContracts(options: CheckOptions): Promise<{
 
 async function checkRequiredContracts(
   root: string,
-  sourceDir: string | undefined,
+  sourceDir: DriftSource | undefined,
   files: string[] | undefined,
   contracts: DriftExtractedContract[],
   patterns: string[],

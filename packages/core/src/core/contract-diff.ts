@@ -18,6 +18,22 @@ import { canonicalize } from './hash.js';
 import { readIndex, toIndex } from './index-file.js';
 import { isValidContractId } from './validator.js';
 
+/* @drift
+version: 1
+id: core.contract-diff
+scope: file
+stability: locked
+
+intent: >
+  Compare current Drift contracts with the committed index and format reviewer
+  summaries for intentional contract changes.
+
+llm:
+  must_not_change:
+    - Diff output must distinguish added, changed, and removed contracts.
+    - Locked contract acceptance files must require a valid contract id and reason.
+    - Git-scoped diffs must not report unrelated indexed contracts.
+*/
 export type DiffContractsOptions = ExtractOptions & {
   indexPath?: string;
   gitBase?: string;

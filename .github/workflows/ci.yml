@@ -65,3 +65,11 @@ jobs:
         run: |
           pnpm --filter next-v1 drift-lock:extract
           git diff --exit-code -- apps/next-v1/.drift/contracts.generated.json
+
+      - name: Check root DriftLock contracts
+        run: pnpm drift-lock:check
+
+      - name: Verify root DriftLock index is current
+        run: |
+          pnpm drift-lock:extract
+          git diff --exit-code -- .drift/contracts.generated.json

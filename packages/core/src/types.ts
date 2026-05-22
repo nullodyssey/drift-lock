@@ -1,5 +1,7 @@
 export type DriftContractId = string;
 
+export type DriftSource = string | string[];
+
 export type DriftScope = 'file' | 'declaration';
 
 export type DriftStability = 'draft' | 'locked';

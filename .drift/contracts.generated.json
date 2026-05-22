@@ -1,0 +1,261 @@
+{
+  "version": 1,
+  "contracts": [
+    {
+      "version": 1,
+      "id": "cli.command-surface",
+      "scope": "file",
+      "stability": "locked",
+      "intent": "Expose the DriftLock command surface for install, extraction, context, checks, coverage, diffs, explanations, acceptance, and bundled skills.",
+      "llm": {
+        "must_not_change": [
+          "Commands must read .drift/config.json before falling back to defaults.",
+          "Extract must remain the only command that writes the committed contract index.",
+          "--git-base must only be accepted together with --changed on check."
+        ]
+      },
+      "file": "packages/cli/src/cli.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:66c8f1881b14d1d39e2a02f90491d8d150515ec5b14a97f81a70a91977d6e955",
+      "bodyHash": "sha256:6da9ec36b06b404f6a69c6f83c2c07a1f33d51eaa12abe38ca2adc2fb225a9a1"
+    },
+    {
+      "version": 1,
+      "id": "cli.install-project",
+      "scope": "file",
+      "stability": "locked",
+      "intent": "Install DriftLock into a target project by creating managed config, scripts, dependency instructions, optional ESLint config, CI, skills, and examples.",
+      "llm": {
+        "must_not_change": [
+          "Dry runs must report planned changes without writing project files.",
+          "Managed files must not overwrite existing files unless force is enabled.",
+          "Installer-generated projects must keep using a simple single-source config."
+        ]
+      },
+      "file": "packages/cli/src/install.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:80b5f089d163119dce5c4922a28a5fb8a7d437534bb4f5f9b0181feaca021bb5",
+      "bodyHash": "sha256:e8022541911a519f46d6e299fc2336aa8e84e94ec60683f090ea40369e556305"
+    },
+    {
+      "version": 1,
+      "id": "cli.skills",
+      "scope": "file",
+      "stability": "locked",
+      "intent": "List and install bundled DriftLock agent skills with provider-specific file layout and command templating.",
+      "llm": {
+        "must_not_change": [
+          "Unknown requested skills must fail instead of being silently ignored.",
+          "Existing installed skills must require force before replacement.",
+          "Provider-specific filtering must preserve OpenAI, Claude, and Cursor layouts."
+        ]
+      },
+      "file": "packages/cli/src/skills.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:0565a925dad41d15426b56f09e0aa833ff2f756fe72e932e82e93acce7e3502e",
+      "bodyHash": "sha256:8d49b952feea0d35792ecf967fedf5dda4c2441e9e365f93ce792fc8df92f545"
+    },
+    {
+      "version": 1,
+      "id": "core.checker",
+      "scope": "file",
+      "stability": "locked",
+      "intent": "Validate extracted Drift contracts against executable invariants, required-file coverage, and locked-contract baselines.",
+      "llm": {
+        "must_not_change": [
+          "Locked contracts must compare against the committed index before passing.",
+          "Required contract checks must use the configured source files.",
+          "Schema extraction errors must not prevent valid contracts from being checked."
+        ]
+      },
+      "file": "packages/core/src/core/checker.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:f5af2c827114129166acdb0d93e8b7d5376ccf80ea53ad968983028d6082b800",
+      "bodyHash": "sha256:302b9b757d17beb6254bfb6f17587e5cb5474acc18fe00a2e9f0989e7f0a3c04"
+    },
+    {
+      "version": 1,
+      "id": "core.config",
+      "scope": "file",
+      "stability": "locked",
+      "intent": "Define and validate the DriftLock project config schema used by every CLI command.",
+      "llm": {
+        "must_not_change": [
+          "Preserve default config compatibility for projects without .drift/config.json.",
+          "Keep config validation strict so ignored fields cannot look enforceable."
+        ]
+      },
+      "file": "packages/core/src/core/config.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:71bfa5fa220b3f6d0b34a05ac24c74c699add99c7c4146bd05a083c395581eb7",
+      "bodyHash": "sha256:3c73edf860bbce7abfd0d346c8ac6557d6a5fb069bf0869ba063f3ad13e69498"
+    },
+    {
+      "version": 1,
+      "id": "core.context-renderer",
+      "scope": "file",
+      "stability": "locked",
+      "intent": "Render concise Drift contract context for a target file or task so agents can plan edits against declared constraints.",
+      "llm": {
+        "must_not_change": [
+          "File context must stay scoped to the requested file.",
+          "Task context must rank contracts from ids, files, intents, SSOT, invariants, and LLM notes.",
+          "Planning notes must continue telling agents to run diff and check after edits."
+        ]
+      },
+      "file": "packages/core/src/core/context.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:75165970f4781afa19bb3c9b1303cfcfa39c0805527f6ae0de694febe4e46ecb",
+      "bodyHash": "sha256:7b22b7f92d5d34e8e8e6ab1b7e581aa474cda6b00d7afbababc71affd9867cd4"
+    },
+    {
+      "version": 1,
+      "id": "core.contract-diff",
+      "scope": "file",
+      "stability": "locked",
+      "intent": "Compare current Drift contracts with the committed index and format reviewer summaries for intentional contract changes.",
+      "llm": {
+        "must_not_change": [
+          "Diff output must distinguish added, changed, and removed contracts.",
+          "Locked contract acceptance files must require a valid contract id and reason.",
+          "Git-scoped diffs must not report unrelated indexed contracts."
+        ]
+      },
+      "file": "packages/core/src/core/contract-diff.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:ad2957eda58f6bc48cd229f491c75de641903ef88cc6747de078447aec62b927",
+      "bodyHash": "sha256:35458de52e4e39dc322c75bef9434c026b79ae37d83313b50a3ed71bb292b744"
+    },
+    {
+      "version": 1,
+      "id": "core.extractor",
+      "scope": "file",
+      "stability": "locked",
+      "intent": "Extract valid @drift contracts from TypeScript source while reporting schema, duplicate-id, and anchoring errors deterministically.",
+      "llm": {
+        "must_not_change": [
+          "Only real TypeScript comments may be interpreted as Drift contracts.",
+          "Contract extraction must continue collecting errors across files.",
+          "Contract ordering must remain deterministic for generated indexes."
+        ]
+      },
+      "file": "packages/core/src/core/extractor.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:5ff0323bf31b9b17ca4e416083021cba48aa2bb30193b803b16c9fb76691846c",
+      "bodyHash": "sha256:a4522abe172576fa2f803dd348747150670d8b171edf8bb7081639038a2db9dd"
+    },
+    {
+      "version": 1,
+      "id": "eslint.surface",
+      "scope": "file",
+      "stability": "locked",
+      "intent": "Publish the DriftLock ESLint plugin rule map and recommended flat-config preset under the drift-lock namespace.",
+      "llm": {
+        "must_not_change": [
+          "The recommended preset must enable every exported rule as an error.",
+          "Rule names must stay stable for downstream ESLint configs.",
+          "The plugin object must reference itself in the recommended config."
+        ]
+      },
+      "file": "packages/eslint-plugin/src/index.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:63ed9b99aaed6feac1fc4ea727cfcd46f697ecc607c57966c5f07d902263b74e",
+      "bodyHash": "sha256:5be87e2e7c8f5dc4228bc349705b7f1cea66fa1e75eefe81dffeda45c37963d2"
+    },
+    {
+      "version": 1,
+      "id": "eslint.no-locked-contract-change-rule",
+      "scope": "file",
+      "stability": "locked",
+      "intent": "Report silent edits to locked Drift contracts by comparing the current file against the committed Drift index during ESLint runs.",
+      "llm": {
+        "must_not_change": [
+          "Missing indexes must be ignored so projects can lint before extraction.",
+          "Invalid indexes must be reported as lint failures.",
+          "Locked-change checks must stay scoped to the linted file."
+        ]
+      },
+      "file": "packages/eslint-plugin/src/rules/no-locked-contract-change.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:ddcbf2f957a782f3b8d31e2ef66080744b2c1cfaeb6f7fb808263c7937ae19c7",
+      "bodyHash": "sha256:3485ece8860e87e35f8cf184aa5a23c2caa0ee17c8f47d65fe488ecd8425ebe8"
+    },
+    {
+      "version": 1,
+      "id": "eslint.ssot-flow-rule",
+      "scope": "file",
+      "stability": "locked",
+      "intent": "Report Drift SSOT flow violations through ESLint for contracts extracted from the file currently being linted.",
+      "llm": {
+        "must_not_change": [
+          "The rule must only evaluate contracts extracted from the current file.",
+          "Every SSOT flow error must be forwarded through the shared reporter."
+        ]
+      },
+      "file": "packages/eslint-plugin/src/rules/ssot-flow.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:70d94898ab7cc208ad16518f2e6ac268243fd5cae811ddeac416cc69264dc05e",
+      "bodyHash": "sha256:da5b73180893f5ba459d9e4a8479466077f3f8c9232561bb8607c7fac7dce5e1"
+    },
+    {
+      "version": 1,
+      "id": "eslint.ssot-usage-rule",
+      "scope": "file",
+      "stability": "locked",
+      "intent": "Report Drift SSOT usage violations through ESLint for contracts extracted from the file currently being linted.",
+      "llm": {
+        "must_not_change": [
+          "The rule must only evaluate contracts extracted from the current file.",
+          "Every SSOT usage error must be forwarded through the shared reporter."
+        ]
+      },
+      "file": "packages/eslint-plugin/src/rules/ssot-usage.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:4685f1213717a2d1f23ac87318bb1cfac8d2014ecd3ff297cd9425f6e295161a",
+      "bodyHash": "sha256:8e66bca6e83e5f775ead91677a5db800c5869c80b7a88abbd4d90ad0f765ae90"
+    },
+    {
+      "version": 1,
+      "id": "eslint.valid-contract-rule",
+      "scope": "file",
+      "stability": "locked",
+      "intent": "Report Drift contract syntax, schema, and anchoring errors through ESLint for the file currently being linted.",
+      "llm": {
+        "must_not_change": [
+          "The rule must report every extractor error for the current file.",
+          "Filenames must be normalized relative to the configured root."
+        ]
+      },
+      "file": "packages/eslint-plugin/src/rules/valid-contract.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:da9ebd392ff1ebf55ad734bc4eaf9daab6691ea0b5c8f1e222adf50d6f5137a6",
+      "bodyHash": "sha256:76160e51288d456443a411278fc930a6f96b7893541ab11cbd70990bd0281675"
+    }
+  ]
+}

@@ -1,11 +1,27 @@
 import path from 'node:path';
-import type { DriftError, DriftExtractedContract, DriftInvariant } from '../types.js';
+import type { DriftError, DriftExtractedContract, DriftInvariant, DriftSource } from '../types.js';
 import { extractContracts } from './extractor.js';
 import { normalizePath } from './files.js';
 
+/* @drift
+version: 1
+id: core.context-renderer
+scope: file
+stability: locked
+
+intent: >
+  Render concise Drift contract context for a target file or task so agents can
+  plan edits against declared constraints.
+
+llm:
+  must_not_change:
+    - File context must stay scoped to the requested file.
+    - Task context must rank contracts from ids, files, intents, SSOT, invariants, and LLM notes.
+    - Planning notes must continue telling agents to run diff and check after edits.
+*/
 export type RenderTaskContextOptions = {
   root: string;
-  sourceDir?: string;
+  sourceDir?: DriftSource;
   task: string;
 };
 

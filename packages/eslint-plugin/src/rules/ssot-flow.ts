@@ -1,6 +1,21 @@
 import { checkSsotFlow, extractContractsFromSource } from '@drift-lock/core';
 import { getRuleOptions, relativeFilename, reportDriftError } from '../utils.js';
 
+/* @drift
+version: 1
+id: eslint.ssot-flow-rule
+scope: file
+stability: locked
+
+intent: >
+  Report Drift SSOT flow violations through ESLint for contracts extracted from
+  the file currently being linted.
+
+llm:
+  must_not_change:
+    - The rule must only evaluate contracts extracted from the current file.
+    - Every SSOT flow error must be forwarded through the shared reporter.
+*/
 export const ssotFlowRule = {
   meta: {
     type: 'problem',

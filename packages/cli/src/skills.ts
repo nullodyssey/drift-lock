@@ -2,6 +2,22 @@ import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+/* @drift
+version: 1
+id: cli.skills
+scope: file
+stability: locked
+
+intent: >
+  List and install bundled DriftLock agent skills with provider-specific file
+  layout and command templating.
+
+llm:
+  must_not_change:
+    - Unknown requested skills must fail instead of being silently ignored.
+    - Existing installed skills must require force before replacement.
+    - Provider-specific filtering must preserve OpenAI, Claude, and Cursor layouts.
+*/
 export type SkillProvider = 'openai' | 'claude' | 'cursor';
 
 export type InstallSkillsOptions = {

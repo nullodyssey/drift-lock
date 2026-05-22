@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      '@drift-lock/cli':
+        specifier: workspace:*
+        version: link:packages/cli
       '@types/node':
         specifier: ^24.10.1
         version: 24.12.4

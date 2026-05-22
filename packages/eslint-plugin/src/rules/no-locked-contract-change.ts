@@ -3,6 +3,22 @@ import path from 'node:path';
 import { checkLockedChangesForFile, type DriftContractsIndex, extractContractsFromSource } from '@drift-lock/core';
 import { getRuleOptions, relativeFilename, reportDriftError } from '../utils.js';
 
+/* @drift
+version: 1
+id: eslint.no-locked-contract-change-rule
+scope: file
+stability: locked
+
+intent: >
+  Report silent edits to locked Drift contracts by comparing the current file
+  against the committed Drift index during ESLint runs.
+
+llm:
+  must_not_change:
+    - Missing indexes must be ignored so projects can lint before extraction.
+    - Invalid indexes must be reported as lint failures.
+    - Locked-change checks must stay scoped to the linted file.
+*/
 type IndexReadResult =
   | { status: 'missing' }
   | { status: 'loaded'; index: DriftContractsIndex }
