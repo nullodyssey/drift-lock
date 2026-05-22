@@ -18,6 +18,7 @@ DriftLock reads `.drift/config.json` from the project root.
 
 - `version`: config schema version. Currently `1`.
 - `source`: source directory, or list of source directories, scanned by commands when `--source` is not passed.
+  Source discovery applies the project ignore file described below.
 - `index`: committed contract index used by `extract`, `check`, `diff`, and `accept`.
 - `requireContracts`: optional list of project-relative glob patterns for files that must contain at least one valid `@drift` contract.
 - `adoption.mode`: optional mode for required-contract gaps: `audit`, `warn`, or `enforce`. Defaults to `enforce`.
@@ -62,6 +63,22 @@ Supported pattern syntax:
 - `*` matches within one path segment.
 - `**` matches across path segments.
 - paths are normalized as project-relative POSIX paths.
+
+## Source Discovery Ignores
+
+When DriftLock discovers files from `source`, it applies one project-root ignore
+file:
+
+- `.driftignore` when present.
+- `.gitignore` otherwise.
+
+`.driftignore` takes priority over `.gitignore`; the files are not merged. Use
+`.driftignore` when DriftLock should scan a different set of source files than
+Git tracks.
+
+DriftLock always ignores internal state, build, and dependency directories even
+if an ignore file tries to re-include them: `.git`, `.drift`, `.next`,
+`dist`, and `node_modules`.
 
 When a source file matches `requireContracts` but has no valid `@drift` contract,
 `drift-lock check` reports `DRIFT015_REQUIRED_CONTRACT_MISSING`.

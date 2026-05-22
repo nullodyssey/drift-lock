@@ -1,22 +1,26 @@
-import { readdir } from 'node:fs/promises';
+import ignore from 'ignore';
+import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { DriftSource } from '../types.js';
 
-const ignoredDirs = new Set(['.git', '.next', '.drift', 'dist', 'node_modules']);
+const alwaysIgnoredDirs = new Set(['.git', '.next', '.drift', 'dist', 'node_modules']);
+type IgnoreMatcher = ReturnType<typeof ignore>;
 
 export async function discoverSourceFiles(root: string, sourceDir: DriftSource = 'src'): Promise<string[]> {
+  const absoluteRoot = path.resolve(root);
+  const ignoreMatcher = await readProjectIgnore(absoluteRoot);
   const files = new Set<string>();
 
   for (const source of normalizeSourceDirs(sourceDir)) {
-    const start = path.join(root, source);
-    const sourceFiles = await walk(start).catch((error: NodeJS.ErrnoException) => {
+    const start = path.join(absoluteRoot, source);
+    const sourceFiles = await walk(absoluteRoot, start, ignoreMatcher).catch((error: NodeJS.ErrnoException) => {
       if (error.code === 'ENOENT') return [];
       throw error;
     });
 
     for (const file of sourceFiles) {
       if (!file.endsWith('.ts') && !file.endsWith('.tsx')) continue;
-      files.add(path.relative(root, file).split(path.sep).join('/'));
+      files.add(normalizePath(path.relative(absoluteRoot, file)));
     }
   }
 
@@ -28,21 +32,38 @@ export function normalizeSourceDirs(sourceDir: DriftSource = 'src'): string[] {
   return [...new Set(sources.map((source) => normalizePath(source.trim()).replace(/^\.\//, '').replace(/\/$/, '')).filter(Boolean))];
 }
 
-async function walk(dir: string): Promise<string[]> {
+async function walk(root: string, dir: string, ignoreMatcher: IgnoreMatcher | undefined): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true });
   const files: string[] = [];
 
   for (const entry of entries) {
-    if (entry.name.startsWith('.') && ignoredDirs.has(entry.name)) continue;
+    if (alwaysIgnoredDirs.has(entry.name)) continue;
     const fullPath = path.join(dir, entry.name);
+    const relativePath = normalizePath(path.relative(root, fullPath));
+
     if (entry.isDirectory()) {
-      if (!ignoredDirs.has(entry.name)) files.push(...(await walk(fullPath)));
+      if (ignoreMatcher?.ignores(relativePath + '/')) continue;
+      files.push(...(await walk(root, fullPath, ignoreMatcher)));
     } else if (entry.isFile()) {
+      if (ignoreMatcher?.ignores(relativePath)) continue;
       files.push(fullPath);
     }
   }
 
   return files;
+}
+
+async function readProjectIgnore(root: string): Promise<IgnoreMatcher | undefined> {
+  const content = await readOptionalFile(path.join(root, '.driftignore')) ?? await readOptionalFile(path.join(root, '.gitignore'));
+  if (!content) return undefined;
+  return ignore().add(content);
+}
+
+async function readOptionalFile(file: string): Promise<string | undefined> {
+  return readFile(file, 'utf8').catch((error: NodeJS.ErrnoException) => {
+    if (error.code === 'ENOENT') return undefined;
+    throw error;
+  });
 }
 
 export function normalizePath(file: string): string {

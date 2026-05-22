@@ -42,6 +42,7 @@
     "test": "pnpm run build && vitest run"
   },
   "dependencies": {
+    "ignore": "^7.0.5",
     "typescript": "^5.9.3",
     "yaml": "^2.8.1"
   }

@@ -281,6 +281,11 @@ DriftLock reads `.drift/config.json`:
 `source` may also be an array for monorepos that need to scan multiple package
 source roots without including tests or fixtures.
 
+Source discovery honors a project-root `.driftignore` when present; otherwise it
+falls back to `.gitignore`. The two files are not merged. DriftLock always
+ignores internal state, build, and dependency directories such as `.git`,
+`.drift`, `.next`, `dist`, and `node_modules`.
+
 `requireContracts` is optional and defaults to `[]`. When set, `drift-lock check`
 reports `DRIFT015_REQUIRED_CONTRACT_MISSING` for matching source files that do
 not contain any valid `@drift` contract. `adoption.mode` controls whether those
