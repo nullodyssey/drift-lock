@@ -59,6 +59,56 @@ export function createCheckoutSession() {}
     expect(result).toEqual({ contracts: [], errors: [] });
   });
 
+  it('extracts a file contract after imports in an import-only module', () => {
+    const result = extractContractsFromSource(
+      'src/setup.ts',
+      `import './polyfill';
+
+/* @drift
+version: 1
+id: module.side-effect-boundary
+scope: file
+stability: locked
+
+intent: >
+  Protect this import-only side-effect module contract.
+*/
+`,
+    );
+
+    expect(result.errors).toEqual([]);
+    expect(result.contracts).toHaveLength(1);
+    expect(result.contracts[0]).toMatchObject({
+      id: 'module.side-effect-boundary',
+      scope: 'file',
+      anchor: { type: 'file' },
+    });
+  });
+
+  it('extracts a file-only contract with no statements', () => {
+    const result = extractContractsFromSource(
+      'src/boundary.ts',
+      `/* @drift
+version: 1
+id: module.boundary
+scope: file
+stability: locked
+
+intent: >
+  Protect this empty module boundary contract.
+*/
+`,
+    );
+
+    expect(result.errors).toEqual([]);
+    expect(result.contracts).toHaveLength(1);
+    expect(result.contracts[0]).toMatchObject({
+      id: 'module.boundary',
+      scope: 'file',
+      anchor: { type: 'file' },
+    });
+  });
+
   it('returns schema errors for unknown fields and missing required fields', () => {
     const result = extractContractsFromSource(
       'src/example.ts',

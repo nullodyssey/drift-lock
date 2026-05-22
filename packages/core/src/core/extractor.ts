@@ -122,30 +122,36 @@ function findContractBlocks(text: string): ContractBlock[] {
   const sourceFile = ts.createSourceFile('drift.ts', text, ts.ScriptTarget.Latest, true);
   const seen = new Set<string>();
 
+  collectContractBlocksFromPosition(text, 0, seen, blocks);
   for (const statement of sourceFile.statements) {
-    ts.forEachLeadingCommentRange(text, statement.pos, (start, end, kind) => {
-      if (kind !== ts.SyntaxKind.MultiLineCommentTrivia) return;
-      const key = `${start}:${end}`;
-      if (seen.has(key)) return;
-      seen.add(key);
-      const raw = text.slice(start, end);
-      // The strict opening marker avoids accidentally treating generic comments or
-      // JSDoc as contracts. CRLF is accepted so Windows checkouts do not hide them.
-      const body = raw.match(/^\/\* @drift\r?\n([\s\S]*?)\*\/$/)?.[1];
-      if (body === undefined) return;
-      const position = lineColumnAt(text, start);
-      blocks.push({
-        body,
-        raw,
-        start,
-        end,
-        line: position.line,
-        column: position.column,
-      });
-    });
+    collectContractBlocksFromPosition(text, statement.pos, seen, blocks);
+    collectContractBlocksFromPosition(text, statement.end, seen, blocks);
   }
 
-  return blocks;
+  return blocks.sort((a, b) => a.start - b.start);
+}
+
+function collectContractBlocksFromPosition(text: string, position: number, seen: Set<string>, blocks: ContractBlock[]): void {
+  ts.forEachLeadingCommentRange(text, position, (start, end, kind) => {
+    if (kind !== ts.SyntaxKind.MultiLineCommentTrivia) return;
+    const key = `${start}:${end}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    const raw = text.slice(start, end);
+    // The strict opening marker avoids accidentally treating generic comments or
+    // JSDoc as contracts. CRLF is accepted so Windows checkouts do not hide them.
+    const body = raw.match(/^\/\* @drift\r?\n([\s\S]*?)\*\/$/)?.[1];
+    if (body === undefined) return;
+    const position = lineColumnAt(text, start);
+    blocks.push({
+      body,
+      raw,
+      start,
+      end,
+      line: position.line,
+      column: position.column,
+    });
+  });
 }
 
 function anchorContract(
