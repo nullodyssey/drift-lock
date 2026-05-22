@@ -16,11 +16,12 @@ The public CLI binary is:
 drift-lock
 ```
 
-Use Node 22 or newer:
+Use Node 22 or newer, and npm 11.5.1 or newer for Trusted Publishing:
 
 ```bash
 nvm use
 node --version
+npm --version
 ```
 
 ## P1 - First Publish

@@ -9,7 +9,8 @@ nvm use
 node --version
 ```
 
-Use Node 22 or newer for release publishing.
+Use Node 22 or newer for release publishing. The CI Trusted Publishing path
+also requires npm 11.5.1 or newer.
 
 ## Version Bump
 
