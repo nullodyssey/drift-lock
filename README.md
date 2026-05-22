@@ -260,7 +260,10 @@ DriftLock reads `.drift/config.json`:
   "requireContracts": [
     "src/features/**/actions.ts",
     "src/services/**/*.ts"
-  ]
+  ],
+  "adoption": {
+    "mode": "warn"
+  }
 }
 ```
 
@@ -268,10 +271,13 @@ DriftLock reads `.drift/config.json`:
 source roots without including tests or fixtures.
 
 `requireContracts` is optional and defaults to `[]`. When set, `drift-lock check`
-fails with `DRIFT015_REQUIRED_CONTRACT_MISSING` for matching source files that do
-not contain any valid `@drift` contract. Use `drift-lock coverage` to review
-required files that are still uncovered before turning patterns into blocking CI
-policy. See `docs/config.md` for the config reference.
+reports `DRIFT015_REQUIRED_CONTRACT_MISSING` for matching source files that do
+not contain any valid `@drift` contract. `adoption.mode` controls whether those
+required-contract gaps are reported as `audit`, `warn`, or blocking `enforce`
+diagnostics; other Drift violations remain blocking. You can also override it for
+a single check with `drift-lock check --adoption-mode warn`. Use `drift-lock coverage`
+to review required files that are still uncovered before turning patterns into
+blocking CI policy. See `docs/config.md` for the config reference.
 
 ## ESLint
 

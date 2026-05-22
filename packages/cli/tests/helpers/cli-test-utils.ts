@@ -25,11 +25,11 @@ export async function writePackage(root: string): Promise<void> {
   );
 }
 
-export async function writeDriftConfigFile(root: string, requireContracts: string[], source: string | string[] = 'src'): Promise<void> {
+export async function writeDriftConfigFile(root: string, requireContracts: string[], source: string | string[] = 'src', adoptionMode?: 'audit' | 'warn' | 'enforce'): Promise<void> {
   await mkdir(path.join(root, '.drift'), { recursive: true });
   await writeFile(
     path.join(root, '.drift/config.json'),
-    `${JSON.stringify({ version: 1, source, index: '.drift/contracts.generated.json', requireContracts }, null, 2)}\n`,
+    `${JSON.stringify({ version: 1, source, index: '.drift/contracts.generated.json', requireContracts, ...(adoptionMode ? { adoption: { mode: adoptionMode } } : {}) }, null, 2)}\n`,
     'utf8',
   );
 }

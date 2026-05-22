@@ -39,6 +39,36 @@ describe('drift-lock coverage command', () => {
     expect(result.stderr).toContain('src/features/billing/actions.ts');
   });
 
+  it('prints non-blocking required-contract diagnostics in warn and audit modes', async () => {
+    const root = await tempProject();
+    await mkdir(path.join(root, 'src/features/billing'), { recursive: true });
+    await writeFile(path.join(root, 'src/features/billing/actions.ts'), 'export const checkoutAction = true;\n', 'utf8');
+    await writeDriftConfigFile(root, ['src/features/**/actions.ts'], 'src', 'warn');
+
+    const configuredWarn = await runCli(['check', '--root', root]);
+    const auditOverride = await runCli(['check', '--root', root, '--adoption-mode', 'audit']);
+    const enforceOverride = await runCli(['check', '--root', root, '--adoption-mode', 'enforce']);
+
+    expect(configuredWarn.code).toBe(0);
+    expect(configuredWarn.stderr).toContain('WARN');
+    expect(configuredWarn.stderr).toContain('DRIFT015');
+    expect(auditOverride.code).toBe(0);
+    expect(auditOverride.stderr).toContain('INFO');
+    expect(auditOverride.stderr).toContain('DRIFT015');
+    expect(enforceOverride.code).toBe(1);
+    expect(enforceOverride.stderr).toContain('DRIFT015');
+  });
+
+  it('rejects invalid adoption mode overrides', async () => {
+    const root = await tempProject();
+    await writeDriftConfigFile(root, []);
+
+    const result = await runCli(['check', '--root', root, '--adoption-mode', 'relaxed']);
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('Unsupported adoption mode "relaxed"');
+  });
+
   it('reads multiple source directories from config', async () => {
     const root = await tempProject();
     await mkdir(path.join(root, 'packages/core/src'), { recursive: true });

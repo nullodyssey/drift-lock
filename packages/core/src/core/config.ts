@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import type { DriftSource } from '../types.js';
+import type { DriftAdoptionMode, DriftSource } from '../types.js';
 import { defaultIndexPath } from './index-file.js';
 
 /* @drift
@@ -24,6 +24,9 @@ export type DriftConfig = {
   source: DriftSource;
   index: string;
   requireContracts: string[];
+  adoption: {
+    mode: DriftAdoptionMode;
+  };
 };
 
 export const defaultDriftConfig: DriftConfig = {
@@ -31,6 +34,7 @@ export const defaultDriftConfig: DriftConfig = {
   source: 'src',
   index: defaultIndexPath,
   requireContracts: [],
+  adoption: { mode: 'enforce' },
 };
 
 export async function readDriftConfig(root: string, input = defaultConfigPath): Promise<DriftConfig> {
@@ -74,12 +78,33 @@ function validateConfig(value: unknown, file: string): DriftConfig {
     }
   }
 
+  const adoption = normalizeAdoption(config.adoption, file);
+
   return {
     version: 1,
     source: normalizeSource(config.source),
     index: config.index,
     requireContracts: config.requireContracts?.map((pattern) => pattern.trim()) ?? [],
+    adoption,
   };
+}
+
+function normalizeAdoption(value: unknown, file: string): DriftConfig['adoption'] {
+  if (value === undefined) return { mode: 'enforce' };
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error(`Invalid DriftLock config at "${file}".`);
+  }
+
+  const adoption = value as Partial<DriftConfig['adoption']>;
+  if (!isValidAdoptionMode(adoption.mode) || Object.keys(adoption).some((key) => key !== 'mode')) {
+    throw new Error(`Invalid DriftLock config at "${file}".`);
+  }
+
+  return { mode: adoption.mode };
+}
+
+function isValidAdoptionMode(value: unknown): value is DriftAdoptionMode {
+  return value === 'audit' || value === 'warn' || value === 'enforce';
 }
 
 function isValidSource(value: unknown): value is DriftSource {

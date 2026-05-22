@@ -13,6 +13,7 @@ describe('drift config', () => {
       source: 'src',
       index: '.drift/contracts.generated.json',
       requireContracts: [],
+      adoption: { mode: 'enforce' },
     });
 
     await writeDriftConfig(root, {
@@ -20,6 +21,7 @@ describe('drift config', () => {
       source: 'app',
       index: '.drift/custom.generated.json',
       requireContracts: ['app/**/*.ts'],
+      adoption: { mode: 'warn' },
     });
 
     await expect(readDriftConfig(root)).resolves.toEqual({
@@ -27,6 +29,7 @@ describe('drift config', () => {
       source: 'app',
       index: '.drift/custom.generated.json',
       requireContracts: ['app/**/*.ts'],
+      adoption: { mode: 'warn' },
     });
 
     await writeDriftConfig(root, {
@@ -34,6 +37,7 @@ describe('drift config', () => {
       source: ['packages/core/src', 'packages/cli/src'],
       index: '.drift/contracts.generated.json',
       requireContracts: ['packages/core/src/**/*.ts'],
+      adoption: { mode: 'audit' },
     });
 
     await expect(readDriftConfig(root)).resolves.toEqual({
@@ -41,6 +45,7 @@ describe('drift config', () => {
       source: ['packages/core/src', 'packages/cli/src'],
       index: '.drift/contracts.generated.json',
       requireContracts: ['packages/core/src/**/*.ts'],
+      adoption: { mode: 'audit' },
     });
   });
 
@@ -58,6 +63,14 @@ describe('drift config', () => {
     await writeFile(
       path.join(root, '.drift/config.json'),
       JSON.stringify({ version: 1, source: [], index: '.drift/contracts.generated.json', requireContracts: [] }),
+      'utf8',
+    );
+
+    await expect(readDriftConfig(root)).rejects.toThrow(/Invalid DriftLock config/);
+
+    await writeFile(
+      path.join(root, '.drift/config.json'),
+      JSON.stringify({ version: 1, source: 'src', index: '.drift/contracts.generated.json', requireContracts: [], adoption: { mode: 'relaxed' } }),
       'utf8',
     );
 

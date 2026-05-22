@@ -6,6 +6,10 @@ export type DriftScope = 'file' | 'declaration';
 
 export type DriftStability = 'draft' | 'locked';
 
+export type DriftAdoptionMode = 'audit' | 'warn' | 'enforce';
+
+export type DriftDiagnosticSeverity = 'info' | 'warning' | 'error';
+
 export type DriftSsotMap = Record<string, string>;
 
 export type DriftInvariant = {
@@ -115,6 +119,10 @@ export type DriftError = {
   line?: number;
   column?: number;
   details?: Record<string, unknown>;
+};
+
+export type DriftDiagnostic = DriftError & {
+  severity: DriftDiagnosticSeverity;
 };
 
 export type DriftExplanation = {

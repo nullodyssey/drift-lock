@@ -1,4 +1,4 @@
-import type { DriftErrorCode, DriftError } from '../types.js';
+import type { DriftDiagnostic, DriftDiagnosticSeverity, DriftErrorCode, DriftError } from '../types.js';
 
 const messages: Record<DriftErrorCode, (details: Record<string, unknown>) => string> = {
   DRIFT001_INVALID_YAML: () => 'DRIFT001: Invalid @drift YAML.',
@@ -48,11 +48,27 @@ export function driftError(
   };
 }
 
+export function toDiagnostic(error: DriftError, severity: DriftDiagnosticSeverity = 'error'): DriftDiagnostic {
+  return { ...error, severity };
+}
+
 export function formatErrors(errors: DriftError[]): string {
-  return errors
-    .map((error) => {
-      const location = error.line ? `${error.file}:${error.line}:${error.column ?? 1}` : error.file;
-      return `${location} ${error.message}`;
-    })
+  return errors.map(formatErrorLine).join('\n');
+}
+
+export function formatDiagnostics(diagnostics: DriftDiagnostic[]): string {
+  return diagnostics
+    .map((diagnostic) => `${diagnosticPrefix(diagnostic.severity)} ${formatErrorLine(diagnostic)}`)
     .join('\n');
+}
+
+function formatErrorLine(error: DriftError): string {
+  const location = error.line ? `${error.file}:${error.line}:${error.column ?? 1}` : error.file;
+  return `${location} ${error.message}`;
+}
+
+function diagnosticPrefix(severity: DriftDiagnosticSeverity): string {
+  if (severity === 'info') return 'INFO';
+  if (severity === 'warning') return 'WARN';
+  return 'ERROR';
 }

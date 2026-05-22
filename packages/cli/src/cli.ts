@@ -10,6 +10,7 @@ import {
   formatCoverageSummary,
   formatExplanations,
   extractContracts,
+  formatDiagnostics,
   formatErrors,
   getCoverage,
   readDriftConfig,
@@ -18,6 +19,7 @@ import {
   toIndex,
   writeAcceptanceFile,
   writeIndex,
+  type DriftAdoptionMode,
 } from '@drift-lock/core';
 import {
   detectPackageManager,
@@ -138,7 +140,8 @@ program
   .option('--index <file>', 'index path')
   .option('--changed', 'only validate contracts changed since the Drift index', false)
   .option('--git-base <ref>', 'limit changed checks to files changed since a Git ref')
-  .action(async (options: { root: string; source?: string; index?: string; changed: boolean; gitBase?: string }) => {
+  .option('--adoption-mode <mode>', 'required-contract adoption mode: audit, warn, or enforce')
+  .action(async (options: { root: string; source?: string; index?: string; changed: boolean; gitBase?: string; adoptionMode?: string }) => {
     if (options.gitBase && !options.changed) {
       throw new Error('Use --git-base together with --changed.');
     }
@@ -151,7 +154,10 @@ program
       changedOnly: options.changed,
       gitBase: options.gitBase,
       requireContracts: config.requireContracts,
+      adoptionMode: options.adoptionMode ? parseAdoptionMode(options.adoptionMode) : config.adoption.mode,
     });
+    const nonBlockingDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.severity !== 'error');
+    if (nonBlockingDiagnostics.length > 0) console.error(formatDiagnostics(nonBlockingDiagnostics));
     if (result.errors.length > 0) fail(result.errors);
     const filters = [options.changed ? 'changed-only filtering' : undefined, options.gitBase ? `Git base ${options.gitBase}` : undefined].filter(Boolean);
     console.log(`Checked ${result.contracts.length} @drift contract(s)${filters.length > 0 ? ` with ${filters.join(' and ')}` : ''}.`);
@@ -198,6 +204,7 @@ program
       indexPath: options.index ?? config.index,
       contractId,
       requireContracts: config.requireContracts,
+      adoptionMode: config.adoption.mode,
     });
 
     if (options.json) {
@@ -297,6 +304,11 @@ program.parseAsync().catch((error: unknown) => {
 function fail(errors: Parameters<typeof formatErrors>[0]): never {
   console.error(formatErrors(errors));
   process.exit(1);
+}
+
+function parseAdoptionMode(value: string): DriftAdoptionMode {
+  if (value === 'audit' || value === 'warn' || value === 'enforce') return value;
+  throw new Error(`Unsupported adoption mode "${value}". Expected audit, warn, or enforce.`);
 }
 
 function parseProvider(value: string): SkillProvider {

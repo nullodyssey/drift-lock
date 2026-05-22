@@ -1,10 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import ts from 'typescript';
-import type { DriftContractsIndex, DriftError, DriftExtractedContract, DriftSource } from '../types.js';
+import type { DriftAdoptionMode, DriftContractsIndex, DriftDiagnostic, DriftDiagnosticSeverity, DriftError, DriftExtractedContract, DriftSource } from '../types.js';
 import { diffContractSets } from './contract-diff.js';
 import { filesMatchingRequireContractPatterns, firstMatchingRequireContractPattern } from './coverage.js';
-import { driftError } from './errors.js';
+import { driftError, toDiagnostic } from './errors.js';
 import { extractContracts, type ExtractOptions } from './extractor.js';
 import { discoverSourceFiles } from './files.js';
 import { filterIndexByFiles, resolveGitFileScope } from './git-scope.js';
@@ -33,10 +33,12 @@ export type CheckOptions = ExtractOptions & {
   changedOnly?: boolean;
   gitBase?: string;
   requireContracts?: string[];
+  adoptionMode?: DriftAdoptionMode;
 };
 
 export async function checkContracts(options: CheckOptions): Promise<{
   contracts: DriftExtractedContract[];
+  diagnostics: DriftDiagnostic[];
   errors: DriftError[];
 }> {
   const root = path.resolve(options.root);
@@ -45,10 +47,19 @@ export async function checkContracts(options: CheckOptions): Promise<{
   const scopedIndex = gitScope && index ? filterIndexByFiles(index, gitScope.contractFiles) : index;
   const extractFiles = gitScope?.extractFiles ?? options.files;
   const extracted = await extractContracts({ ...options, files: extractFiles });
-  const errors = [...extracted.errors];
-  errors.push(...(await checkRequiredContracts(root, options.sourceDir, extractFiles, extracted.contracts, options.requireContracts ?? [])));
+  const diagnostics = extracted.errors.map((error) => toDiagnostic(error));
+  diagnostics.push(
+    ...(await checkRequiredContracts(
+      root,
+      options.sourceDir,
+      extractFiles,
+      extracted.contracts,
+      options.requireContracts ?? [],
+      options.adoptionMode ?? 'enforce',
+    )),
+  );
   if (gitScope && index) {
-    errors.push(...checkScopedDuplicateIds(extracted.contracts, index, gitScope.contractFiles));
+    diagnostics.push(...checkScopedDuplicateIds(extracted.contracts, index, gitScope.contractFiles).map((error) => toDiagnostic(error)));
   }
   const contractsToCheck = options.changedOnly
     ? changedContracts(extracted.contracts, scopedIndex, gitScope?.impactedContractIds)
@@ -58,17 +69,18 @@ export async function checkContracts(options: CheckOptions): Promise<{
   // prevent other valid contracts in the repo from being checked.
   for (const contract of contractsToCheck) {
     const text = await readFile(path.resolve(root, contract.file), 'utf8');
-    errors.push(...checkSsotUsage(contract, text));
-    errors.push(...checkSsotFlow(contract, text));
+    diagnostics.push(...checkSsotUsage(contract, text).map((error) => toDiagnostic(error)));
+    diagnostics.push(...checkSsotFlow(contract, text).map((error) => toDiagnostic(error)));
   }
 
   // Without a committed index there is no trustworthy baseline for locked
   // contracts, so V1 skips only locked-change detection.
   if (scopedIndex) {
-    errors.push(...checkLockedChanges(root, extracted.contracts, scopedIndex));
+    diagnostics.push(...checkLockedChanges(root, extracted.contracts, scopedIndex).map((error) => toDiagnostic(error)));
   }
 
-  return { contracts: extracted.contracts, errors };
+  const errors = diagnostics.filter((diagnostic) => diagnostic.severity === 'error');
+  return { contracts: extracted.contracts, diagnostics, errors };
 }
 
 async function checkRequiredContracts(
@@ -77,17 +89,28 @@ async function checkRequiredContracts(
   files: string[] | undefined,
   contracts: DriftExtractedContract[],
   patterns: string[],
-): Promise<DriftError[]> {
+  adoptionMode: DriftAdoptionMode,
+): Promise<DriftDiagnostic[]> {
   if (patterns.length === 0) return [];
   const sourceFiles = files ?? (await discoverSourceFiles(root, sourceDir));
   const filesWithContracts = new Set(contracts.map((contract) => contract.file));
+  const severity = severityForAdoptionMode(adoptionMode);
   return filesMatchingRequireContractPatterns(sourceFiles, patterns)
     .filter((file) => !filesWithContracts.has(file))
     .map((file) =>
-      driftError('DRIFT015_REQUIRED_CONTRACT_MISSING', file, {
-        pattern: firstMatchingRequireContractPattern(file, patterns) ?? patterns[0],
-      }),
+      toDiagnostic(
+        driftError('DRIFT015_REQUIRED_CONTRACT_MISSING', file, {
+          pattern: firstMatchingRequireContractPattern(file, patterns) ?? patterns[0],
+        }),
+        severity,
+      ),
     );
+}
+
+function severityForAdoptionMode(mode: DriftAdoptionMode): DriftDiagnosticSeverity {
+  if (mode === 'audit') return 'info';
+  if (mode === 'warn') return 'warning';
+  return 'error';
 }
 
 function checkScopedDuplicateIds(

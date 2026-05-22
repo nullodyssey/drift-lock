@@ -36,6 +36,38 @@ describe('drift contract checking', () => {
     ]);
   });
 
+  it('reports required-contract gaps as non-blocking diagnostics in warn and audit modes', async () => {
+    const root = await createProject({
+      'src/features/billing/actions.ts': 'export const checkoutAction = true;\n',
+    });
+
+    const warn = await checkContracts({ root, requireContracts: ['src/features/**/actions.ts'], adoptionMode: 'warn' });
+    const audit = await checkContracts({ root, requireContracts: ['src/features/**/actions.ts'], adoptionMode: 'audit' });
+
+    expect(warn.errors).toEqual([]);
+    expect(warn.diagnostics).toEqual([
+      expect.objectContaining({ code: 'DRIFT015_REQUIRED_CONTRACT_MISSING', severity: 'warning' }),
+    ]);
+    expect(audit.errors).toEqual([]);
+    expect(audit.diagnostics).toEqual([
+      expect.objectContaining({ code: 'DRIFT015_REQUIRED_CONTRACT_MISSING', severity: 'info' }),
+    ]);
+  });
+
+  it('keeps executable invariant violations blocking in audit mode', async () => {
+    const root = await createProject({
+      'src/actions.ts': validActionsSource().replace(
+        "import { PRO_PRICE_ID } from '@/features/billing/pricing';\n",
+        '',
+      ),
+    });
+
+    const result = await checkContracts({ root, adoptionMode: 'audit' });
+
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT010_SSOT_NOT_USED');
+    expect(result.diagnostics.find((diagnostic) => diagnostic.code === 'DRIFT010_SSOT_NOT_USED')).toMatchObject({ severity: 'error' });
+  });
+
   it('accepts ssot usage on file-scoped contracts', () => {
     const result = extractContractsFromSource('src/actions.ts', fileScopedUsageSource());
 
