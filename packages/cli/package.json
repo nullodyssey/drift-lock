@@ -39,7 +39,8 @@
   "scripts": {
     "build": "tsup src/cli.ts --format esm --dts --clean --out-dir dist",
     "check": "tsc --noEmit",
-    "test": "pnpm --filter @drift-lock/core run build && vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "test:with-build": "pnpm --filter @drift-lock/core run build && vitest run --passWithNoTests"
   },
   "dependencies": {
     "@drift-lock/core": "workspace:*",

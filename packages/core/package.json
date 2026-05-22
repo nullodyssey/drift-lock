@@ -39,7 +39,8 @@
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean --out-dir dist",
     "check": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:with-build": "pnpm run build && vitest run"
   },
   "dependencies": {
     "typescript": "^5.9.3",

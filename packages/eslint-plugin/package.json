@@ -40,7 +40,8 @@
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean --out-dir dist",
     "check": "tsc --noEmit",
-    "test": "pnpm --filter @drift-lock/core run build && vitest run"
+    "test": "vitest run",
+    "test:with-build": "pnpm --filter @drift-lock/core run build && vitest run"
   },
   "dependencies": {
     "@drift-lock/core": "workspace:*"
