@@ -1,5 +1,6 @@
 import path from 'node:path';
 import type { DriftError, DriftExtractedContract } from '../types.js';
+import { scanDisableDirectives, type DriftDisableDirectiveCoverage, type DriftDisableDirective } from './disable-directives.js';
 import { extractContracts, type ExtractOptions } from './extractor.js';
 import { discoverSourceFiles, normalizePath } from './files.js';
 
@@ -25,6 +26,7 @@ export type DriftCoverage = {
     total: number;
     executable: number;
   };
+  disableDirectives: DriftDisableDirectiveCoverage;
 };
 
 export async function getCoverage(options: DriftCoverageOptions): Promise<{
@@ -41,6 +43,7 @@ export async function getCoverage(options: DriftCoverageOptions): Promise<{
   const requiredFiles = filesMatchingRequireContractPatterns(sourceFiles, requireContracts);
   const requiredUncoveredFiles = requiredFiles.filter((file) => !filesWithContracts.has(file));
   const invariants = contracts.flatMap((contract) => contract.invariants ?? []);
+  const disableDirectives = await scanDisableDirectives(root, sourceFiles);
 
   return {
     coverage: {
@@ -61,6 +64,7 @@ export async function getCoverage(options: DriftCoverageOptions): Promise<{
         total: invariants.length,
         executable: invariants.filter((invariant) => invariant.enforce === 'drift/ssot-usage' || invariant.enforce === 'drift/ssot-flow').length,
       },
+      disableDirectives,
     },
     contracts,
     errors: extracted.errors,
@@ -86,6 +90,11 @@ export function formatCoverageSummary(coverage: DriftCoverage): string {
     'Invariants:',
     `- total: ${coverage.invariants.total}`,
     `- executable enforcement: ${coverage.invariants.executable}`,
+    '',
+    'Disable directives:',
+    `- total: ${coverage.disableDirectives.total}`,
+    `- malformed: ${coverage.disableDirectives.malformed}`,
+    `- expired: ${coverage.disableDirectives.expired}`,
   ];
 
   if (coverage.files.requiredUncoveredFiles.length > 0) {
@@ -93,7 +102,26 @@ export function formatCoverageSummary(coverage: DriftCoverage): string {
     for (const file of coverage.files.requiredUncoveredFiles) lines.push(`- ${file}`);
   }
 
+  if (coverage.disableDirectives.items.length > 0) {
+    lines.push('', 'Drift disable directives:');
+    for (const directive of coverage.disableDirectives.items) lines.push(formatDisableDirective(directive));
+  }
+
   return lines.join('\n');
+}
+
+function formatDisableDirective(directive: DriftDisableDirective): string {
+  const command = directive.kind === 'next-line' ? 'drift-lock-disable-next-line' : 'drift-lock-disable-file';
+  const details = [
+    directive.rule ?? 'unknown-rule',
+    directive.reason ? `reason="${directive.reason}"` : undefined,
+    directive.expires ? `expires=${directive.expires}` : undefined,
+    directive.expired ? 'expired' : undefined,
+    directive.malformed ? `malformed ${directive.message ?? 'invalid directive'}` : undefined,
+  ]
+    .filter(Boolean)
+    .join(' ');
+  return `- ${directive.file}:${directive.line} ${command} ${details}`;
 }
 
 export function filesMatchingRequireContractPatterns(files: string[], patterns: string[]): string[] {

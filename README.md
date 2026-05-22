@@ -279,6 +279,17 @@ a single check with `drift-lock check --adoption-mode warn`. Use `drift-lock cov
 to review required files that are still uncovered before turning patterns into
 blocking CI policy. See `docs/config.md` for the config reference.
 
+`coverage` also reports local disable directives so adoption exceptions stay
+visible without changing check behavior yet:
+
+```ts
+// drift-lock-disable-next-line drift/ssot-flow -- reason: migration billing-v2, expires: 2026-07-01
+// drift-lock-disable-file drift/import-boundary -- reason: generated adapter
+```
+
+Disable directives are reporting-only in this release; malformed or expired
+directives are listed by `drift-lock coverage` but do not affect exit codes.
+
 ## ESLint
 
 DriftLock ships an ESLint 9 flat config plugin:

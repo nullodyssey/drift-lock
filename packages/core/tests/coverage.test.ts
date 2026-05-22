@@ -30,4 +30,53 @@ describe('drift coverage', () => {
       invariants: { total: 2, executable: 2 },
     });
   });
+
+  it('reports drift-lock-disable directives from configured source files', async () => {
+    const root = await createProject({
+      'src/actions.ts': '// drift-lock-disable-next-line drift/ssot-flow -- reason: migration billing-v2, expires: 2999-01-01\nexport const checkoutAction = true;\n',
+      'src/legacy.ts': '// drift-lock-disable-file drift/import-boundary -- reason: legacy adapter, expires: 2000-01-01\nexport const legacy = true;\n',
+      'src/malformed.ts': '// drift-lock-disable-next-line drift/ssot-flow\nexport const malformed = true;\n',
+      'tests/not-source.ts': '// drift-lock-disable-file drift/ssot-flow -- reason: ignored test fixture\n',
+    });
+
+    const result = await getCoverage({ root, sourceDir: 'src' });
+
+    expect(result.errors).toEqual([]);
+    expect(result.coverage.disableDirectives).toMatchObject({
+      total: 3,
+      malformed: 1,
+      expired: 1,
+      items: [
+        {
+          file: 'src/actions.ts',
+          line: 1,
+          kind: 'next-line',
+          rule: 'drift/ssot-flow',
+          reason: 'migration billing-v2',
+          expires: '2999-01-01',
+          expired: false,
+          malformed: false,
+        },
+        {
+          file: 'src/legacy.ts',
+          line: 1,
+          kind: 'file',
+          rule: 'drift/import-boundary',
+          reason: 'legacy adapter',
+          expires: '2000-01-01',
+          expired: true,
+          malformed: false,
+        },
+        {
+          file: 'src/malformed.ts',
+          line: 1,
+          kind: 'next-line',
+          rule: 'drift/ssot-flow',
+          expired: false,
+          malformed: true,
+          message: 'missing reason',
+        },
+      ],
+    });
+  });
 });

@@ -79,3 +79,20 @@ the configured mode for one check with `drift-lock check --adoption-mode warn`.
 `drift-lock coverage` reports how many required files are covered and lists the
 required files that still have no contract. `coverage` is informational and exits
 successfully unless contract extraction itself fails.
+
+## Disable Directive Reporting
+
+`coverage` also reports `drift-lock-disable` directives found in configured
+source files. This is reporting-only: directives do not suppress Drift checks yet,
+and malformed or expired directives do not change the exit code.
+
+Supported strict formats:
+
+```ts
+// drift-lock-disable-next-line <rule> -- reason: <text>
+// drift-lock-disable-file <rule> -- reason: <text>
+// drift-lock-disable-next-line <rule> -- reason: <text>, expires: YYYY-MM-DD
+```
+
+`reason` and `rule` are required. `expires` is optional, but when present it
+must use `YYYY-MM-DD`.

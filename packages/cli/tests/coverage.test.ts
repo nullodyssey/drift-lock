@@ -26,6 +26,38 @@ describe('drift-lock coverage command', () => {
     expect(json.coverage.files.requiredUncoveredFiles).toEqual(['src/services/payment.ts']);
   });
 
+  it('prints drift-lock-disable directive reporting in coverage output', async () => {
+    const root = await tempProject();
+    await writeFile(
+      path.join(root, 'src/actions.ts'),
+      '// drift-lock-disable-next-line drift/ssot-flow -- reason: migration billing-v2, expires: 2999-01-01\nexport const checkoutAction = true;\n',
+      'utf8',
+    );
+    await writeFile(
+      path.join(root, 'src/legacy.ts'),
+      '// drift-lock-disable-file drift/import-boundary -- reason: legacy adapter, expires: 2000-01-01\nexport const legacy = true;\n',
+      'utf8',
+    );
+    await writeFile(path.join(root, 'src/malformed.ts'), '// drift-lock-disable-next-line drift/ssot-flow\n', 'utf8');
+    await writeDriftConfigFile(root, []);
+
+    const summary = await runCli(['coverage', '--root', root]);
+    const jsonResult = await runCli(['coverage', '--json', '--root', root]);
+    const json = JSON.parse(jsonResult.stdout) as { coverage: Record<string, any> };
+
+    expect(summary.code).toBe(0);
+    expect(summary.stdout).toContain('Disable directives:');
+    expect(summary.stdout).toContain('- total: 3');
+    expect(summary.stdout).toContain('- malformed: 1');
+    expect(summary.stdout).toContain('- expired: 1');
+    expect(summary.stdout).toContain('src/actions.ts:1 drift-lock-disable-next-line drift/ssot-flow reason="migration billing-v2"');
+    expect(summary.stdout).toContain('src/legacy.ts:1 drift-lock-disable-file drift/import-boundary reason="legacy adapter" expires=2000-01-01 expired');
+    expect(summary.stdout).toContain('src/malformed.ts:1 drift-lock-disable-next-line drift/ssot-flow malformed missing reason');
+    expect(jsonResult.code).toBe(0);
+    expect(json.coverage.disableDirectives).toMatchObject({ total: 3, malformed: 1, expired: 1 });
+    expect(json.coverage.disableDirectives.items).toHaveLength(3);
+  });
+
   it('fails check when a required file has no contract', async () => {
     const root = await tempProject();
     await mkdir(path.join(root, 'src/features/billing'), { recursive: true });
