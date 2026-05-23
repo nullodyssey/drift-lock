@@ -73,7 +73,7 @@ function summariesForContract(contract: DriftExtractedContract): DriftContractSu
 export async function writeIndex(root: string, output = defaultIndexPath, index: DriftContractsIndex): Promise<void> {
   const absoluteOutput = path.resolve(root, output);
   await mkdir(path.dirname(absoluteOutput), { recursive: true });
-  await writeFile(absoluteOutput, `${JSON.stringify(index, null, 2)}`, 'utf8');
+  await writeFile(absoluteOutput, `${JSON.stringify(index, null, 2)}\n`, 'utf8');
 }
 
 export async function readIndex(root: string, input = defaultIndexPath): Promise<DriftContractsIndex | undefined> {

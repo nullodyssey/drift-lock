@@ -82,6 +82,7 @@ describe('drift index files', () => {
 
     const index = await readFile(path.join(root, '.drift/contracts.generated.json'), 'utf8');
     expect(index).not.toContain('generatedAt');
+    expect(index.endsWith('\n')).toBe(true);
     expect(JSON.parse(index).contracts[0]).not.toHaveProperty('raw');
     expect(JSON.parse(index).contracts[0].bodyHash).toMatch(/^sha256:[a-f0-9]{64}$/);
   });
