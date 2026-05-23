@@ -41,7 +41,19 @@
         "name": "createCheckoutSession"
       },
       "contentHash": "sha256:f0410a0087dc61a2931ac521819ee856caade7aca31feeb4f25a1073fa3e9afc",
-      "bodyHash": "sha256:15b52de4c8fa607a5bad35d18b829d176e50314769e96216fa4b7cc426d6b370"
+      "bodyHash": "sha256:8b43e4203628e617352f9f961ed483781b72bfeeab5d84c4128c27cdf01950ee",
+      "summaries": {
+        "ssotFlow": [
+          {
+            "ssotPath": "@/features/billing/pricing.ts",
+            "returns": [
+              "return.amount",
+              "return.currency",
+              "return.priceId"
+            ]
+          }
+        ]
+      }
     },
     {
       "version": 1,
@@ -77,7 +89,19 @@
         "name": "createCheckoutQuote"
       },
       "contentHash": "sha256:8ba58c46c84e930db0b23d50341221e956a5a74a20e838668fa29efbde04e788",
-      "bodyHash": "sha256:c33c9edd696a45685c5bd019e1beda2c6915c4321dfe21771aaee800d49346f0"
+      "bodyHash": "sha256:7215b157501d23fe5dc63aa74c30400760059b2b0f268e93a02858d84dddc997",
+      "summaries": {
+        "ssotFlow": [
+          {
+            "ssotPath": "@/features/billing/pricing.ts",
+            "returns": [
+              "return.lineItem.price.currency",
+              "return.lineItem.price.id",
+              "return.totals.monthly.amount"
+            ]
+          }
+        ]
+      }
     }
   ]
 }
