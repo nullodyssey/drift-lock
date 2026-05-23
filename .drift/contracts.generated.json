@@ -523,6 +523,7 @@
       "llm": {
         "must_not_change": [
           "Unsupported expression dependencies must not be treated as trusted.",
+          "Function names must not downgrade arbitrary calls into proven provenance.",
           "Parameters must shadow trusted imports as untrusted local values.",
           "Only supported immutable local patterns may propagate provenance."
         ]
@@ -531,8 +532,8 @@
       "anchor": {
         "type": "file"
       },
-      "contentHash": "sha256:6c2217a94eaf8ccf9963c435b870ceb09503797ccb87c94108aafbe44a301cb4",
-      "bodyHash": "sha256:f1f7856cae8bd16dffce13f1026623cfdfda719fb20788365291da4e142414ec"
+      "contentHash": "sha256:cd8efaf0ef32c475e6457d55014c1a3db765dbf342f58a4d8c35e28138e24247",
+      "bodyHash": "sha256:058957ef58b34547ebf897eb0efaa57cbe7a879fe3d2efabd82afe96e51d085b"
     },
     {
       "version": 1,

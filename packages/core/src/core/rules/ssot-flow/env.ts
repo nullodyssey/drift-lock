@@ -15,6 +15,7 @@ intent: >
 llm:
   must_not_change:
     - Unsupported expression dependencies must not be treated as trusted.
+    - Function names must not downgrade arbitrary calls into proven provenance.
     - Parameters must shadow trusted imports as untrusted local values.
     - Only supported immutable local patterns may propagate provenance.
 */
@@ -42,11 +43,6 @@ export function applyVariableStatement(statement: ts.VariableStatement, env: Flo
 
     if (!isConst || !declaration.initializer) {
       env.set(declaration.name.text, unsupported);
-      continue;
-    }
-
-    if (isInputParserCall(declaration.initializer)) {
-      env.set(declaration.name.text, untrusted);
       continue;
     }
 
@@ -123,25 +119,6 @@ function isDerivedBinaryOperator(kind: ts.SyntaxKind): boolean {
     kind === ts.SyntaxKind.PlusToken ||
     kind === ts.SyntaxKind.MinusToken
   );
-}
-
-function isInputParserCall(expression: ts.Expression): boolean {
-  const unwrapped = unwrapExpression(expression);
-  if (!ts.isCallExpression(unwrapped)) return false;
-  const calleeName = callName(unwrapped.expression);
-  return calleeName !== undefined && /^(parse|validate|safeParse)/.test(calleeName);
-}
-
-function unwrapExpression(expression: ts.Expression): ts.Expression {
-  if (ts.isParenthesizedExpression(expression) || ts.isNonNullExpression(expression)) return unwrapExpression(expression.expression);
-  if (ts.isAsExpression(expression) || ts.isTypeAssertionExpression(expression) || ts.isSatisfiesExpression(expression)) return unwrapExpression(expression.expression);
-  return expression;
-}
-
-function callName(expression: ts.Expression): string | undefined {
-  if (ts.isIdentifier(expression)) return expression.text;
-  if (ts.isPropertyAccessExpression(expression)) return expression.name.text;
-  return undefined;
 }
 
 function bindingNames(name: ts.BindingName): string[] {

@@ -334,8 +334,7 @@ export const price = PRO_PRICE_ID;
 }
 
 function validFlowSource(id = 'billing.create-checkout-session'): string {
-  return `import { parseCheckoutInput } from '@/features/billing/billing.schema';
-import { BILLING_PRICES } from '@/features/billing/pricing';
+  return `import { BILLING_PRICES } from '@/features/billing/pricing';
 
 /* @drift
 version: 1
@@ -366,7 +365,7 @@ llm:
     - checkout flow
 */
 export async function createCheckoutSession(input: unknown) {
-  const payload = parseCheckoutInput(input);
+  const payload = input as { plan: 'pro'; seats: number };
   const price = BILLING_PRICES[payload.plan];
 
   return {
@@ -380,8 +379,7 @@ export async function createCheckoutSession(input: unknown) {
 }
 
 function validNestedFlowSource(id = 'billing.create-checkout-session'): string {
-  return `import { parseCheckoutInput } from '@/features/billing/billing.schema';
-import { BILLING_PRICES } from '@/features/billing/pricing';
+  return `import { BILLING_PRICES } from '@/features/billing/pricing';
 
 /* @drift
 version: 1
@@ -404,7 +402,7 @@ invariants:
       - return.totals.monthly.amount
 */
 export async function createCheckoutSession(input: unknown) {
-  const payload = parseCheckoutInput(input);
+  const payload = input as { plan: 'pro'; seats: number };
   const price = BILLING_PRICES[payload.plan];
   const amount = price.monthlyAmount * payload.seats;
 

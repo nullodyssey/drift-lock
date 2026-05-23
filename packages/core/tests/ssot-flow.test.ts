@@ -273,6 +273,45 @@ describe('drift ssot flow', () => {
     expect(result.errors.map((error) => error.code)).toContain('DRIFT014_UNSUPPORTED_FLOW_PATTERN');
   });
 
+  it('rejects parser-named input helpers instead of trusting function names', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource().replace(
+        "const payload = input as { plan: 'pro'; seats: number };",
+        'const payload = parseCheckoutInput(input);',
+      ),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.amount')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unsupported-call',
+        foundExpression: 'price.monthlyAmount * payload.seats',
+        foundNodeKind: 'BinaryExpression',
+      },
+    });
+  });
+
+  it('rejects parser-named helper aliases mixed with trusted values', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource()
+        .replace('const price = BILLING_PRICES[payload.plan];', `const price = BILLING_PRICES[payload.plan];
+  const fee = parseFee(payload);`)
+        .replace('amount: price.monthlyAmount * payload.seats,', 'amount: price.monthlyAmount + fee,'),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.amount')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unsupported-call',
+        nodeKind: 'CallExpression',
+        foundExpression: 'price.monthlyAmount + fee',
+        foundNodeKind: 'BinaryExpression',
+      },
+    });
+  });
+
   it('rejects derived expressions that mix trusted values with unsupported helper calls', async () => {
     const root = await createProject({
       'src/actions.ts': validFlowSource().replace('amount: price.monthlyAmount * payload.seats,', 'amount: price.monthlyAmount + resolveFee(payload),'),
@@ -394,7 +433,7 @@ describe('drift ssot flow', () => {
     const root = await createProject({
       'src/actions.ts': validFlowSource()
         .replace('export async function createCheckoutSession(input: unknown) {', 'export async function createCheckoutSession(BILLING_PRICES: any) {')
-        .replace('const payload = parseCheckoutInput(input);', 'const payload = parseCheckoutInput({ plan: "pro", seats: 1 });'),
+        .replace("const payload = input as { plan: 'pro'; seats: number };", 'const payload = { plan: "pro" as const, seats: 1 };'),
     });
 
     const result = await checkContracts({ root });
