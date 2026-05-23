@@ -1,5 +1,3 @@
-import { readFile } from 'node:fs/promises';
-import path from 'node:path';
 import type { DriftDiagnostic } from '../types.js';
 import type { CheckRunContext } from './check-run.js';
 import { toDiagnostic } from './errors.js';
@@ -20,6 +18,7 @@ ssot:
   ssot-usage: "./rules/ssot-usage/index.ts"
   ssot-flow: "./rules/ssot-flow/index.ts"
   errors: "./errors.ts"
+  source-cache: "./source-cache.ts"
 
 invariants:
   - id: invariants-run-ssot-usage
@@ -31,12 +30,15 @@ invariants:
   - id: invariants-use-shared-diagnostics
     enforce: drift/ssot-usage
     ssot: errors
+  - id: invariants-read-through-source-cache
+    enforce: drift/ssot-usage
+    ssot: source-cache
 
 llm:
   must_not_change:
     - Schema extraction errors must not prevent valid selected contracts from being checked.
     - SSOT flow checks must receive helperContracts from the prepared run context.
-    - Source caching belongs to a later phase; V1 reads text directly per checked contract.
+    - Source text must be read through the run-scoped SourceCache.
 */
 export async function runInvariantChecks(run: CheckRunContext): Promise<DriftDiagnostic[]> {
   const diagnostics: DriftDiagnostic[] = [];
@@ -44,7 +46,7 @@ export async function runInvariantChecks(run: CheckRunContext): Promise<DriftDia
   // Run invariant checks only after extraction. Schema/ancrage errors should not
   // prevent other valid contracts in the repo from being checked.
   for (const contract of run.contractsToCheck) {
-    const text = await readFile(path.resolve(run.root, contract.file), 'utf8');
+    const text = await run.sourceCache.readText(contract.file);
     diagnostics.push(...checkSsotUsage(contract, text).map((error) => toDiagnostic(error)));
     diagnostics.push(...checkSsotFlow(contract, text, { helperContracts: run.helperContracts }).map((error) => toDiagnostic(error)));
   }

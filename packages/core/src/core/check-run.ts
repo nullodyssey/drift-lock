@@ -10,6 +10,7 @@ import { extractContracts, type ExtractOptions } from './extractor.js';
 import type { GitFileScope } from './git-scope.js';
 import { buildHelperContracts } from './helper-summaries.js';
 import { readIndex, toIndex } from './index-file.js';
+import { SourceCache } from './source-cache.js';
 
 /* @drift
 version: 1
@@ -26,6 +27,7 @@ ssot:
   index-file: "./index-file.ts"
   contract-selection: "./contract-selection.ts"
   helper-summaries: "./helper-summaries.ts"
+  source-cache: "./source-cache.ts"
 
 invariants:
   - id: run-extracts-contracts
@@ -40,12 +42,16 @@ invariants:
   - id: run-builds-helper-context
     enforce: drift/ssot-usage
     ssot: helper-summaries
+  - id: run-creates-source-cache
+    enforce: drift/ssot-usage
+    ssot: source-cache
 
 llm:
   must_not_change:
     - scopedIndex selects scoped checks only; helperContracts must use the full index.
     - changedOnly must include changed contracts and SSOT-impacted contracts.
     - Extraction must use Git-scoped files when a Git base is provided.
+    - SourceCache must be instantiated per check run, not globally.
 */
 export type CheckOptions = ExtractOptions & {
   indexPath?: string;
@@ -67,6 +73,7 @@ export type CheckRunContext = {
   extracted: ExtractContractsResult;
   contractsToCheck: DriftExtractedContract[];
   helperContracts: DriftIndexedContract[];
+  sourceCache: SourceCache;
 };
 
 export async function prepareCheckRun(options: CheckOptions): Promise<CheckRunContext> {
@@ -87,6 +94,7 @@ export async function prepareCheckRun(options: CheckOptions): Promise<CheckRunCo
     : extracted.contracts;
   // Helper summaries need the full index; scopedIndex only decides which contracts run.
   const helperContracts = buildHelperContracts(index, toIndex(extracted.contracts).contracts);
+  const sourceCache = new SourceCache(root);
 
   return {
     root,
@@ -98,5 +106,6 @@ export async function prepareCheckRun(options: CheckOptions): Promise<CheckRunCo
     extracted,
     contractsToCheck,
     helperContracts,
+    sourceCache,
   };
 }
