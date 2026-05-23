@@ -26,11 +26,15 @@ invariants:
     ssot: schema
 */`;
 
-export const healthyAction = `import { parseCheckoutInput } from '@/features/billing/billing.schema';
+export const healthyAction = `import { isCheckoutInput } from '@/features/billing/billing.schema';
 import { BILLING_PRICES } from '@/features/billing/pricing';
 
 export async function createCheckoutSession(input: unknown) {
-  const payload = parseCheckoutInput(input);
+  if (!isCheckoutInput(input)) {
+    throw new Error('Invalid checkout input');
+  }
+
+  const payload = input;
   const price = BILLING_PRICES[payload.plan];
 
   return {
@@ -41,11 +45,15 @@ export async function createCheckoutSession(input: unknown) {
   };
 }`;
 
-export const driftedAction = `import { parseCheckoutInput } from '@/features/billing/billing.schema';
+export const driftedAction = `import { isCheckoutInput } from '@/features/billing/billing.schema';
 import { BILLING_PRICES } from '@/features/billing/pricing';
 
 export async function createCheckoutSession(input: unknown) {
-  const payload = parseCheckoutInput(input);
+  if (!isCheckoutInput(input)) {
+    throw new Error('Invalid checkout input');
+  }
+
+  const payload = input;
   const price = {
     priceId: 'test',
     monthlyAmount: 10,
@@ -101,7 +109,11 @@ invariants:
 */`;
 
 export const nestedBranchHealthy = `export async function createCheckoutQuote(input: unknown) {
-  const payload = parseCheckoutInput(input);
+  if (!isCheckoutInput(input)) {
+    throw new Error('Invalid checkout input');
+  }
+
+  const payload = input;
 
   if (payload.seats >= 10) {
     const price = BILLING_PRICES[payload.plan];
@@ -122,7 +134,11 @@ export const nestedBranchHealthy = `export async function createCheckoutQuote(in
 }`;
 
 export const nestedBranchDrifted = `export async function createCheckoutQuote(input: unknown) {
-  const payload = parseCheckoutInput(input);
+  if (!isCheckoutInput(input)) {
+    throw new Error('Invalid checkout input');
+  }
+
+  const payload = input;
 
   if (payload.seats >= 10) {
     return {

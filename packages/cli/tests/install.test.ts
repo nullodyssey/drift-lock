@@ -77,6 +77,26 @@ describe('drift-lock project installer', () => {
     expect(result.stdout).not.toContain('Package manager');
   });
 
+  it('installs the billing example with explicit input guards', async () => {
+    const root = await tempProject();
+    await writePackage(root);
+
+    await installProject({
+      root,
+      source: 'src',
+      packageManager: 'pnpm',
+      example: 'next-billing',
+      ci: false,
+      installDependencies: false,
+    });
+
+    const exampleSchema = await readFile(path.join(root, 'drift-example/billing/billing.schema.ts'), 'utf8');
+    const exampleAction = await readFile(path.join(root, 'drift-example/billing/actions.ts'), 'utf8');
+    expect(exampleSchema).toContain('export function isCheckoutInput');
+    expect(exampleAction).toContain('if (!isCheckoutInput(input))');
+    expect(exampleAction).not.toContain('parseCheckoutInput');
+  });
+
   it('installs managed project files idempotently without dependency install when disabled', async () => {
     const root = await tempProject();
     await writePackage(root);
@@ -102,7 +122,6 @@ describe('drift-lock project installer', () => {
     await expectExists(path.join(root, '.drift/contracts.generated.json'));
     await expectExists(path.join(root, 'eslint.config.js'));
     await expectExists(path.join(root, '.github/workflows/drift-lock.yml'));
-
     const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8')) as { scripts: Record<string, string> };
     expect(packageJson.scripts['drift-lock:check']).toBe('drift-lock check');
     expect(packageJson.scripts['drift-lock:coverage']).toBe('drift-lock coverage');

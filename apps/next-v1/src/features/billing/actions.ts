@@ -1,6 +1,6 @@
 'use server';
 
-import { parseCheckoutInput } from '@/features/billing/billing.schema';
+import { isCheckoutInput } from '@/features/billing/billing.schema';
 import { BILLING_PRICES } from '@/features/billing/pricing';
 
 /* @drift
@@ -35,7 +35,11 @@ llm:
     - checkout flow
 */
 export async function createCheckoutSession(input: unknown) {
-  const payload = parseCheckoutInput(input);
+  if (!isCheckoutInput(input)) {
+    throw new Error('Invalid checkout input');
+  }
+
+  const payload = input;
   const price = BILLING_PRICES[payload.plan];
 
   return {

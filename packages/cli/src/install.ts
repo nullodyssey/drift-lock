@@ -225,12 +225,24 @@ async function writeNextBillingExample(root: string, context: InstallWriteContex
   },
 } as const;
 `,
-    'drift-example/billing/billing.schema.ts': `export function parseCheckoutInput(input: unknown): { plan: 'pro'; seats: number } {
-  if (!input || typeof input !== 'object') throw new Error('Invalid input');
-  return { plan: 'pro', seats: 1 };
-}
-`,
-    'drift-example/billing/actions.ts': `import { parseCheckoutInput } from './billing.schema.js';
+    'drift-example/billing/billing.schema.ts': [
+      'export type CheckoutInput = {',
+      "  plan: 'pro';",
+      '  seats: number;',
+      '};',
+      '',
+      'export function isCheckoutInput(input: unknown): input is CheckoutInput {',
+      "  if (typeof input !== 'object' || input === null) return false;",
+      '  const candidate = input as Record<string, unknown>;',
+      '  return (',
+      "    candidate.plan === 'pro' &&",
+      "    typeof candidate.seats === 'number' &&",
+      '    candidate.seats >= 1',
+      '  );',
+      '}',
+      '',
+    ].join('\n'),
+    'drift-example/billing/actions.ts': `import { isCheckoutInput } from './billing.schema.js';
 import { BILLING_PRICES } from './pricing.js';
 
 /* @drift
@@ -257,7 +269,11 @@ llm:
     - pricing source
 */
 export async function createCheckoutSession(input: unknown) {
-  const payload = parseCheckoutInput(input);
+  if (!isCheckoutInput(input)) {
+    throw new Error('Invalid checkout input');
+  }
+
+  const payload = input;
   const price = BILLING_PRICES[payload.plan];
   return { priceId: price.priceId };
 }
