@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import type { DriftContractsIndex, DriftExtractedContract } from '../types.js';
+import type { DriftContractSummaries, DriftContractsIndex, DriftExtractedContract, DriftIndexedContract } from '../types.js';
 
 /* @drift
 version: 1
@@ -25,8 +25,26 @@ export function toIndex(contracts: DriftExtractedContract[]): DriftContractsInde
     version: 1,
     // Runtime-only fields make checks possible in-memory, but keeping them out of
     // the committed index preserves a small, stable baseline.
-    contracts: contracts.map(({ raw: _raw, bodyStart: _bodyStart, bodyEnd: _bodyEnd, line: _line, column: _column, ...contract }) => contract),
+    contracts: contracts.map(toIndexedContract),
   };
+}
+
+function toIndexedContract(contract: DriftExtractedContract): DriftIndexedContract {
+  const { raw: _raw, bodyStart: _bodyStart, bodyEnd: _bodyEnd, line: _line, column: _column, ...indexed } = contract;
+  const summaries = summariesForContract(contract);
+  return summaries ? { ...indexed, summaries } : indexed;
+}
+
+function summariesForContract(contract: DriftExtractedContract): DriftContractSummaries | undefined {
+  const ssotFlow = (contract.invariants ?? [])
+    .filter((invariant) => invariant.enforce === 'drift/ssot-flow' && invariant.ssot && invariant.sinks?.length)
+    .flatMap((invariant) => {
+      const ssotPath = contract.ssot?.[invariant.ssot as string];
+      if (!ssotPath) return [];
+      return [{ ssotPath, returns: [...new Set(invariant.sinks)].sort() }];
+    });
+
+  return ssotFlow.length > 0 ? { ssotFlow } : undefined;
 }
 
 export async function writeIndex(root: string, output = defaultIndexPath, index: DriftContractsIndex): Promise<void> {

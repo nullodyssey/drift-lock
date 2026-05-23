@@ -69,14 +69,25 @@ export type DriftExtractedContract = DriftContract & {
 
 export type DriftContractsIndex = {
   version: 1;
-  contracts: Array<Omit<DriftExtractedContract, 'raw' | 'bodyStart' | 'bodyEnd' | 'line' | 'column'>>;
+  contracts: DriftIndexedContract[];
 };
 
-export type DriftIndexedContract = DriftContractsIndex['contracts'][number];
+export type DriftSsotFlowSummary = {
+  ssotPath: string;
+  returns: string[];
+};
+
+export type DriftContractSummaries = {
+  ssotFlow?: DriftSsotFlowSummary[];
+};
+
+export type DriftIndexedContract = Omit<DriftExtractedContract, 'raw' | 'bodyStart' | 'bodyEnd' | 'line' | 'column'> & {
+  summaries?: DriftContractSummaries;
+};
 
 export type DriftContractChangeKind = 'added' | 'changed' | 'removed';
 
-export type DriftContractChangeField = 'intent' | 'stability' | 'scope' | 'anchor' | 'ssot' | 'invariants' | 'llm' | 'file' | 'body';
+export type DriftContractChangeField = 'intent' | 'stability' | 'scope' | 'anchor' | 'ssot' | 'invariants' | 'llm' | 'file' | 'summaries' | 'body';
 
 export type DriftInvariantChangeKind = 'added' | 'changed' | 'removed' | 'reordered';
 

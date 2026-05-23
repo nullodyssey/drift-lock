@@ -21,4 +21,4 @@ llm:
     - checkSsotFlow must remain reachable from the package root.
     - This shim must not contain separate rule behavior that can drift from the engine.
 */
-export { checkSsotFlow } from './rules/ssot-flow/index.js';
+export { checkSsotFlow, type CheckSsotFlowOptions } from './rules/ssot-flow/index.js';

@@ -176,6 +176,7 @@ function foundForSsotFlow(reason: string | undefined, sink: string | undefined, 
   if (reason === 'missing-sink') return `Sink "${sink ?? 'unknown'}" is missing from the returned object.`;
   if (reason === 'untrusted-value') return `Sink "${sink ?? 'unknown'}" is assigned from a value that is not proven to derive from the SSOT.`;
   if (reason === 'unsupported-call') return `Sink "${sink ?? 'unknown'}" depends on a call, await, or constructor that Drift cannot prove locally.`;
+  if (reason === 'unverified-helper-call') return `Sink "${sink ?? 'unknown'}" depends on a helper call without a matching verified summary.`;
   if (reason === 'unsupported-return') return 'A return path does not return a supported object literal.';
   if (reason === 'unsupported-spread') return 'The return object uses a spread that can hide or override critical sinks.';
   if (reason === 'unsupported-mutation') return 'The anchored flow mutates state, so local provenance is not reliable.';
@@ -187,7 +188,8 @@ function foundForSsotFlow(reason: string | undefined, sink: string | undefined, 
 function suggestedFixForSsotFlow(reason: string | undefined, sink: string | undefined): string {
   if (reason === 'missing-sink') return `Add "${sink ?? 'the missing sink'}" to the returned object and derive it from the declared SSOT.`;
   if (reason === 'untrusted-value') return `Replace the local or hardcoded value with a value derived from the declared SSOT.`;
-  if (reason === 'unsupported-call') return 'Inline the critical SSOT-derived value locally, or wait for helper provenance summaries before using this pattern.';
+  if (reason === 'unsupported-call') return 'Inline the critical SSOT-derived value locally, or use a helper with a verified ssot-flow summary.';
+  if (reason === 'unverified-helper-call') return 'Add and verify a drift/ssot-flow contract on the helper, or return only fields covered by its summary.';
   if (reason === 'unsupported-return') return 'Return an object literal containing the declared sinks, or explicitly terminate paths that should not return.';
   if (reason === 'unsupported-spread') return 'Write critical return fields explicitly instead of relying on object spread.';
   if (reason === 'unsupported-mutation') return 'Keep the critical flow immutable with const aliases and explicit return fields.';

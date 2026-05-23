@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import ts from 'typescript';
-import type { DriftAdoptionMode, DriftContractsIndex, DriftDiagnostic, DriftDiagnosticSeverity, DriftError, DriftExtractedContract, DriftSource } from '../types.js';
+import type { DriftAdoptionMode, DriftContractsIndex, DriftDiagnostic, DriftDiagnosticSeverity, DriftError, DriftExtractedContract, DriftIndexedContract, DriftSource } from '../types.js';
 import { diffContractSets } from './contract-diff.js';
 import { filesMatchingRequireContractPatterns, firstMatchingRequireContractPattern } from './coverage.js';
 import { driftError, toDiagnostic } from './errors.js';
@@ -72,13 +72,14 @@ export async function checkContracts(options: CheckOptions): Promise<{
   const contractsToCheck = options.changedOnly
     ? changedContracts(extracted.contracts, scopedIndex, gitScope?.impactedContractIds)
     : extracted.contracts;
+  const helperContracts = mergedHelperContracts(scopedIndex ?? index, toIndex(extracted.contracts).contracts);
 
   // Run invariant checks only after extraction. Schema/ancrage errors should not
   // prevent other valid contracts in the repo from being checked.
   for (const contract of contractsToCheck) {
     const text = await readFile(path.resolve(root, contract.file), 'utf8');
     diagnostics.push(...checkSsotUsage(contract, text).map((error) => toDiagnostic(error)));
-    diagnostics.push(...checkSsotFlow(contract, text).map((error) => toDiagnostic(error)));
+    diagnostics.push(...checkSsotFlow(contract, text, { helperContracts }).map((error) => toDiagnostic(error)));
   }
 
   // Without a committed index there is no trustworthy baseline for locked
@@ -89,6 +90,13 @@ export async function checkContracts(options: CheckOptions): Promise<{
 
   const errors = diagnostics.filter((diagnostic) => diagnostic.severity === 'error');
   return { contracts: extracted.contracts, diagnostics, errors };
+}
+
+function mergedHelperContracts(index: DriftContractsIndex | undefined, current: DriftIndexedContract[]): DriftIndexedContract[] {
+  const byId = new Map<string, DriftIndexedContract>();
+  for (const contract of index?.contracts ?? []) byId.set(contract.id, contract);
+  for (const contract of current) byId.set(contract.id, contract);
+  return [...byId.values()];
 }
 
 async function checkRequiredContracts(

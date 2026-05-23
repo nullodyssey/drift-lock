@@ -100,6 +100,8 @@ ruleTester.run('ssot-usage', rules['ssot-usage'] as any, {
   ],
 });
 
+const eslintHelperSummary = createIndexedProjectFromSources({ 'src/pricing.ts': eslintVerifiedHelperSource() });
+
 ruleTester.run('ssot-flow', rules['ssot-flow'] as any, {
   valid: [
     {
@@ -113,6 +115,11 @@ ruleTester.run('ssot-flow', rules['ssot-flow'] as any, {
     {
       filename: 'src/actions.ts',
       code: validConstArrowFlowSource(),
+    },
+    {
+      filename: path.join(eslintHelperSummary.root, 'src/actions.ts'),
+      code: eslintHelperCallSiteSource(),
+      options: [{ root: eslintHelperSummary.root }],
     },
     {
       filename: 'src/actions.ts',
@@ -255,6 +262,13 @@ function createIndexedProject(code: string): { root: string; filename: string } 
   return project;
 }
 
+function createIndexedProjectFromSources(files: Record<string, string>): { root: string; filename: string } {
+  const project = createProject();
+  const contracts = Object.entries(files).flatMap(([file, code]) => extractContractsFromSource(file, code).contracts);
+  writeFileSync(path.join(project.root, '.drift/contracts.generated.json'), `${JSON.stringify(toIndex(contracts), null, 2)}\n`);
+  return project;
+}
+
 function createProjectWithIndex(index: string): { root: string; filename: string } {
   const project = createProject();
   writeFileSync(path.join(project.root, '.drift/contracts.generated.json'), index);
@@ -330,6 +344,72 @@ invariants:
       - return.priceId
 */
 export const price = PRO_PRICE_ID;
+`;
+}
+
+function eslintHelperCallSiteSource(): string {
+  return `import { resolvePrice } from './pricing';
+
+/* @drift
+version: 1
+id: billing.create-checkout-session
+scope: declaration
+stability: locked
+
+intent: >
+  Create a Stripe Checkout session from a helper-provided pricing summary.
+
+ssot:
+  pricing: "./pricing-source.ts"
+
+invariants:
+  - id: checkout-price-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.priceId
+      - return.amount
+*/
+export function createCheckoutSession(input: { plan: 'pro'; seats: number }) {
+  const price = resolvePrice(input.plan);
+  return {
+    priceId: price.priceId,
+    amount: price.monthlyAmount * input.seats,
+  };
+}
+`;
+}
+
+function eslintVerifiedHelperSource(): string {
+  return `import { BILLING_PRICES } from './pricing-source';
+
+/* @drift
+version: 1
+id: billing.resolve-price
+scope: declaration
+stability: locked
+
+intent: >
+  Resolve the selected billing price from the pricing source of truth.
+
+ssot:
+  pricing: "./pricing-source.ts"
+
+invariants:
+  - id: return-price-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.priceId
+      - return.monthlyAmount
+*/
+export function resolvePrice(plan: 'pro') {
+  const price = BILLING_PRICES[plan];
+  return {
+    priceId: price.priceId,
+    monthlyAmount: price.monthlyAmount,
+  };
+}
 `;
 }
 

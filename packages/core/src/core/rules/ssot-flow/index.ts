@@ -3,8 +3,9 @@ import type { DriftError, DriftExtractedContract } from '../../../types.js';
 import { checkReturnExpression, checkStatements, hasUnsupportedMutation } from './control.js';
 import { flowNotProven, unsupportedForSinks } from './diagnostics.js';
 import { createInitialEnv } from './env.js';
+import { findHelperImports } from './helpers.js';
 import { findTrustedImports } from './imports.js';
-import type { FlowContext, FunctionLikeWithBody } from './types.js';
+import type { FlowContext, FlowOptions, FunctionLikeWithBody } from './types.js';
 
 /* @drift
 version: 1
@@ -42,7 +43,9 @@ llm:
     - Unsupported functions or missing trusted imports must fail without silent success.
     - The public behavior must stay compatible except for stricter unsupported dependency handling.
 */
-export function checkSsotFlow(contract: DriftExtractedContract, text: string): DriftError[] {
+export type CheckSsotFlowOptions = FlowOptions;
+
+export function checkSsotFlow(contract: DriftExtractedContract, text: string, options: CheckSsotFlowOptions = {}): DriftError[] {
   const errors: DriftError[] = [];
   const invariants = contract.invariants ?? [];
   const ssot = contract.ssot ?? {};
@@ -63,20 +66,21 @@ export function checkSsotFlow(contract: DriftExtractedContract, text: string): D
       continue;
     }
 
-    errors.push(...checkFunctionFlow(context, functionNode, ssotPath));
+    errors.push(...checkFunctionFlow(context, functionNode, ssotPath, options));
   }
 
   return errors;
 }
 
-function checkFunctionFlow(context: FlowContext, functionNode: FunctionLikeWithBody, ssotPath: string): DriftError[] {
+function checkFunctionFlow(context: FlowContext, functionNode: FunctionLikeWithBody, ssotPath: string, options: FlowOptions): DriftError[] {
   const errors: DriftError[] = [];
   const sinks = context.invariant.sinks ?? [];
   const body = functionNode.body;
   if (!body) return unsupportedForSinks(context, sinks, 'unsupported-return');
   const trustedImports = findTrustedImports(context.sourceFile, ssotPath);
+  const helperImports = findHelperImports(context.sourceFile, context.contract.file, options.helperContracts ?? [], ssotPath);
 
-  if (trustedImports.size === 0) {
+  if (trustedImports.size === 0 && helperImports.size === 0) {
     return sinks.map((sink) => flowNotProven(context, sink));
   }
 
@@ -84,7 +88,7 @@ function checkFunctionFlow(context: FlowContext, functionNode: FunctionLikeWithB
     return unsupportedForSinks(context, sinks, 'unsupported-mutation');
   }
 
-  const env = createInitialEnv(trustedImports, functionNode.parameters);
+  const env = createInitialEnv(trustedImports, functionNode.parameters, helperImports);
 
   if (ts.isBlock(body)) {
     const checked = checkStatements(context, body.statements, env);

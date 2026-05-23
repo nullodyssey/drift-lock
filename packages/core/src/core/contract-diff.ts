@@ -170,7 +170,7 @@ function changedFields(
   invariantChanges: DriftInvariantChange[],
 ): DriftContractChangeField[] {
   const fields: DriftContractChangeField[] = [];
-  for (const field of ['intent', 'stability', 'scope', 'anchor', 'ssot', 'invariants', 'llm', 'file'] as const) {
+  for (const field of ['intent', 'stability', 'scope', 'anchor', 'ssot', 'invariants', 'llm', 'file', 'summaries'] as const) {
     if (field === 'invariants') {
       if (invariantChanges.length > 0) fields.push(field);
     } else if (!sameValue(current[field], previous[field])) {

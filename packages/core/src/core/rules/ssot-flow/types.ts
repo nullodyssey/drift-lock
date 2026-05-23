@@ -1,5 +1,5 @@
 import type ts from 'typescript';
-import type { DriftError, DriftExtractedContract, DriftInvariant } from '../../../types.js';
+import type { DriftError, DriftExtractedContract, DriftIndexedContract, DriftInvariant } from '../../../types.js';
 
 /* @drift
 version: 1
@@ -22,6 +22,7 @@ export type FlowReason =
   | 'missing-sink'
   | 'untrusted-value'
   | 'unsupported-call'
+  | 'unverified-helper-call'
   | 'unsupported-return'
   | 'unsupported-spread'
   | 'unsupported-mutation'
@@ -29,13 +30,30 @@ export type FlowReason =
   | 'unsupported-switch-fallthrough'
   | 'unsupported-pattern';
 
+export type FlowObjectSummary = {
+  returns: string[];
+  path: string[];
+};
+
+export type FlowHelperSummary = {
+  returns: string[];
+};
+
 export type FlowValue = {
   trust: FlowTrust;
   reason?: FlowReason;
   nodeKind?: string;
+  objectSummary?: FlowObjectSummary;
+  helperSummary?: FlowHelperSummary;
 };
 
 export type FlowEnv = Map<string, FlowValue>;
+
+export type FlowHelperImports = Map<string, FlowHelperSummary | undefined>;
+
+export type FlowOptions = {
+  helperContracts?: DriftIndexedContract[];
+};
 
 export type FlowContext = {
   sourceFile: ts.SourceFile;

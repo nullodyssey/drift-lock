@@ -89,7 +89,7 @@
         "type": "file"
       },
       "contentHash": "sha256:35825ba669b3804aeb881b35443a41bf9affe6caa225786baf6fa3a29509337a",
-      "bodyHash": "sha256:0680e6cd45b4cdb633e275550c31bbf1a5caeb4e8b81f51aae7dd0f85eea5632"
+      "bodyHash": "sha256:7b9cee328fdacf240851a35dc7b42d1f04c5de161268cc312a2973a3d03969f6"
     },
     {
       "version": 1,
@@ -151,7 +151,17 @@
         "name": "createDefaultDriftConfig"
       },
       "contentHash": "sha256:637f5b374e3a2272c0037157e427c13b2e93625f8b02f90f1e876f110847a5d3",
-      "bodyHash": "sha256:c90b3b6e7ce8526ce2d4f9139d8fd6c63eeec4ac09d5d063482bed43fb725d06"
+      "bodyHash": "sha256:c90b3b6e7ce8526ce2d4f9139d8fd6c63eeec4ac09d5d063482bed43fb725d06",
+      "summaries": {
+        "ssotFlow": [
+          {
+            "ssotPath": "./index-file.ts",
+            "returns": [
+              "return.index"
+            ]
+          }
+        ]
+      }
     },
     {
       "version": 1,
@@ -211,7 +221,7 @@
         "type": "file"
       },
       "contentHash": "sha256:1179f789ce55d66eaff12f42cfde0c214aed2c8072a8aeea770a6c7af5392381",
-      "bodyHash": "sha256:ffc7625cb622c95bc1735e95866996e11f1f395ee357b592473603595995ab07"
+      "bodyHash": "sha256:6b41175983a324039b3dbb68c5404512323d354d66f93ce3386a2b3b8d7b849a"
     },
     {
       "version": 1,
@@ -327,7 +337,7 @@
         "type": "file"
       },
       "contentHash": "sha256:5dc5e96324639907ce7e72e7d857f2801aa6e9731ca8774c14cda03640404d6c",
-      "bodyHash": "sha256:eda207c597cd9998e12d188c282d04da09cf4e6d90f45713741b8b648999fd76"
+      "bodyHash": "sha256:d5516648e30bf04bf8f722e0ce765321fe53530a73698e2fa35ef1ccf3a1e44c"
     },
     {
       "version": 1,
@@ -443,7 +453,7 @@
         "type": "file"
       },
       "contentHash": "sha256:a93e5cd106d8592bb742334d365fcdd83a5e691eb4d6b229afa3c1b1f16ebeda",
-      "bodyHash": "sha256:5443aec9a491d7275d884ede543d1f62c085016778b91c48b9c547dd5b6b7d95"
+      "bodyHash": "sha256:06e98c52410459f9553900d7af6bc3eca6f9a1e78be2b5bf9bfcecb8420c5e78"
     },
     {
       "version": 1,
@@ -533,7 +543,27 @@
         "type": "file"
       },
       "contentHash": "sha256:cd8efaf0ef32c475e6457d55014c1a3db765dbf342f58a4d8c35e28138e24247",
-      "bodyHash": "sha256:058957ef58b34547ebf897eb0efaa57cbe7a879fe3d2efabd82afe96e51d085b"
+      "bodyHash": "sha256:0ee43dda1fa55876d53979e38d523cd853de17c4a986382513599faa9dd6ad02"
+    },
+    {
+      "version": 1,
+      "id": "core.ssot-flow.helpers",
+      "scope": "file",
+      "stability": "draft",
+      "intent": "Resolve first-iteration helper contract summaries for named imports consumed by SSOT flow checks without trusting function names or unsupported module shapes.",
+      "llm": {
+        "must_not_change": [
+          "Helper summaries must be consumed only when they match the current SSOT path.",
+          "Unresolved helper imports must fail closed instead of becoming trusted.",
+          "V1 unsupported import shapes must stay explicit in code comments."
+        ]
+      },
+      "file": "packages/core/src/core/rules/ssot-flow/helpers.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:b01c297311c245db894c8d5711cc6f9047af77a15c1312d2544e043b2e805d64",
+      "bodyHash": "sha256:930da33574932514b10a9fc9687b6d0db68db4a4f3bcb94ea1725138cb62ebbd"
     },
     {
       "version": 1,
@@ -610,7 +640,7 @@
         "type": "file"
       },
       "contentHash": "sha256:d508f5d10722f9259ecd8828b5d51497de1bfc7406a57d74275500012f386e6b",
-      "bodyHash": "sha256:9ecdece05cd054846844f3e95bb4510754bdd4a67b4f3fc32c26dccf1880ae69"
+      "bodyHash": "sha256:0463352d3188234604ab96a058086e48077c2b586fba7a2448430d1d6ecc384c"
     },
     {
       "version": 1,
@@ -649,7 +679,7 @@
         "type": "file"
       },
       "contentHash": "sha256:88ed6ef2e11270ccfa1196a00b6ddc1c82f28b94b3b45bdb41a03c8eaae0bc9e",
-      "bodyHash": "sha256:707be5b890aed570bfd15283ba96cf54b266f2114da2ddc83dd86484455e67b5"
+      "bodyHash": "sha256:4de1473522d0db3a9e68878b349df6b0ccde256788a2455fbee3955a8f0a10af"
     },
     {
       "version": 1,
@@ -678,7 +708,7 @@
         "type": "file"
       },
       "contentHash": "sha256:ede7249fd207426590ce3d8cd031c9a7f9413674b07fbc857ababca54e1eec38",
-      "bodyHash": "sha256:677b14ab47170f632dbbd268392d47abf994dc0651b36ec6806ed5fbcc5a003d"
+      "bodyHash": "sha256:fc0770b905e5c14a8a0579176c43fb940054f3cbb069f49181bc9b517705f9de"
     },
     {
       "version": 1,
@@ -747,7 +777,7 @@
         "type": "file"
       },
       "contentHash": "sha256:7f30472dfbcc354b26bb803a203110f3035691b2ca8877ff986100fcbd8bf6f0",
-      "bodyHash": "sha256:3265cb02e663ac02b773f2407cc6868e0a7e1586212464acd7f736c32c5b8da8"
+      "bodyHash": "sha256:9f952c19d5c4223df8aa4e4fc867de68a7bb05253a0e07c7ef92e93abd1d07d8"
     },
     {
       "version": 1,
@@ -838,7 +868,7 @@
         "type": "file"
       },
       "contentHash": "sha256:73527dbf5a4b7a86c5f6422367cb6af8362f746093b403a4b4296d584a54e470",
-      "bodyHash": "sha256:6bc121f316b03b8a0c77d1e7c1639cf256873b5c9ff3c1142f29e7629d103b55"
+      "bodyHash": "sha256:c5ed1b5e397eb2807bb071c01fcfe63ef69fd2c5dfaa553376a6569804ab17ba"
     },
     {
       "version": 1,

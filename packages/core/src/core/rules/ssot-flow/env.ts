@@ -1,5 +1,5 @@
 import ts from 'typescript';
-import type { FlowEnv, FlowReason, FlowValue } from './types.js';
+import type { FlowEnv, FlowHelperImports, FlowReason, FlowValue } from './types.js';
 import { trusted, untrusted, unsupported } from './types.js';
 
 /* @drift
@@ -19,8 +19,15 @@ llm:
     - Parameters must shadow trusted imports as untrusted local values.
     - Only supported immutable local patterns may propagate provenance.
 */
-export function createInitialEnv(trustedImports: Set<string>, parameters: ts.NodeArray<ts.ParameterDeclaration>): FlowEnv {
+export function createInitialEnv(
+  trustedImports: Set<string>,
+  parameters: ts.NodeArray<ts.ParameterDeclaration>,
+  helperImports: FlowHelperImports = new Map(),
+): FlowEnv {
   const env = new Map<string, FlowValue>();
+  for (const [name, helperSummary] of helperImports) {
+    env.set(name, helperSummary ? { trust: 'unsupported', reason: 'unverified-helper-call', helperSummary } : { ...unsupported, reason: 'unverified-helper-call' });
+  }
   for (const name of trustedImports) env.set(name, trusted);
   for (const parameter of parameters) {
     for (const name of bindingNames(parameter.name)) env.set(name, untrusted);
@@ -56,11 +63,15 @@ export function expressionFlow(expression: ts.Expression, env: FlowEnv): FlowVal
   }
 
   if (ts.isPropertyAccessExpression(expression)) {
-    return expressionFlow(expression.expression, env);
+    const base = expressionFlow(expression.expression, env);
+    if (base.objectSummary) return flowForSummaryPath(base, expression.name.text, expression);
+    return base;
   }
 
   if (ts.isElementAccessExpression(expression)) {
-    return expressionFlow(expression.expression, env);
+    const base = expressionFlow(expression.expression, env);
+    if (base.objectSummary) return unsupportedFlow('unverified-helper-call', expression);
+    return base;
   }
 
   if (ts.isParenthesizedExpression(expression) || ts.isNonNullExpression(expression)) {
@@ -92,7 +103,14 @@ export function expressionFlow(expression: ts.Expression, env: FlowEnv): FlowVal
     return untrusted;
   }
 
-  if (ts.isCallExpression(expression) || ts.isNewExpression(expression) || ts.isAwaitExpression(expression)) {
+  if (ts.isCallExpression(expression)) {
+    const helper = calledHelper(expression, env);
+    if (helper?.helperSummary) return { trust: 'untrusted', objectSummary: { returns: helper.helperSummary.returns, path: [] } };
+    if (helper) return unsupportedFlow('unverified-helper-call', expression);
+    return unsupportedFlow('unsupported-call', expression);
+  }
+
+  if (ts.isNewExpression(expression) || ts.isAwaitExpression(expression)) {
     return unsupportedFlow('unsupported-call', expression);
   }
 
@@ -104,6 +122,25 @@ export function combineDerived(values: FlowValue[]): FlowValue {
   if (unsupportedValue) return unsupportedValue;
   if (values.some((value) => value.trust === 'trusted')) return trusted;
   return untrusted;
+}
+
+function flowForSummaryPath(value: FlowValue, segment: string, node: ts.Node): FlowValue {
+  const summary = value.objectSummary;
+  if (!summary) return value;
+  const path = [...summary.path, segment];
+  const returnPath = `return.${path.join('.')}`;
+  if (summary.returns.includes(returnPath)) return trusted;
+  if (summary.returns.some((candidate) => candidate.startsWith(`${returnPath}.`))) {
+    return { trust: 'untrusted', objectSummary: { returns: summary.returns, path } };
+  }
+  return unsupportedFlow('unverified-helper-call', node);
+}
+
+function calledHelper(expression: ts.CallExpression, env: FlowEnv): FlowValue | undefined {
+  const callee = expression.expression;
+  if (!ts.isIdentifier(callee)) return undefined;
+  const value = env.get(callee.text);
+  return value?.helperSummary || value?.reason === 'unverified-helper-call' ? value : undefined;
 }
 
 function unsupportedFlow(reason: FlowReason, node: ts.Node): FlowValue {

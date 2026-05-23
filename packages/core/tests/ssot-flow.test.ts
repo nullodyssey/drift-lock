@@ -312,6 +312,59 @@ describe('drift ssot flow', () => {
     });
   });
 
+  it('proves helper calls with verified ssot-flow summaries', async () => {
+    const root = await createProject(helperSummaryProject());
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('rejects helper calls without verified summaries', async () => {
+    const files = helperSummaryProject();
+    files['src/pricing.ts'] = helperSourceWithoutContract();
+    const root = await createProject(files);
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.amount')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unverified-helper-call',
+        foundExpression: 'price.monthlyAmount * input.seats',
+        foundNodeKind: 'BinaryExpression',
+      },
+    });
+  });
+
+  it('rejects helper summary fields that are not declared as returned sinks', async () => {
+    const files = helperSummaryProject();
+    files['src/pricing.ts'] = verifiedHelperSource(['return.priceId']);
+    const root = await createProject(files);
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.amount')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unverified-helper-call',
+        foundExpression: 'price.monthlyAmount * input.seats',
+        foundNodeKind: 'BinaryExpression',
+      },
+    });
+  });
+
+  it('rejects helper summaries for a different ssot path', async () => {
+    const files = helperSummaryProject();
+    files['src/actions.ts'] = helperCallSiteSource('./other-pricing-source.ts');
+    const root = await createProject(files);
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.priceId')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unverified-helper-call',
+      },
+    });
+  });
+
   it('rejects derived expressions that mix trusted values with unsupported helper calls', async () => {
     const root = await createProject({
       'src/actions.ts': validFlowSource().replace('amount: price.monthlyAmount * payload.seats,', 'amount: price.monthlyAmount + resolveFee(payload),'),
@@ -483,4 +536,98 @@ describe('drift ssot flow', () => {
 
     expect(result.errors.map((error) => error.code)).toContain('DRIFT004_INVALID_FIELD_VALUE');
   });
+function helperSummaryProject(): Record<string, string> {
+  return {
+    'src/actions.ts': helperCallSiteSource('./pricing-source.ts'),
+    'src/pricing.ts': verifiedHelperSource(['return.priceId', 'return.monthlyAmount', 'return.currency']),
+    'src/pricing-source.ts': `export const BILLING_PRICES = {
+  pro: { priceId: 'price_pro', monthlyAmount: 1000, currency: 'USD' },
+};
+`,
+  };
+}
+
+function helperCallSiteSource(ssotPath: string): string {
+  return `import { resolvePrice } from './pricing';
+
+/* @drift
+version: 1
+id: billing.create-checkout-session
+scope: declaration
+stability: locked
+
+intent: >
+  Create a Stripe Checkout session from a helper-provided pricing summary.
+
+ssot:
+  pricing: "${ssotPath}"
+
+invariants:
+  - id: checkout-price-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.priceId
+      - return.amount
+      - return.currency
+*/
+export function createCheckoutSession(input: { plan: 'pro'; seats: number }) {
+  const price = resolvePrice(input.plan);
+
+  return {
+    priceId: price.priceId,
+    amount: price.monthlyAmount * input.seats,
+    currency: price.currency,
+  };
+}
+`;
+}
+
+function verifiedHelperSource(sinks: string[]): string {
+  return `import { BILLING_PRICES } from './pricing-source';
+
+/* @drift
+version: 1
+id: billing.resolve-price
+scope: declaration
+stability: locked
+
+intent: >
+  Resolve the selected billing price from the pricing source of truth.
+
+ssot:
+  pricing: "./pricing-source.ts"
+
+invariants:
+  - id: return-price-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+${sinks.map((sink) => `      - ${sink}`).join('\n')}
+*/
+export function resolvePrice(plan: 'pro') {
+  const price = BILLING_PRICES[plan];
+  return {
+    priceId: price.priceId,
+    monthlyAmount: price.monthlyAmount,
+    currency: price.currency,
+  };
+}
+`;
+}
+
+function helperSourceWithoutContract(): string {
+  return `import { BILLING_PRICES } from './pricing-source';
+
+export function resolvePrice(plan: 'pro') {
+  const price = BILLING_PRICES[plan];
+  return {
+    priceId: price.priceId,
+    monthlyAmount: price.monthlyAmount,
+    currency: price.currency,
+  };
+}
+`;
+}
+
 });
