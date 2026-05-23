@@ -72,7 +72,8 @@ export async function checkContracts(options: CheckOptions): Promise<{
   const contractsToCheck = options.changedOnly
     ? changedContracts(extracted.contracts, scopedIndex, gitScope?.impactedContractIds)
     : extracted.contracts;
-  const helperContracts = mergedHelperContracts(scopedIndex ?? index, toIndex(extracted.contracts).contracts);
+  // Helper summaries need the full index; scopedIndex only decides which contracts run.
+  const helperContracts = mergedHelperContracts(index, toIndex(extracted.contracts).contracts);
 
   // Run invariant checks only after extraction. Schema/ancrage errors should not
   // prevent other valid contracts in the repo from being checked.

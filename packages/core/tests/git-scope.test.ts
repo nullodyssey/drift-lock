@@ -58,6 +58,32 @@ describe('drift git scope', () => {
     expect(result.errors.some((error) => error.contractId === 'billing.unchanged')).toBe(false);
   });
 
+  it('uses unchanged helper summaries during Git-scoped changed-only checks', async () => {
+    const root = await createProject({
+      'src/actions.ts': helperCallSiteSource('Create a Stripe Checkout session from a helper-provided pricing summary.'),
+      'src/pricing.ts': verifiedHelperSource(),
+      'src/pricing-source.ts': `export const BILLING_PRICES = {
+  pro: { priceId: 'price_pro', monthlyAmount: 1000 },
+};
+`,
+    });
+    const extracted = await extractContracts({ root });
+    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await createGitBaseline(root);
+    await writeFile(
+      path.join(root, 'src/actions.ts'),
+      helperCallSiteSource('Create a Stripe Checkout session from a helper-provided pricing summary.')
+        .replace('  return {', '  const seats = input.seats;\n  return {')
+        .replace('price.monthlyAmount * input.seats', 'price.monthlyAmount * seats'),
+      'utf8',
+    );
+
+    const result = await checkContracts({ root, changedOnly: true, gitBase: 'HEAD' });
+
+    expect(result.contracts.map((contract) => contract.id)).toEqual(['billing.create-checkout-session']);
+    expect(result.errors).toEqual([]);
+  });
+
   it('rejects duplicate ids introduced outside the Git scope', async () => {
     const root = await createProject({
       'src/existing.ts': validActionsSource('billing.duplicate'),
@@ -97,3 +123,69 @@ describe('drift git scope', () => {
     expect(result.errors.some((error) => error.code === 'DRIFT005_DUPLICATE_CONTRACT_ID')).toBe(false);
   });
 });
+
+function helperCallSiteSource(intent: string): string {
+  return `import { resolvePrice } from './pricing';
+
+/* @drift
+version: 1
+id: billing.create-checkout-session
+scope: declaration
+stability: locked
+
+intent: >
+  ${intent}
+
+ssot:
+  pricing: "./pricing-source.ts"
+
+invariants:
+  - id: checkout-price-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.priceId
+      - return.amount
+*/
+export function createCheckoutSession(input: { plan: 'pro'; seats: number }) {
+  const price = resolvePrice(input.plan);
+  return {
+    priceId: price.priceId,
+    amount: price.monthlyAmount * input.seats,
+  };
+}
+`;
+}
+
+function verifiedHelperSource(): string {
+  return `import { BILLING_PRICES } from './pricing-source';
+
+/* @drift
+version: 1
+id: billing.resolve-price
+scope: declaration
+stability: locked
+
+intent: >
+  Resolve the selected billing price from the pricing source of truth.
+
+ssot:
+  pricing: "./pricing-source.ts"
+
+invariants:
+  - id: return-price-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.priceId
+      - return.monthlyAmount
+*/
+export function resolvePrice(plan: 'pro') {
+  const price = BILLING_PRICES[plan];
+  return {
+    priceId: price.priceId,
+    monthlyAmount: price.monthlyAmount,
+  };
+}
+`;
+}
