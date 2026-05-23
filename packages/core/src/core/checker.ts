@@ -1,6 +1,5 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import ts from 'typescript';
 import type { DriftAdoptionMode, DriftContractsIndex, DriftDiagnostic, DriftError, DriftExtractedContract } from '../types.js';
 import { changedContracts, resolveCheckScope } from './contract-selection.js';
 import { driftError, toDiagnostic } from './errors.js';
@@ -8,9 +7,9 @@ import { extractContracts, type ExtractOptions } from './extractor.js';
 import { buildHelperContracts } from './helper-summaries.js';
 import { readIndex, toIndex } from './index-file.js';
 import { checkLockedChanges } from './locked-contracts.js';
-import { moduleSpecifierCandidates } from './module-specifier.js';
 import { checkRequiredContracts } from './required-contracts.js';
 import { checkSsotFlow } from './rules/ssot-flow/index.js';
+import { checkSsotUsage } from './rules/ssot-usage/index.js';
 
 /* @drift
 version: 1
@@ -127,43 +126,5 @@ function checkScopedDuplicateIds(
 }
 
 
-export function checkSsotUsage(contract: DriftExtractedContract, text: string): DriftError[] {
-  const errors: DriftError[] = [];
-  const invariants = contract.invariants ?? [];
-  const ssot = contract.ssot ?? {};
-
-  for (const invariant of invariants) {
-    if (invariant.enforce !== 'drift/ssot-usage' || !invariant.ssot) continue;
-    const ssotPath = ssot[invariant.ssot];
-    if (!ssotPath) continue;
-    if (!usesSsot(text, contract, ssotPath)) {
-      errors.push(
-        driftError(
-          'DRIFT010_SSOT_NOT_USED',
-          contract.file,
-          { id: contract.id, ssotKey: invariant.ssot, ssotPath },
-          { line: contract.line, column: contract.column },
-        ),
-      );
-    }
-  }
-
-  return errors;
-}
-
-function usesSsot(text: string, contract: DriftExtractedContract, ssotPath: string): boolean {
-  const anchoredText = text.slice(contract.bodyStart, contract.bodyEnd);
-  const ssotCandidates = moduleSpecifierCandidates(ssotPath);
-  if (ssotCandidates.some((candidate) => anchoredText.includes(candidate))) return true;
-
-  // V1 treats imports as sufficient SSOT usage. This is intentionally shallow:
-  // the goal is catching obvious local replacements, not proving data flow.
-  const sourceFile = ts.createSourceFile(contract.file, text, ts.ScriptTarget.Latest, true);
-  return sourceFile.statements.some((statement) => {
-    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) return false;
-    const importedPath = statement.moduleSpecifier.text;
-    return ssotCandidates.includes(importedPath);
-  });
-}
-
 export { checkLockedChanges, checkLockedChangesForFile } from './locked-contracts.js';
+export { checkSsotUsage } from './rules/ssot-usage/index.js';

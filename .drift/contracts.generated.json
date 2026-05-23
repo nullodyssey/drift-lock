@@ -89,7 +89,7 @@
         "type": "file"
       },
       "contentHash": "sha256:35825ba669b3804aeb881b35443a41bf9affe6caa225786baf6fa3a29509337a",
-      "bodyHash": "sha256:ca3bbd1906ff22cb56896b888f7a171f81a6c5ea313809dfe7d55555a04db5b3"
+      "bodyHash": "sha256:d116dc16081972d53e574a7701b425c86f7ff97b01eda818d16446baeebcbef5"
     },
     {
       "version": 1,
@@ -802,6 +802,42 @@
       },
       "contentHash": "sha256:88ed6ef2e11270ccfa1196a00b6ddc1c82f28b94b3b45bdb41a03c8eaae0bc9e",
       "bodyHash": "sha256:4de1473522d0db3a9e68878b349df6b0ccde256788a2455fbee3955a8f0a10af"
+    },
+    {
+      "version": 1,
+      "id": "core.ssot-usage.rule",
+      "scope": "file",
+      "stability": "locked",
+      "intent": "Enforce drift/ssot-usage invariants by proving that anchored code references the declared source-of-truth module.",
+      "ssot": {
+        "errors": "../../errors.ts",
+        "module-specifier": "../../module-specifier.ts"
+      },
+      "invariants": [
+        {
+          "id": "usage-reports-shared-diagnostics",
+          "enforce": "drift/ssot-usage",
+          "ssot": "errors"
+        },
+        {
+          "id": "usage-supports-module-specifier-candidates",
+          "enforce": "drift/ssot-usage",
+          "ssot": "module-specifier"
+        }
+      ],
+      "llm": {
+        "must_not_change": [
+          "checkSsotUsage must remain the rule entrypoint consumed by checker and ESLint.",
+          "NodeNext TypeScript and emitted JavaScript module specifier alternatives must remain supported.",
+          "Missing SSOT references must report DRIFT010_SSOT_NOT_USED."
+        ]
+      },
+      "file": "packages/core/src/core/rules/ssot-usage/index.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:7bad1652c8ce1f1511ebb657be1516ee532b3f4ff596560d761e8e2d5a133812",
+      "bodyHash": "sha256:d13b2908e930823fdd48b5355e05ba6e2e7c1b8002c1da5da09c527143176ff0"
     },
     {
       "version": 1,
