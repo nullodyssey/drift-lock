@@ -203,6 +203,7 @@ ruleTester.run('ssot-flow', rules['ssot-flow'] as any, {
   const removed = createIndexedProject(validActionsSource());
   const accepted = createIndexedProject(validActionsSource());
   const invalidIndex = createProjectWithIndex('{<<<<<<< HEAD');
+  const invalidIndexShape = createProjectWithIndex(JSON.stringify({ version: 1, contracts: [{ id: 'billing.create-checkout-session' }] }));
   mkdirSync(path.join(accepted.root, '.drift/accepted-contract-changes'), { recursive: true });
   writeFileSync(
     path.join(accepted.root, '.drift/accepted-contract-changes/billing.create-checkout-session.md'),
@@ -231,6 +232,12 @@ ruleTester.run('ssot-flow', rules['ssot-flow'] as any, {
         filename: invalidIndex.filename,
         code: validActionsSource(),
         options: [{ root: invalidIndex.root }],
+        errors: [{ message: /DRIFT_INDEX_INVALID/ }],
+      },
+      {
+        filename: invalidIndexShape.filename,
+        code: validActionsSource(),
+        options: [{ root: invalidIndexShape.root }],
         errors: [{ message: /DRIFT_INDEX_INVALID/ }],
       },
       {

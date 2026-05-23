@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { checkLockedChangesForFile, type DriftContractsIndex, extractContractsFromSource } from '@drift-lock/core';
+import { checkLockedChangesForFile, type DriftContractsIndex, extractContractsFromSource, validateIndexObject } from '@drift-lock/core';
 import { getRuleOptions, relativeFilename, reportDriftError } from '../utils.js';
 
 /* @drift
@@ -88,7 +88,8 @@ function readIndexSync(root: string, indexPath: string): IndexReadResult {
   if (cached) return cached;
 
   try {
-    const index = JSON.parse(readFileSync(absoluteIndexPath, 'utf8')) as DriftContractsIndex;
+    const parsed = JSON.parse(readFileSync(absoluteIndexPath, 'utf8')) as unknown;
+    const index = validateIndexObject(parsed, indexPath);
     const result: IndexReadResult = { status: 'loaded', index };
     indexCache.set(absoluteIndexPath, result);
     return result;
