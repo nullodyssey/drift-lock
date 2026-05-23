@@ -77,6 +77,14 @@ describe('drift config', () => {
 
     await writeFile(
       path.join(root, '.drift/config.json'),
+      JSON.stringify({ version: 1, source: 'src', index: '.drift/contracts.generated.json', requireContract: ['src/**/*.ts'] }),
+      'utf8',
+    );
+
+    await expect(readDriftConfig(root)).rejects.toThrow(/Invalid DriftLock config/);
+
+    await writeFile(
+      path.join(root, '.drift/config.json'),
       JSON.stringify({ version: 1, source: [], index: '.drift/contracts.generated.json', requireContracts: [] }),
       'utf8',
     );

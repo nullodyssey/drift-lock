@@ -102,8 +102,14 @@ export async function writeDriftConfig(root: string, config: DriftConfigInput = 
   await writeFile(absoluteOutput, `${JSON.stringify(config, null, 2)}\n`, 'utf8');
 }
 
+const configKeys = new Set(['version', 'source', 'index', 'requireContracts', 'adoption']);
+
 function validateConfig(value: unknown, file: string): DriftConfig {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error(`Invalid DriftLock config at "${file}".`);
+  }
+
+  if (Object.keys(value).some((key) => !configKeys.has(key))) {
     throw new Error(`Invalid DriftLock config at "${file}".`);
   }
 
