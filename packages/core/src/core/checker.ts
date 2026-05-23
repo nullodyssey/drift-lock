@@ -2,10 +2,9 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import ts from 'typescript';
 import type { DriftAdoptionMode, DriftContractsIndex, DriftDiagnostic, DriftError, DriftExtractedContract } from '../types.js';
-import { diffContractSets } from './contract-diff.js';
+import { changedContracts, resolveCheckScope } from './contract-selection.js';
 import { driftError, toDiagnostic } from './errors.js';
 import { extractContracts, type ExtractOptions } from './extractor.js';
-import { filterIndexByFiles, resolveGitFileScope } from './git-scope.js';
 import { buildHelperContracts } from './helper-summaries.js';
 import { readIndex, toIndex } from './index-file.js';
 import { checkLockedChanges } from './locked-contracts.js';
@@ -52,9 +51,15 @@ export async function checkContracts(options: CheckOptions): Promise<{
 }> {
   const root = path.resolve(options.root);
   const index = await readIndex(root, options.indexPath);
-  const gitScope = options.gitBase ? await resolveGitFileScope(root, options.gitBase, options.sourceDir, index) : undefined;
-  const scopedIndex = gitScope && index ? filterIndexByFiles(index, gitScope.contractFiles) : index;
-  const extractFiles = gitScope?.extractFiles ?? options.files;
+  const { gitScope, scopedIndex, extractFiles } = await resolveCheckScope(
+    {
+      root,
+      sourceDir: options.sourceDir,
+      files: options.files,
+      gitBase: options.gitBase,
+    },
+    index,
+  );
   const extracted = await extractContracts({ ...options, files: extractFiles });
   const diagnostics = extracted.errors.map((error) => toDiagnostic(error));
   diagnostics.push(
@@ -121,16 +126,6 @@ function checkScopedDuplicateIds(
   return errors;
 }
 
-function changedContracts(
-  contracts: DriftExtractedContract[],
-  index: DriftContractsIndex | undefined,
-  impactedContractIds: string[] = [],
-): DriftExtractedContract[] {
-  if (!index) return contracts;
-  const changedIds = new Set(diffContractSets(toIndex(contracts).contracts, index.contracts).changes.map((change) => change.id));
-  for (const id of impactedContractIds) changedIds.add(id);
-  return contracts.filter((contract) => changedIds.has(contract.id));
-}
 
 export function checkSsotUsage(contract: DriftExtractedContract, text: string): DriftError[] {
   const errors: DriftError[] = [];
