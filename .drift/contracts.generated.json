@@ -89,7 +89,7 @@
         "type": "file"
       },
       "contentHash": "sha256:35825ba669b3804aeb881b35443a41bf9affe6caa225786baf6fa3a29509337a",
-      "bodyHash": "sha256:beadc478774d46034dbc5b2791a34900ba6a43ba753e18478cbc5148b93c0b2c"
+      "bodyHash": "sha256:146938b3d73abbd03a7448b9b9ab2d40dc2804720a409a6992394e877b14f2e4"
     },
     {
       "version": 1,
@@ -437,6 +437,25 @@
     },
     {
       "version": 1,
+      "id": "core.helper-summaries",
+      "scope": "file",
+      "stability": "draft",
+      "intent": "Build the global helper summary context used by SSOT flow checks while preserving current extracted contracts over committed index entries.",
+      "llm": {
+        "must_not_change": [
+          "Helper summaries must use the full index, not the Git-scoped index.",
+          "Current extracted contracts must override committed index entries."
+        ]
+      },
+      "file": "packages/core/src/core/helper-summaries.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:adadabc6b9b6de2a397601255247d35388d72cdd0b1c16d7c0c82a97d7093b09",
+      "bodyHash": "sha256:a4867ca4f52c0a010a5909c2466df46077cd8ef374df11ef4219b0aeacb44f60"
+    },
+    {
+      "version": 1,
       "id": "core.index-file",
       "scope": "file",
       "stability": "locked",
@@ -457,6 +476,26 @@
     },
     {
       "version": 1,
+      "id": "core.locked-contracts",
+      "scope": "file",
+      "stability": "locked",
+      "intent": "Enforce locked contract baselines and acceptance files for intentional product-level contract changes.",
+      "llm": {
+        "must_not_change": [
+          "Locked contracts must compare canonical content hashes.",
+          "Valid acceptance files must name the changed contract and include a clear reason.",
+          "Missing current contracts must still report locked removals."
+        ]
+      },
+      "file": "packages/core/src/core/locked-contracts.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:ee6500cc3cc4e20788237623ba485fdca96e34d20a4208b081ee3b195899b133",
+      "bodyHash": "sha256:34505e762e46a5f41092b7cf27f53bd4eec126c4455e280c1125c014c5563b1d"
+    },
+    {
+      "version": 1,
       "id": "core.module-specifier",
       "scope": "file",
       "stability": "locked",
@@ -474,6 +513,47 @@
       },
       "contentHash": "sha256:1adf2166190128b1d4dfa240fe0fe897cf60f003ba823a9f4292f9550cb3ba70",
       "bodyHash": "sha256:8f45c886fab0703d0fff7502ad161b34a3af2e269b52c2463ec75bb9bd9f65de"
+    },
+    {
+      "version": 1,
+      "id": "core.required-contracts",
+      "scope": "file",
+      "stability": "draft",
+      "intent": "Report required-contract coverage gaps with adoption-mode severity while keeping checker orchestration free of coverage policy details.",
+      "ssot": {
+        "coverage": "./coverage.ts",
+        "errors": "./errors.ts",
+        "files": "./files.ts"
+      },
+      "invariants": [
+        {
+          "id": "required-contracts-use-coverage-matchers",
+          "enforce": "drift/ssot-usage",
+          "ssot": "coverage"
+        },
+        {
+          "id": "required-contracts-use-shared-diagnostics",
+          "enforce": "drift/ssot-usage",
+          "ssot": "errors"
+        },
+        {
+          "id": "required-contracts-discovers-source-files",
+          "enforce": "drift/ssot-usage",
+          "ssot": "files"
+        }
+      ],
+      "llm": {
+        "must_not_change": [
+          "Required-contract gaps must honor audit, warn, and enforce severities.",
+          "Extracted files must be preferred over rediscovering the whole source tree."
+        ]
+      },
+      "file": "packages/core/src/core/required-contracts.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:c9b18c8190a22a2248a10dfe8219176ab0a91123b0c81961f8b3dc0efe856cb0",
+      "bodyHash": "sha256:8daa50a7ad10d3cd6c1e907077e72f0d3b264389cea0d0ce43090d881045c9bf"
     },
     {
       "version": 1,

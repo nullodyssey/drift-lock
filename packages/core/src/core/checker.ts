@@ -1,15 +1,16 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import ts from 'typescript';
-import type { DriftAdoptionMode, DriftContractsIndex, DriftDiagnostic, DriftDiagnosticSeverity, DriftError, DriftExtractedContract, DriftIndexedContract, DriftSource } from '../types.js';
+import type { DriftAdoptionMode, DriftContractsIndex, DriftDiagnostic, DriftError, DriftExtractedContract } from '../types.js';
 import { diffContractSets } from './contract-diff.js';
-import { filesMatchingRequireContractPatterns, firstMatchingRequireContractPattern } from './coverage.js';
 import { driftError, toDiagnostic } from './errors.js';
 import { extractContracts, type ExtractOptions } from './extractor.js';
-import { discoverSourceFiles } from './files.js';
 import { filterIndexByFiles, resolveGitFileScope } from './git-scope.js';
+import { buildHelperContracts } from './helper-summaries.js';
 import { readIndex, toIndex } from './index-file.js';
+import { checkLockedChanges } from './locked-contracts.js';
 import { moduleSpecifierCandidates } from './module-specifier.js';
+import { checkRequiredContracts } from './required-contracts.js';
 import { checkSsotFlow } from './rules/ssot-flow/index.js';
 
 /* @drift
@@ -57,14 +58,14 @@ export async function checkContracts(options: CheckOptions): Promise<{
   const extracted = await extractContracts({ ...options, files: extractFiles });
   const diagnostics = extracted.errors.map((error) => toDiagnostic(error));
   diagnostics.push(
-    ...(await checkRequiredContracts(
+    ...(await checkRequiredContracts({
       root,
-      options.sourceDir,
-      extractFiles,
-      extracted.contracts,
-      options.requireContracts ?? [],
-      options.adoptionMode ?? 'enforce',
-    )),
+      sourceDir: options.sourceDir,
+      files: extractFiles,
+      contracts: extracted.contracts,
+      patterns: options.requireContracts ?? [],
+      adoptionMode: options.adoptionMode ?? 'enforce',
+    })),
   );
   if (gitScope && index) {
     diagnostics.push(...checkScopedDuplicateIds(extracted.contracts, index, gitScope.contractFiles).map((error) => toDiagnostic(error)));
@@ -73,7 +74,7 @@ export async function checkContracts(options: CheckOptions): Promise<{
     ? changedContracts(extracted.contracts, scopedIndex, gitScope?.impactedContractIds)
     : extracted.contracts;
   // Helper summaries need the full index; scopedIndex only decides which contracts run.
-  const helperContracts = mergedHelperContracts(index, toIndex(extracted.contracts).contracts);
+  const helperContracts = buildHelperContracts(index, toIndex(extracted.contracts).contracts);
 
   // Run invariant checks only after extraction. Schema/ancrage errors should not
   // prevent other valid contracts in the repo from being checked.
@@ -91,43 +92,6 @@ export async function checkContracts(options: CheckOptions): Promise<{
 
   const errors = diagnostics.filter((diagnostic) => diagnostic.severity === 'error');
   return { contracts: extracted.contracts, diagnostics, errors };
-}
-
-function mergedHelperContracts(index: DriftContractsIndex | undefined, current: DriftIndexedContract[]): DriftIndexedContract[] {
-  const byId = new Map<string, DriftIndexedContract>();
-  for (const contract of index?.contracts ?? []) byId.set(contract.id, contract);
-  for (const contract of current) byId.set(contract.id, contract);
-  return [...byId.values()];
-}
-
-async function checkRequiredContracts(
-  root: string,
-  sourceDir: DriftSource | undefined,
-  files: string[] | undefined,
-  contracts: DriftExtractedContract[],
-  patterns: string[],
-  adoptionMode: DriftAdoptionMode,
-): Promise<DriftDiagnostic[]> {
-  if (patterns.length === 0) return [];
-  const sourceFiles = files ?? (await discoverSourceFiles(root, sourceDir));
-  const filesWithContracts = new Set(contracts.map((contract) => contract.file));
-  const severity = severityForAdoptionMode(adoptionMode);
-  return filesMatchingRequireContractPatterns(sourceFiles, patterns)
-    .filter((file) => !filesWithContracts.has(file))
-    .map((file) =>
-      toDiagnostic(
-        driftError('DRIFT015_REQUIRED_CONTRACT_MISSING', file, {
-          pattern: firstMatchingRequireContractPattern(file, patterns) ?? patterns[0],
-        }),
-        severity,
-      ),
-    );
-}
-
-function severityForAdoptionMode(mode: DriftAdoptionMode): DriftDiagnosticSeverity {
-  if (mode === 'audit') return 'info';
-  if (mode === 'warn') return 'warning';
-  return 'error';
 }
 
 function checkScopedDuplicateIds(
@@ -207,65 +171,4 @@ function usesSsot(text: string, contract: DriftExtractedContract, ssotPath: stri
   });
 }
 
-export function checkLockedChanges(
-  root: string,
-  contracts: DriftExtractedContract[],
-  index: DriftContractsIndex,
-): DriftError[] {
-  const errors: DriftError[] = [];
-  const currentById = new Map(contracts.map((contract) => [contract.id, contract]));
-
-  // Locked contracts are compared by canonical content hash, not raw text, so
-  // whitespace and YAML comments do not force acceptance files.
-  for (const previous of index.contracts) {
-    if (previous.stability !== 'locked') continue;
-    const current = currentById.get(previous.id);
-    if (current && current.contentHash === previous.contentHash) continue;
-    const acceptance = readAcceptanceSync(root, previous.id);
-    if (acceptance.valid) continue;
-    const currentLocation = current ? { file: current.file, line: current.line, column: current.column } : undefined;
-    errors.push(
-      driftError(
-        acceptance.exists ? 'DRIFT012_INVALID_ACCEPTANCE_FILE' : 'DRIFT011_LOCKED_CONTRACT_CHANGED',
-        currentLocation?.file ?? previous.file,
-        { id: previous.id },
-        { line: currentLocation?.line, column: currentLocation?.column },
-      ),
-    );
-  }
-
-  return errors;
-}
-
-export function checkLockedChangesForFile(
-  root: string,
-  file: string,
-  contracts: DriftExtractedContract[],
-  index: DriftContractsIndex,
-): DriftError[] {
-  return checkLockedChanges(
-    root,
-    contracts,
-    {
-      ...index,
-      contracts: index.contracts.filter((contract) => contract.file === file),
-    },
-  );
-}
-
-function readAcceptanceSync(root: string, id: string): { exists: boolean; valid: boolean } {
-  const file = path.join(root, '.drift', 'accepted-contract-changes', `${id}.md`);
-  try {
-    // Use TypeScript's sys API here to keep this helper synchronous without
-    // pulling sync fs calls through the rest of the checker API.
-    const fs = ts.sys;
-    const content = fs.readFile(file);
-    if (content === undefined) return { exists: false, valid: false };
-    if (!content) return { exists: true, valid: false };
-    const contract = content.match(/^contract:\s*(.+)$/m)?.[1]?.trim();
-    const reason = content.match(/^reason:\s*(.+)$/m)?.[1]?.trim();
-    return { exists: true, valid: contract === id && typeof reason === 'string' && reason.length >= 20 };
-  } catch {
-    return { exists: false, valid: false };
-  }
-}
+export { checkLockedChanges, checkLockedChangesForFile } from './locked-contracts.js';
