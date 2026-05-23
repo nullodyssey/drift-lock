@@ -1,15 +1,9 @@
-import { readFile } from 'node:fs/promises';
-import path from 'node:path';
-import type { DriftAdoptionMode, DriftContractsIndex, DriftDiagnostic, DriftError, DriftExtractedContract } from '../types.js';
-import { changedContracts, resolveCheckScope } from './contract-selection.js';
+import type { DriftContractsIndex, DriftDiagnostic, DriftError, DriftExtractedContract } from '../types.js';
+import { prepareCheckRun, type CheckOptions } from './check-run.js';
 import { driftError, toDiagnostic } from './errors.js';
-import { extractContracts, type ExtractOptions } from './extractor.js';
-import { buildHelperContracts } from './helper-summaries.js';
-import { readIndex, toIndex } from './index-file.js';
-import { checkLockedChanges } from './locked-contracts.js';
+import { runInvariantChecks } from './invariant-checks.js';
+import { checkLockedContracts } from './locked-contracts.js';
 import { checkRequiredContracts } from './required-contracts.js';
-import { checkSsotFlow } from './rules/ssot-flow/index.js';
-import { checkSsotUsage } from './rules/ssot-usage/index.js';
 
 /* @drift
 version: 1
@@ -18,16 +12,16 @@ scope: file
 stability: locked
 
 intent: >
-  Validate extracted Drift contracts against executable invariants, required-file
+  Validate a prepared Drift check run against executable invariants, required-file
   coverage, and locked-contract baselines.
 
 ssot:
-  extractor: "./extractor.ts"
+  check-run: "./check-run.ts"
 
 invariants:
-  - id: checks-extracted-contracts
+  - id: checks-prepared-run
     enforce: drift/ssot-usage
-    ssot: extractor
+    ssot: check-run
 
 llm:
   must_not_change:
@@ -35,67 +29,24 @@ llm:
     - Required contract checks must use the configured source files.
     - Schema extraction errors must not prevent valid contracts from being checked.
 */
-export type CheckOptions = ExtractOptions & {
-  indexPath?: string;
-  changedOnly?: boolean;
-  gitBase?: string;
-  requireContracts?: string[];
-  adoptionMode?: DriftAdoptionMode;
-};
+export type { CheckOptions } from './check-run.js';
 
 export async function checkContracts(options: CheckOptions): Promise<{
   contracts: DriftExtractedContract[];
   diagnostics: DriftDiagnostic[];
   errors: DriftError[];
 }> {
-  const root = path.resolve(options.root);
-  const index = await readIndex(root, options.indexPath);
-  const { gitScope, scopedIndex, extractFiles } = await resolveCheckScope(
-    {
-      root,
-      sourceDir: options.sourceDir,
-      files: options.files,
-      gitBase: options.gitBase,
-    },
-    index,
-  );
-  const extracted = await extractContracts({ ...options, files: extractFiles });
-  const diagnostics = extracted.errors.map((error) => toDiagnostic(error));
-  diagnostics.push(
-    ...(await checkRequiredContracts({
-      root,
-      sourceDir: options.sourceDir,
-      files: extractFiles,
-      contracts: extracted.contracts,
-      patterns: options.requireContracts ?? [],
-      adoptionMode: options.adoptionMode ?? 'enforce',
-    })),
-  );
-  if (gitScope && index) {
-    diagnostics.push(...checkScopedDuplicateIds(extracted.contracts, index, gitScope.contractFiles).map((error) => toDiagnostic(error)));
+  const run = await prepareCheckRun(options);
+  const diagnostics = run.extracted.errors.map((error) => toDiagnostic(error));
+  diagnostics.push(...(await checkRequiredContracts(run)));
+  if (run.gitScope && run.index) {
+    diagnostics.push(...checkScopedDuplicateIds(run.extracted.contracts, run.index, run.gitScope.contractFiles).map((error) => toDiagnostic(error)));
   }
-  const contractsToCheck = options.changedOnly
-    ? changedContracts(extracted.contracts, scopedIndex, gitScope?.impactedContractIds)
-    : extracted.contracts;
-  // Helper summaries need the full index; scopedIndex only decides which contracts run.
-  const helperContracts = buildHelperContracts(index, toIndex(extracted.contracts).contracts);
-
-  // Run invariant checks only after extraction. Schema/ancrage errors should not
-  // prevent other valid contracts in the repo from being checked.
-  for (const contract of contractsToCheck) {
-    const text = await readFile(path.resolve(root, contract.file), 'utf8');
-    diagnostics.push(...checkSsotUsage(contract, text).map((error) => toDiagnostic(error)));
-    diagnostics.push(...checkSsotFlow(contract, text, { helperContracts }).map((error) => toDiagnostic(error)));
-  }
-
-  // Without a committed index there is no trustworthy baseline for locked
-  // contracts, so V1 skips only locked-change detection.
-  if (scopedIndex) {
-    diagnostics.push(...checkLockedChanges(root, extracted.contracts, scopedIndex).map((error) => toDiagnostic(error)));
-  }
+  diagnostics.push(...(await runInvariantChecks(run)));
+  diagnostics.push(...checkLockedContracts(run));
 
   const errors = diagnostics.filter((diagnostic) => diagnostic.severity === 'error');
-  return { contracts: extracted.contracts, diagnostics, errors };
+  return { contracts: run.extracted.contracts, diagnostics, errors };
 }
 
 function checkScopedDuplicateIds(
@@ -124,7 +75,6 @@ function checkScopedDuplicateIds(
 
   return errors;
 }
-
 
 export { checkLockedChanges, checkLockedChangesForFile } from './locked-contracts.js';
 export { checkSsotUsage } from './rules/ssot-usage/index.js';

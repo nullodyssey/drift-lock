@@ -63,18 +63,66 @@
     },
     {
       "version": 1,
-      "id": "core.checker",
+      "id": "core.check-run",
       "scope": "file",
       "stability": "locked",
-      "intent": "Validate extracted Drift contracts against executable invariants, required-file coverage, and locked-contract baselines.",
+      "intent": "Prepare the immutable execution context for Drift contract checks while preserving the boundary between scoped execution and global proof context.",
       "ssot": {
-        "extractor": "./extractor.ts"
+        "extractor": "./extractor.ts",
+        "index-file": "./index-file.ts",
+        "contract-selection": "./contract-selection.ts",
+        "helper-summaries": "./helper-summaries.ts"
       },
       "invariants": [
         {
-          "id": "checks-extracted-contracts",
+          "id": "run-extracts-contracts",
           "enforce": "drift/ssot-usage",
           "ssot": "extractor"
+        },
+        {
+          "id": "run-reads-index",
+          "enforce": "drift/ssot-usage",
+          "ssot": "index-file"
+        },
+        {
+          "id": "run-resolves-check-scope",
+          "enforce": "drift/ssot-usage",
+          "ssot": "contract-selection"
+        },
+        {
+          "id": "run-builds-helper-context",
+          "enforce": "drift/ssot-usage",
+          "ssot": "helper-summaries"
+        }
+      ],
+      "llm": {
+        "must_not_change": [
+          "scopedIndex selects scoped checks only; helperContracts must use the full index.",
+          "changedOnly must include changed contracts and SSOT-impacted contracts.",
+          "Extraction must use Git-scoped files when a Git base is provided."
+        ]
+      },
+      "file": "packages/core/src/core/check-run.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:89395da12575597523535514cba29fc06907a9c582a36b7628350c408bf4a3e6",
+      "bodyHash": "sha256:e8402579471bfdaab2e25173abab98b87d6f727d39391d214b29fb32830f369a"
+    },
+    {
+      "version": 1,
+      "id": "core.checker",
+      "scope": "file",
+      "stability": "locked",
+      "intent": "Validate a prepared Drift check run against executable invariants, required-file coverage, and locked-contract baselines.",
+      "ssot": {
+        "check-run": "./check-run.ts"
+      },
+      "invariants": [
+        {
+          "id": "checks-prepared-run",
+          "enforce": "drift/ssot-usage",
+          "ssot": "check-run"
         }
       ],
       "llm": {
@@ -88,8 +136,8 @@
       "anchor": {
         "type": "file"
       },
-      "contentHash": "sha256:35825ba669b3804aeb881b35443a41bf9affe6caa225786baf6fa3a29509337a",
-      "bodyHash": "sha256:d116dc16081972d53e574a7701b425c86f7ff97b01eda818d16446baeebcbef5"
+      "contentHash": "sha256:99771bc0111f63a257f3e7fe59f2ae16e830f51ee25f13aa3f14f89440c2d18c",
+      "bodyHash": "sha256:cb6526886d787e17e611394397e692a8ea5bed7ef371ab30bdfea6fa46156859"
     },
     {
       "version": 1,
@@ -518,6 +566,48 @@
     },
     {
       "version": 1,
+      "id": "core.invariant-checks",
+      "scope": "file",
+      "stability": "locked",
+      "intent": "Run executable Drift invariant rules for selected contracts after extraction while preserving rule-specific diagnostics.",
+      "ssot": {
+        "ssot-usage": "./rules/ssot-usage/index.ts",
+        "ssot-flow": "./rules/ssot-flow/index.ts",
+        "errors": "./errors.ts"
+      },
+      "invariants": [
+        {
+          "id": "invariants-run-ssot-usage",
+          "enforce": "drift/ssot-usage",
+          "ssot": "ssot-usage"
+        },
+        {
+          "id": "invariants-run-ssot-flow",
+          "enforce": "drift/ssot-usage",
+          "ssot": "ssot-flow"
+        },
+        {
+          "id": "invariants-use-shared-diagnostics",
+          "enforce": "drift/ssot-usage",
+          "ssot": "errors"
+        }
+      ],
+      "llm": {
+        "must_not_change": [
+          "Schema extraction errors must not prevent valid selected contracts from being checked.",
+          "SSOT flow checks must receive helperContracts from the prepared run context.",
+          "Source caching belongs to a later phase; V1 reads text directly per checked contract."
+        ]
+      },
+      "file": "packages/core/src/core/invariant-checks.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:b8f8a1d9fb4cfdc96edd8d1234da3698ecbb285f698109bb87fa356f0c91d9d2",
+      "bodyHash": "sha256:3b56efea36caa4dc2a670db1dab9cde62278382353300b322395387a104c5ae6"
+    },
+    {
+      "version": 1,
       "id": "core.locked-contracts",
       "scope": "file",
       "stability": "locked",
@@ -534,7 +624,7 @@
         "type": "file"
       },
       "contentHash": "sha256:ee6500cc3cc4e20788237623ba485fdca96e34d20a4208b081ee3b195899b133",
-      "bodyHash": "sha256:34505e762e46a5f41092b7cf27f53bd4eec126c4455e280c1125c014c5563b1d"
+      "bodyHash": "sha256:d209c6977ae00b36d43facc3928f0ca88e6b1464c1bc85a94cd31a12991f0e55"
     },
     {
       "version": 1,
@@ -595,7 +685,7 @@
         "type": "file"
       },
       "contentHash": "sha256:c9b18c8190a22a2248a10dfe8219176ab0a91123b0c81961f8b3dc0efe856cb0",
-      "bodyHash": "sha256:8daa50a7ad10d3cd6c1e907077e72f0d3b264389cea0d0ce43090d881045c9bf"
+      "bodyHash": "sha256:8af8051d34c4ffdb111e786f6fcc1a0bfb045c510bd593e9ba2f103303db262b"
     },
     {
       "version": 1,

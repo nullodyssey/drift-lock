@@ -1,7 +1,8 @@
 import path from 'node:path';
 import ts from 'typescript';
-import type { DriftContractsIndex, DriftError, DriftExtractedContract } from '../types.js';
-import { driftError } from './errors.js';
+import type { DriftContractsIndex, DriftDiagnostic, DriftError, DriftExtractedContract } from '../types.js';
+import type { CheckRunContext } from './check-run.js';
+import { driftError, toDiagnostic } from './errors.js';
 
 /* @drift
 version: 1
@@ -19,6 +20,12 @@ llm:
     - Valid acceptance files must name the changed contract and include a clear reason.
     - Missing current contracts must still report locked removals.
 */
+
+export function checkLockedContracts(run: CheckRunContext): DriftDiagnostic[] {
+  if (!run.scopedIndex) return [];
+  return checkLockedChanges(run.root, run.extracted.contracts, run.scopedIndex).map((error) => toDiagnostic(error));
+}
+
 export function checkLockedChanges(
   root: string,
   contracts: DriftExtractedContract[],

@@ -1,10 +1,5 @@
-import type {
-  DriftAdoptionMode,
-  DriftDiagnostic,
-  DriftDiagnosticSeverity,
-  DriftExtractedContract,
-  DriftSource,
-} from '../types.js';
+import type { DriftDiagnostic, DriftDiagnosticSeverity } from '../types.js';
+import type { CheckRunContext } from './check-run.js';
 import { filesMatchingRequireContractPatterns, firstMatchingRequireContractPattern } from './coverage.js';
 import { driftError, toDiagnostic } from './errors.js';
 import { discoverSourceFiles } from './files.js';
@@ -40,33 +35,25 @@ llm:
     - Required-contract gaps must honor audit, warn, and enforce severities.
     - Extracted files must be preferred over rediscovering the whole source tree.
 */
-export type CheckRequiredContractsOptions = {
-  root: string;
-  sourceDir: DriftSource | undefined;
-  files: string[] | undefined;
-  contracts: DriftExtractedContract[];
-  patterns: string[];
-  adoptionMode: DriftAdoptionMode;
-};
-
-export async function checkRequiredContracts(options: CheckRequiredContractsOptions): Promise<DriftDiagnostic[]> {
-  if (options.patterns.length === 0) return [];
-  const sourceFiles = options.files ?? (await discoverSourceFiles(options.root, options.sourceDir));
-  const filesWithContracts = new Set(options.contracts.map((contract) => contract.file));
-  const severity = severityForAdoptionMode(options.adoptionMode);
-  return filesMatchingRequireContractPatterns(sourceFiles, options.patterns)
+export async function checkRequiredContracts(run: CheckRunContext): Promise<DriftDiagnostic[]> {
+  const patterns = run.options.requireContracts ?? [];
+  if (patterns.length === 0) return [];
+  const sourceFiles = run.extractFiles ?? (await discoverSourceFiles(run.root, run.options.sourceDir));
+  const filesWithContracts = new Set(run.extracted.contracts.map((contract) => contract.file));
+  const severity = severityForAdoptionMode(run.options.adoptionMode ?? 'enforce');
+  return filesMatchingRequireContractPatterns(sourceFiles, patterns)
     .filter((file) => !filesWithContracts.has(file))
     .map((file) =>
       toDiagnostic(
         driftError('DRIFT015_REQUIRED_CONTRACT_MISSING', file, {
-          pattern: firstMatchingRequireContractPattern(file, options.patterns) ?? options.patterns[0],
+          pattern: firstMatchingRequireContractPattern(file, patterns) ?? patterns[0],
         }),
         severity,
       ),
     );
 }
 
-function severityForAdoptionMode(mode: DriftAdoptionMode): DriftDiagnosticSeverity {
+function severityForAdoptionMode(mode: 'audit' | 'warn' | 'enforce'): DriftDiagnosticSeverity {
   if (mode === 'audit') return 'info';
   if (mode === 'warn') return 'warning';
   return 'error';
