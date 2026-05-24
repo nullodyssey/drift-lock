@@ -41,6 +41,7 @@
     "build": "tsup src/index.ts --format esm --dts --clean --out-dir dist",
     "check": "tsc --noEmit",
     "test": "vitest run",
+    "coverage": "vitest run --coverage",
     "test:with-build": "pnpm --filter @drift-lock/core run build && vitest run"
   },
   "dependencies": {
