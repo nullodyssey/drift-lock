@@ -1,7 +1,8 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { extractContracts, readIndex, toIndex, writeIndex } from '@drift-lock/core';
+import { extractContracts, toIndex, writeIndex } from '@drift-lock/core';
+import { readIndex } from '../src/core/index-file.js';
 import { createProject } from './helpers/core-test-utils.js';
 import { validActionsSource } from './helpers/contract-fixtures.js';
 import { validFlowSource } from './helpers/flow-fixtures.js';

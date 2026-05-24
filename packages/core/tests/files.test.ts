@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { discoverSourceFiles } from '@drift-lock/core';
+import { discoverSourceFiles } from '../src/core/files.js';
 import { createProject } from './helpers/core-test-utils.js';
 
 describe('drift source file discovery', () => {

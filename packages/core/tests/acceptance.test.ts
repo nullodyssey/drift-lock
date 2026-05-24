@@ -1,7 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { isValidContractId, writeAcceptanceFile } from '@drift-lock/core';
+import { writeAcceptanceFile } from '@drift-lock/core';
+import { isValidContractId } from '../src/core/validator.js';
 import { createProject } from './helpers/core-test-utils.js';
 
 describe('drift acceptance files', () => {

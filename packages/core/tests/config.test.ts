@@ -1,7 +1,8 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { readDriftConfig, writeDriftConfig } from '@drift-lock/core';
+import { readDriftConfig } from '@drift-lock/core';
+import { writeDriftConfig } from '../src/core/config.js';
 import { createProject } from './helpers/core-test-utils.js';
 
 describe('drift config', () => {

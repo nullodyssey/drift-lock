@@ -1026,19 +1026,21 @@
       "id": "core.public-api",
       "scope": "file",
       "stability": "locked",
-      "intent": "Re-export the public DriftLock core API from a single stable package entrypoint.",
+      "intent": "Re-export the stable internal DriftLock engine facade used by the official CLI and ESLint plugin from a single package entrypoint.",
       "llm": {
         "must_not_change": [
-          "Public core modules must remain reachable through the package root.",
-          "Types and executable helpers must stay exported together."
+          "The package root is supported for official DriftLock packages, not as a broad external SDK.",
+          "Existing CLI and ESLint plugin engine imports must remain reachable through the package root.",
+          "New root exports must be justified by a current official package consumer.",
+          "Low-level helpers must not be exported only for convenience."
         ]
       },
       "file": "packages/core/src/index.ts",
       "anchor": {
         "type": "file"
       },
-      "contentHash": "sha256:19ff254d130f51158b86dbe48147591681c488ee88da7fcc9d51d917fbd86e3f",
-      "bodyHash": "sha256:1598aa975522cde14a8f37ed6f07f4a3274f3f6115fab4ac97f0e5b75a1a49bf"
+      "contentHash": "sha256:3e5f0855ba5ec04e4d68d834a2e7cb67d880e564c764048cea188f8354de72d7",
+      "bodyHash": "sha256:d08f36edad67b7b4630931aff9b1b61a58766cf7c163fa9feae1d5581308180c"
     },
     {
       "version": 1,

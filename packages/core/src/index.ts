@@ -5,27 +5,37 @@ scope: file
 stability: locked
 
 intent: >
-  Re-export the public DriftLock core API from a single stable package entrypoint.
+  Re-export the stable internal DriftLock engine facade used by the official CLI
+  and ESLint plugin from a single package entrypoint.
 
 llm:
   must_not_change:
-    - Public core modules must remain reachable through the package root.
-    - Types and executable helpers must stay exported together.
+    - The package root is supported for official DriftLock packages, not as a broad external SDK.
+    - Existing CLI and ESLint plugin engine imports must remain reachable through the package root.
+    - New root exports must be justified by a current official package consumer.
+    - Low-level helpers must not be exported only for convenience.
 */
-export * from './types.js';
-export * from './core/checker.js';
-export * from './core/config.js';
-export * from './core/context.js';
-export * from './core/disable-directives.js';
-export * from './core/contract-diff.js';
-export * from './core/coverage.js';
-export * from './core/errors.js';
-export * from './core/explain.js';
-export * from './core/extractor.js';
-export * from './core/files.js';
-export * from './core/git-scope.js';
-export * from './core/hash.js';
-export * from './core/index-file.js';
-export * from './core/module-specifier.js';
-export * from './core/ssot-flow.js';
-export * from './core/validator.js';
+export { checkContracts, checkLockedChangesForFile, checkSsotUsage, type CheckOptions } from './core/checker.js';
+export { checkSsotFlow, type CheckSsotFlowOptions } from './core/ssot-flow.js';
+export { defaultDriftConfig, readDriftConfig, type DriftConfig } from './core/config.js';
+export { renderContext, renderTaskContext } from './core/context.js';
+export { diffContracts, formatContractDiffSummary, writeAcceptanceFile } from './core/contract-diff.js';
+export { getCoverage, formatCoverageSummary, type DriftCoverage } from './core/coverage.js';
+export { formatErrors, formatDiagnostics } from './core/errors.js';
+export { explainContracts, formatExplanations } from './core/explain.js';
+export { extractContracts, extractContractsFromSource } from './core/extractor.js';
+export { toIndex, validateIndexObject, writeIndex } from './core/index-file.js';
+export type {
+  DriftAdoptionMode,
+  DriftContract,
+  DriftContractDiff,
+  DriftContractsIndex,
+  DriftDiagnostic,
+  DriftError,
+  DriftExplanation,
+  DriftExtractedContract,
+  DriftIndexedContract,
+  DriftInvariant,
+  DriftResult,
+  DriftSource,
+} from './types.js';
