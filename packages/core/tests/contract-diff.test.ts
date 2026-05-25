@@ -80,6 +80,21 @@ describe('drift contract diffs', () => {
     expect(summary).toContain('        + return.tax');
     expect(summary).toContain('      sinks removed:');
     expect(summary).toContain('        - return.amount');
+    expect(summary).toBe([
+      'Drift contract changes:',
+      '- billing.changed (changed)',
+      '  file: src/actions.ts',
+      '  stability: locked',
+      '  fields: invariants, summaries',
+      '  invariants:',
+      '    ~ checkout-price-from-pricing',
+      '      enforce: drift/ssot-flow',
+      '      ssot: pricing -> schema',
+      '      sinks added:',
+      '        + return.tax',
+      '      sinks removed:',
+      '        - return.amount',
+    ].join('\n'));
   });
 
   it('summarizes added and removed invariants semantically', async () => {
@@ -194,6 +209,7 @@ describe('drift contract diffs', () => {
     const changedOnly = await checkContracts({ root, changedOnly: true });
 
     expect(diff.diff.changes).toEqual([]);
+    expect(formatContractDiffSummary(diff.diff)).toBe('No Drift contract changes found.');
     expect(changedOnly.errors).toEqual([]);
   });
 

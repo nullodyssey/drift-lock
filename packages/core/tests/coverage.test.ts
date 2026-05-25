@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getCoverage } from '@drift-lock/core';
+import { formatCoverageSummary, getCoverage } from '@drift-lock/core';
 import { createProject } from './helpers/core-test-utils.js';
 import { validActionsSource } from './helpers/contract-fixtures.js';
 
@@ -29,6 +29,33 @@ describe('drift coverage', () => {
       },
       invariants: { total: 2, executable: 2 },
     });
+    expect(formatCoverageSummary(result.coverage)).toBe([
+      'Drift Coverage',
+      '',
+      'Contracts:',
+      '- total: 1',
+      '- locked: 1',
+      '- draft: 0',
+      '',
+      'Files:',
+      '- source files: 3',
+      '- files with contracts: 1',
+      '- files requiring contracts: 2',
+      '- required files covered: 1',
+      '- required files uncovered: 1',
+      '',
+      'Invariants:',
+      '- total: 2',
+      '- executable enforcement: 2',
+      '',
+      'Disable directives:',
+      '- total: 0',
+      '- malformed: 0',
+      '- expired: 0',
+      '',
+      'Required files without contracts:',
+      '- src/services/payment.ts',
+    ].join('\n'));
   });
 
   it('reports drift-lock-disable directives from configured source files', async () => {
@@ -79,5 +106,34 @@ describe('drift coverage', () => {
         },
       ],
     });
+    expect(formatCoverageSummary(result.coverage)).toBe([
+      'Drift Coverage',
+      '',
+      'Contracts:',
+      '- total: 0',
+      '- locked: 0',
+      '- draft: 0',
+      '',
+      'Files:',
+      '- source files: 4',
+      '- files with contracts: 0',
+      '- files requiring contracts: 0',
+      '- required files covered: 0',
+      '- required files uncovered: 0',
+      '',
+      'Invariants:',
+      '- total: 0',
+      '- executable enforcement: 0',
+      '',
+      'Disable directives:',
+      '- total: 3',
+      '- malformed: 1',
+      '- expired: 1',
+      '',
+      'Drift disable directives:',
+      '- src/actions.ts:1 drift-lock-disable-next-line drift/ssot-flow reason="migration billing-v2" expires=2999-01-01',
+      '- src/legacy.ts:1 drift-lock-disable-file drift/import-boundary reason="legacy adapter" expires=2000-01-01 expired',
+      '- src/malformed.ts:1 drift-lock-disable-next-line drift/ssot-flow malformed missing reason',
+    ].join('\n'));
   });
 });

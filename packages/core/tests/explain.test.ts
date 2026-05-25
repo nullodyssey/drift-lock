@@ -124,6 +124,25 @@ describe('drift explanations', () => {
     expect(output).toContain('Drift violation:');
     expect(output).toContain('Sink: return.totals.monthly.amount');
     expect(output).toContain('Reason: missing-sink');
+    expect(output).toBe([
+      'Drift violation:',
+      'DRIFT013_SSOT_FLOW_NOT_PROVEN billing.create-checkout-session',
+      '',
+      'Location: src/actions.ts:3:1',
+      'Invariant: checkout-price-from-pricing',
+      'Sink: return.totals.monthly.amount',
+      'SSOT: pricing -> @/features/billing/pricing.ts',
+      'Reason: missing-sink',
+      '',
+      'Expected:',
+      'Sink "return.totals.monthly.amount" should derive from ssot "pricing".',
+      '',
+      'Found:',
+      'Sink "return.totals.monthly.amount" is missing from the returned object.',
+      '',
+      'Suggested fix:',
+      'Add "return.totals.monthly.amount" to the returned object and derive it from the declared SSOT.',
+    ].join('\n'));
     expect(formatExplanations([])).toBe('No Drift violations found.');
   });
 });

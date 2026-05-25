@@ -13,6 +13,21 @@ describe('drift context rendering', () => {
     expect(result.output).toContain('Relevant Drift Contracts');
     expect(result.output).toContain('billing.create-checkout-session');
     expect(result.output).toContain('pricing: @/features/billing/pricing.ts');
+    expect(result.output).toBe([
+      'Relevant Drift Contracts',
+      '',
+      '- billing.create-checkout-session',
+      '  scope: declaration',
+      '  stability: locked',
+      '  intent: Create a Stripe Checkout session for the Pro subscription.',
+      '  ssot:',
+      '    pricing: @/features/billing/pricing.ts',
+      '    schema: @/features/billing/billing.schema.ts',
+      '  must_not_change:',
+      '    - pricing source',
+      '    - accepted input shape',
+      '    - checkout flow',
+    ].join('\n'));
   });
 
   it('renders pre-plan task context from relevant contracts', async () => {
@@ -40,6 +55,38 @@ describe('drift context rendering', () => {
     expect(result.output).not.toContain('support.unrelated-ticket');
     expect(result.output).toContain('Planning Notes:');
     expect(result.output).toContain('- Run drift-lock diff --summary after implementation.');
+    expect(result.output).toBe([
+      'Drift Context For Task',
+      '',
+      'Task:',
+      'add yearly billing pricing plan',
+      '',
+      'Relevant Drift Contracts:',
+      '- billing.create-checkout-session',
+      '  file: src/actions.ts',
+      '  stability: locked',
+      '  intent: Create a Stripe Checkout session for the Pro subscription.',
+      '  ssot:',
+      '    pricing: @/features/billing/pricing.ts',
+      '    schema: @/features/billing/billing.schema.ts',
+      '  invariants:',
+      '    - checkout-price-from-pricing: drift/ssot-flow ssot=pricing sinks=return.priceId, return.amount, return.currency',
+      '  must_not_change:',
+      '    - pricing source',
+      '    - accepted input shape',
+      '    - checkout flow',
+      '',
+      'Relevant Files:',
+      '- @/features/billing/billing.schema.ts',
+      '- @/features/billing/pricing.ts',
+      '- src/actions.ts',
+      '',
+      'Planning Notes:',
+      '- Update declared SSOT files before changing derived behavior.',
+      '- Respect locked contracts and listed invariants while planning.',
+      '- Run drift-lock diff --summary after implementation.',
+      '- Run drift-lock check after implementation.',
+    ].join('\n'));
   });
 
   it('resolves relative ssot paths in task context relevant files', async () => {
