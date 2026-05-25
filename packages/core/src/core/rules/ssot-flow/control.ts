@@ -1,9 +1,9 @@
 import ts from 'typescript';
 import type { DriftError } from '../../../types.js';
 import { flowNotProven, sourceExpressionDetails, unsupportedForSinks, unsupportedPattern } from './diagnostics.js';
-import { applyVariableStatement, cloneEnv, expressionFlow } from './env.js';
-import { findSinkExpression, parseReturnSinkPath } from './sinks.js';
-import type { FlowCheckResult, FlowContext, FlowEnv, FlowReason, FlowValue, SinkResolution } from './types.js';
+import { applyVariableStatement, cloneEnv, expressionFlow, flowForObjectProperty } from './env.js';
+import { parseReturnSinkPath } from './sinks.js';
+import type { FlowCheckResult, FlowContext, FlowEnv, FlowReason, FlowValue, SinkPathSegment, SinkResolution } from './types.js';
 import { trusted } from './types.js';
 
 /* @drift
@@ -82,10 +82,6 @@ export function checkReturnExpression(context: FlowContext, expression: ts.Expre
     return unsupportedForSinks(context, sinks, 'unsupported-return', returnExpression);
   }
 
-  if (returnExpression.properties.some(ts.isSpreadAssignment)) {
-    return unsupportedForSinks(context, sinks, 'unsupported-spread', returnExpression);
-  }
-
   for (const sink of sinks) {
     const path = parseReturnSinkPath(sink);
     if (!path) {
@@ -93,7 +89,7 @@ export function checkReturnExpression(context: FlowContext, expression: ts.Expre
       continue;
     }
 
-    const property = findSinkExpression(returnExpression, path);
+    const property = resolveSinkExpression(returnExpression, path, env);
     const error = checkSinkResolution(context, sink, property, env);
     if (error) errors.push(error);
   }
@@ -107,7 +103,16 @@ function checkSinkResolution(context: FlowContext, sink: string, property: SinkR
   }
 
   if (property.kind === 'unsupported') {
-    return unsupportedPattern(context, sink, 'unsupported-pattern');
+    return unsupportedPattern(
+      context,
+      sink,
+      property.reason ?? 'unsupported-pattern',
+      property.expression ? sourceExpressionDetails(context.sourceFile, property.expression) : {},
+    );
+  }
+
+  if (property.kind === 'flow') {
+    return flowError(context, sink, property.expression, property.flow);
   }
 
   if (property.kind === 'collection') {
@@ -179,12 +184,106 @@ function checkCollectionSink(
     );
   }
 
-  if (callbackReturn.expression.properties.some(ts.isSpreadAssignment)) {
-    return unsupportedPattern(context, sink, 'unsupported-spread', sourceExpressionDetails(context.sourceFile, callbackReturn.expression));
+  const itemProperty = resolveSinkExpression(callbackReturn.expression, property.itemPath, callbackEnv);
+  return checkSinkResolution(context, sink, itemProperty, callbackEnv);
+}
+
+function resolveSinkExpression(expression: ts.ObjectLiteralExpression, path: SinkPathSegment[], env: FlowEnv): SinkResolution {
+  const [segment, ...rest] = path;
+  if (!segment) return { kind: 'found', expression };
+
+  let resolved: SinkResolution | undefined;
+
+  for (const property of expression.properties) {
+    if (ts.isSpreadAssignment(property)) {
+      const spreadResolution = resolveSpreadSegment(property.expression, segment, rest, env);
+      if (spreadResolution.kind === 'unsupported') return spreadResolution;
+      if (spreadResolution.kind !== 'missing') resolved = spreadResolution;
+      continue;
+    }
+
+    if (ts.isPropertyAssignment(property) && propertyNameText(property.name) === segment.name) {
+      resolved = resolvePropertyAssignment(property.initializer, segment, rest, env);
+      continue;
+    }
+
+    if (ts.isShorthandPropertyAssignment(property) && property.name.text === segment.name) {
+      resolved = resolveShorthandProperty(property.name, segment, rest, env);
+      continue;
+    }
+
+    if (ts.isMethodDeclaration(property) && propertyNameText(property.name) === segment.name) {
+      return { kind: 'unsupported', reason: 'unsupported-pattern', expression: property };
+    }
   }
 
-  const itemProperty = findSinkExpression(callbackReturn.expression, property.itemPath);
-  return checkSinkResolution(context, sink, itemProperty, callbackEnv);
+  return resolved ?? { kind: 'missing' };
+}
+
+function resolvePropertyAssignment(
+  initializer: ts.Expression,
+  segment: SinkPathSegment,
+  rest: SinkPathSegment[],
+  env: FlowEnv,
+): SinkResolution {
+  if (segment.collection) return { kind: 'collection', expression: initializer, itemPath: rest };
+  if (rest.length === 0) return { kind: 'found', expression: initializer };
+
+  const nested = unwrapReturnExpression(initializer);
+  if (ts.isObjectLiteralExpression(nested)) return resolveSinkExpression(nested, rest, env);
+
+  const flow = expressionFlow(initializer, env);
+  if (flow.objectSummary) return resolveFlowPath(flow, rest, initializer);
+  return { kind: 'unsupported', reason: 'unsupported-pattern', expression: initializer };
+}
+
+function resolveShorthandProperty(
+  expression: ts.Identifier,
+  segment: SinkPathSegment,
+  rest: SinkPathSegment[],
+  env: FlowEnv,
+): SinkResolution {
+  if (segment.collection) return { kind: 'collection', expression, itemPath: rest };
+  if (rest.length === 0) return { kind: 'found', expression };
+
+  const flow = expressionFlow(expression, env);
+  if (flow.objectSummary) return resolveFlowPath(flow, rest, expression);
+  return { kind: 'unsupported', reason: 'unsupported-pattern', expression };
+}
+
+function resolveSpreadSegment(
+  expression: ts.Expression,
+  segment: SinkPathSegment,
+  rest: SinkPathSegment[],
+  env: FlowEnv,
+): SinkResolution {
+  const flow = expressionFlow(expression, env);
+  if (!flow.objectSummary) return { kind: 'unsupported', reason: 'unsupported-spread', expression };
+  if (segment.collection) return { kind: 'unsupported', reason: 'unsupported-spread', expression };
+  return resolveFlowPath(flow, [segment, ...rest], expression, { missingKnownKey: 'missing', unsupportedReason: 'unsupported-spread' });
+}
+
+function resolveFlowPath(
+  flow: FlowValue,
+  path: SinkPathSegment[],
+  expression: ts.Expression,
+  options: { missingKnownKey?: 'missing' | 'unsupported'; unsupportedReason?: FlowReason } = {},
+): SinkResolution {
+  let current = flow;
+
+  for (const segment of path) {
+    if (segment.collection) return { kind: 'unsupported', reason: options.unsupportedReason ?? 'unsupported-pattern', expression };
+    const summary = current.objectSummary;
+    if (!summary) return { kind: 'unsupported', reason: options.unsupportedReason ?? 'unsupported-pattern', expression };
+    if (summary.kind === 'known' && !Object.prototype.hasOwnProperty.call(summary.properties, segment.name)) {
+      return options.missingKnownKey === 'missing'
+        ? { kind: 'missing' }
+        : { kind: 'unsupported', reason: options.unsupportedReason ?? 'unsupported-pattern', expression };
+    }
+    current = flowForObjectProperty(current, segment.name, expression);
+  }
+
+  return { kind: 'flow', flow: current, expression };
 }
 
 function flowErrorForExpression(context: FlowContext, sink: string, expression: ts.Expression, env: FlowEnv): DriftError | undefined {
@@ -244,6 +343,11 @@ function mapCallbackReturnObject(
 function statementExpression(statement: ts.Statement): ts.Node {
   if (ts.isExpressionStatement(statement)) return statement.expression;
   return statement;
+}
+
+function propertyNameText(name: ts.PropertyName): string | undefined {
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) return name.text;
+  return undefined;
 }
 
 export function checkIfStatement(context: FlowContext, statement: ts.IfStatement, env: FlowEnv): FlowCheckResult {

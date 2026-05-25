@@ -61,7 +61,9 @@ export function expressionFlow(expression: ts.Expression, env: FlowEnv): FlowVal
   if (ts.isElementAccessExpression(expression)) {
     const base = expressionFlow(expression.expression, env);
     if (base.namespaceImport) return unsupportedFlow('unsupported-pattern', expression);
-    if (base.objectSummary) return unsupportedFlow('unverified-helper-call', expression);
+    if (base.objectSummary) {
+      return base.objectSummary.kind === 'known' ? untrusted : unsupportedFlow('unverified-helper-call', expression);
+    }
     return base;
   }
 
@@ -90,13 +92,18 @@ export function expressionFlow(expression: ts.Expression, env: FlowEnv): FlowVal
     return untrusted;
   }
 
-  if (ts.isObjectLiteralExpression(expression) || ts.isArrayLiteralExpression(expression)) {
+  if (ts.isObjectLiteralExpression(expression)) {
+    const summary = knownObjectSummary(expression, env);
+    return summary ? { trust: 'untrusted', objectSummary: summary } : unsupportedFlow('unsupported-pattern', expression);
+  }
+
+  if (ts.isArrayLiteralExpression(expression)) {
     return untrusted;
   }
 
   if (ts.isCallExpression(expression)) {
     const helper = calledHelper(expression, env);
-    if (helper?.helperSummary) return { trust: 'untrusted', objectSummary: { returns: helper.helperSummary.returns, path: [] } };
+    if (helper?.helperSummary) return { trust: 'untrusted', objectSummary: { kind: 'indexed', returns: helper.helperSummary.returns, path: [] } };
     if (helper) return unsupportedFlow('unverified-helper-call', expression);
     return unsupportedFlow('unsupported-call', expression);
   }
@@ -115,14 +122,15 @@ export function combineDerived(values: FlowValue[]): FlowValue {
   return untrusted;
 }
 
-function flowForSummaryPath(value: FlowValue, segment: string, node: ts.Node): FlowValue {
+export function flowForObjectProperty(value: FlowValue, segment: string, node: ts.Node): FlowValue {
   const summary = value.objectSummary;
   if (!summary) return value;
+  if (summary.kind === 'known') return summary.properties[segment] ?? unsupportedFlow('unsupported-pattern', node);
   const path = [...summary.path, segment];
   const returnPath = `return.${path.join('.')}`;
-  if (summary.returns.includes(returnPath)) return { trust: 'trusted', objectSummary: { returns: summary.returns, path } };
+  if (summary.returns.includes(returnPath)) return { trust: 'trusted', objectSummary: { kind: 'indexed', returns: summary.returns, path } };
   if (summary.returns.some((candidate) => candidate.startsWith(`${returnPath}.`))) {
-    return { trust: 'untrusted', objectSummary: { returns: summary.returns, path } };
+    return { trust: 'untrusted', objectSummary: { kind: 'indexed', returns: summary.returns, path } };
   }
   return unsupportedFlow('unverified-helper-call', node);
 }
@@ -134,7 +142,7 @@ function flowForProperty(
   options: { allowNamespace?: boolean } = {},
 ): FlowValue {
   if (value.namespaceImport) return options.allowNamespace ? trusted : unsupportedFlow('unsupported-pattern', node);
-  if (value.objectSummary) return flowForSummaryPath(value, segment, node);
+  if (value.objectSummary) return flowForObjectProperty(value, segment, node);
   return value;
 }
 
@@ -176,6 +184,30 @@ function isSupportedObjectBindingPattern(pattern: ts.ObjectBindingPattern): bool
     if (!ts.isIdentifier(element.name)) return false;
     return !element.propertyName || propertyNameText(element.propertyName) !== undefined;
   });
+}
+
+function knownObjectSummary(expression: ts.ObjectLiteralExpression, env: FlowEnv): FlowValue['objectSummary'] | undefined {
+  const properties: Record<string, FlowValue> = {};
+
+  for (const property of expression.properties) {
+    if (ts.isSpreadAssignment(property) || ts.isMethodDeclaration(property)) return undefined;
+
+    if (ts.isPropertyAssignment(property)) {
+      const name = propertyNameText(property.name);
+      if (!name) return undefined;
+      properties[name] = expressionFlow(property.initializer, env);
+      continue;
+    }
+
+    if (ts.isShorthandPropertyAssignment(property)) {
+      properties[property.name.text] = expressionFlow(property.name, env);
+      continue;
+    }
+
+    return undefined;
+  }
+
+  return { kind: 'known', properties };
 }
 
 function markBindings(name: ts.BindingName, value: FlowValue, env: FlowEnv): void {

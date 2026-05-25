@@ -30,10 +30,18 @@ export type FlowReason =
   | 'unsupported-switch-fallthrough'
   | 'unsupported-pattern';
 
-export type FlowObjectSummary = {
+export type FlowIndexedObjectSummary = {
+  kind: 'indexed';
   returns: string[];
   path: string[];
 };
+
+export type FlowKnownObjectSummary = {
+  kind: 'known';
+  properties: Record<string, FlowValue>;
+};
+
+export type FlowObjectSummary = FlowIndexedObjectSummary | FlowKnownObjectSummary;
 
 export type FlowHelperSummary = {
   returns: string[];
@@ -89,9 +97,10 @@ export type SinkPathSegment = {
 
 export type SinkResolution =
   | { kind: 'found'; expression: ts.Expression }
+  | { kind: 'flow'; flow: FlowValue; expression: ts.Expression }
   | { kind: 'collection'; expression: ts.Expression; itemPath: SinkPathSegment[] }
   | { kind: 'missing' }
-  | { kind: 'unsupported' };
+  | { kind: 'unsupported'; reason?: FlowReason; expression?: ts.Node };
 
 export const untrusted: FlowValue = { trust: 'untrusted' };
 export const trusted: FlowValue = { trust: 'trusted' };

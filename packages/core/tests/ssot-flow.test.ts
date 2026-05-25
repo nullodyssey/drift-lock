@@ -509,12 +509,79 @@ describe('drift ssot flow', () => {
     });
   });
 
-  it('rejects trusted object spreads until resolvable spread support exists', async () => {
+  it('proves ssot flow through known object alias spreads', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`const price = BILLING_PRICES[input.plan];
+  const summary = {
+    priceId: price.priceId,
+  };
+  return {
+    ...summary,
+  };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('proves explicit properties that overwrite known object alias spreads', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`const price = BILLING_PRICES[input.plan];
+  const summary = {
+    priceId: 'price_local',
+  };
+  return {
+    ...summary,
+    priceId: price.priceId,
+  };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('proves ssot flow through verified helper summary spreads', async () => {
+    const files = helperSummaryProject();
+    files['src/actions.ts'] = helperCallSiteSource('./pricing-source.ts').replace(
+      `return {
+    priceId: price.priceId,
+    amount: price.monthlyAmount * input.seats,
+    currency: price.currency,
+  };`,
+      `return {
+    ...price,
+    amount: price.monthlyAmount * input.seats,
+  };`,
+    );
+    const root = await createProject(files);
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('rejects raw ssot object spreads without known keys', async () => {
     const root = await createProject({
       'src/actions.ts': flowSourceWithBody(`const price = BILLING_PRICES[input.plan];
   return {
     ...price,
     priceId: price.priceId,
+  };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.priceId')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unsupported-spread',
+      },
+    });
+  });
+
+  it('rejects payload object spreads without known keys', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`const payloadSpread = input as { priceId: string };
+  return {
+    ...payloadSpread,
   };`),
     });
 
@@ -530,7 +597,7 @@ describe('drift ssot flow', () => {
   it('rejects spreads that can overwrite an explicitly proven sink', async () => {
     const root = await createProject({
       'src/actions.ts': flowSourceWithBody(`const price = BILLING_PRICES[input.plan];
-  const override = { priceId: "price_local" };
+  const override = input as { priceId: string };
   return {
     priceId: price.priceId,
     ...override,
@@ -546,11 +613,12 @@ describe('drift ssot flow', () => {
     });
   });
 
-  it('rejects helper spreads until helper object keys and overwrite order are modeled', async () => {
+  it('rejects unsupported call spreads without known keys', async () => {
     const root = await createProject({
-      'src/actions.ts': flowSourceWithBody(`const price = resolvePrice(input.plan);
+      'src/actions.ts': flowSourceWithBody(`const price = BILLING_PRICES[input.plan];
   return {
-    ...price,
+    ...resolvePrice(input),
+    priceId: price.priceId,
   };`),
     });
 
