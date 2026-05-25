@@ -120,7 +120,7 @@ function flowForSummaryPath(value: FlowValue, segment: string, node: ts.Node): F
   if (!summary) return value;
   const path = [...summary.path, segment];
   const returnPath = `return.${path.join('.')}`;
-  if (summary.returns.includes(returnPath)) return trusted;
+  if (summary.returns.includes(returnPath)) return { trust: 'trusted', objectSummary: { returns: summary.returns, path } };
   if (summary.returns.some((candidate) => candidate.startsWith(`${returnPath}.`))) {
     return { trust: 'untrusted', objectSummary: { returns: summary.returns, path } };
   }

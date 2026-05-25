@@ -726,6 +726,22 @@ describe('drift ssot flow', () => {
     expect(result.errors).toEqual([]);
   });
 
+  it('rejects parent helper summary paths as proof for child fields', async () => {
+    const files = nestedHelperSummaryProject();
+    files['src/pricing.ts'] = verifiedNestedParentHelperSource();
+    const root = await createProject(files);
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.priceId')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unverified-helper-call',
+        foundExpression: 'summary.price.id',
+        foundNodeKind: 'PropertyAccessExpression',
+      },
+    });
+  });
+
   it('rejects nested helper summary sibling fields that are not indexed', async () => {
     const files = nestedHelperSummaryProject();
     files['src/actions.ts'] = nestedHelperCallSiteSource('./pricing-source.ts').replace(
@@ -741,6 +757,20 @@ describe('drift ssot flow', () => {
         reason: 'unverified-helper-call',
         foundExpression: 'summary.price.localFallback',
         foundNodeKind: 'PropertyAccessExpression',
+      },
+    });
+  });
+
+  it('rejects nested helper summaries for a different ssot path', async () => {
+    const files = nestedHelperSummaryProject();
+    files['src/actions.ts'] = nestedHelperCallSiteSource('./other-pricing-source.ts');
+    const root = await createProject(files);
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.priceId')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unverified-helper-call',
       },
     });
   });
@@ -1163,6 +1193,37 @@ export function buildPriceSummary(plan: 'pro') {
         id: price.priceId,
       },
     },
+  };
+}
+`;
+}
+
+function verifiedNestedParentHelperSource(): string {
+  return `import { BILLING_PRICES } from './pricing-source';
+
+/* @drift
+version: 1
+id: billing.build-price-summary
+scope: declaration
+stability: locked
+
+intent: >
+  Resolve a nested billing price summary from the pricing source of truth.
+
+ssot:
+  pricing: "./pricing-source.ts"
+
+invariants:
+  - id: return-price-summary-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.price
+*/
+export function buildPriceSummary(plan: 'pro') {
+  const price = BILLING_PRICES[plan];
+  return {
+    price,
   };
 }
 `;
