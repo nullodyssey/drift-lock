@@ -540,6 +540,89 @@ describe('drift ssot flow', () => {
     expect(result.errors).toEqual([]);
   });
 
+  it('rejects computed literal properties that overwrite known object alias spreads', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`const price = BILLING_PRICES[input.plan];
+  const summary = {
+    priceId: price.priceId,
+  };
+  return {
+    ...summary,
+    ['priceId']: input.priceId,
+  };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.priceId')).toMatchObject({
+      code: 'DRIFT013_SSOT_FLOW_NOT_PROVEN',
+      details: {
+        reason: 'untrusted-value',
+        foundExpression: 'input.priceId',
+      },
+    });
+  });
+
+  it('ignores computed literal properties that cannot overwrite known object alias spreads', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`const price = BILLING_PRICES[input.plan];
+  const summary = {
+    priceId: price.priceId,
+  };
+  return {
+    ...summary,
+    ['metadata']: input.plan,
+  };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('rejects dynamic computed properties that can overwrite known object alias spreads', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`const price = BILLING_PRICES[input.plan];
+  const summary = {
+    priceId: price.priceId,
+  };
+  const field = input.plan === 'pro' ? 'priceId' : 'metadata';
+  return {
+    ...summary,
+    [field]: input.priceId,
+  };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.priceId')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unsupported-pattern',
+      },
+    });
+  });
+
+  it('rejects accessors that overwrite known object alias spreads', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`const price = BILLING_PRICES[input.plan];
+  const summary = {
+    priceId: price.priceId,
+  };
+  return {
+    ...summary,
+    get priceId() {
+      return input.priceId;
+    },
+  };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.priceId')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unsupported-pattern',
+      },
+    });
+  });
+
   it('proves ssot flow through verified helper summary spreads', async () => {
     const files = helperSummaryProject();
     files['src/actions.ts'] = helperCallSiteSource('./pricing-source.ts').replace(

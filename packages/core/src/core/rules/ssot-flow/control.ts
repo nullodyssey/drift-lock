@@ -202,8 +202,15 @@ function resolveSinkExpression(expression: ts.ObjectLiteralExpression, path: Sin
       continue;
     }
 
-    if (ts.isPropertyAssignment(property) && propertyNameText(property.name) === segment.name) {
-      resolved = resolvePropertyAssignment(property.initializer, segment, rest, env);
+    if (ts.isPropertyAssignment(property)) {
+      const match = propertyNameMatch(property.name, segment.name);
+      if (match === 'match') {
+        resolved = resolvePropertyAssignment(property.initializer, segment, rest, env);
+        continue;
+      }
+      if (match === 'unknown' && resolved) {
+        return { kind: 'unsupported', reason: 'unsupported-pattern', expression: property };
+      }
       continue;
     }
 
@@ -212,8 +219,11 @@ function resolveSinkExpression(expression: ts.ObjectLiteralExpression, path: Sin
       continue;
     }
 
-    if (ts.isMethodDeclaration(property) && propertyNameText(property.name) === segment.name) {
-      return { kind: 'unsupported', reason: 'unsupported-pattern', expression: property };
+    if (ts.isMethodDeclaration(property) || ts.isGetAccessorDeclaration(property) || ts.isSetAccessorDeclaration(property)) {
+      const match = propertyNameMatch(property.name, segment.name);
+      if (match === 'match' || (match === 'unknown' && resolved)) {
+        return { kind: 'unsupported', reason: 'unsupported-pattern', expression: property };
+      }
     }
   }
 
@@ -347,6 +357,26 @@ function statementExpression(statement: ts.Statement): ts.Node {
 
 function propertyNameText(name: ts.PropertyName): string | undefined {
   if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) return name.text;
+  return undefined;
+}
+
+type PropertyNameMatch = 'match' | 'miss' | 'unknown';
+
+function propertyNameMatch(name: ts.PropertyName, segment: string): PropertyNameMatch {
+  const text = propertyNameText(name);
+  if (text !== undefined) return text === segment ? 'match' : 'miss';
+  if (!ts.isComputedPropertyName(name)) return 'unknown';
+
+  const computedText = computedPropertyNameText(name);
+  if (computedText !== undefined) return computedText === segment ? 'match' : 'miss';
+  return 'unknown';
+}
+
+function computedPropertyNameText(name: ts.ComputedPropertyName): string | undefined {
+  const expression = name.expression;
+  if (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression) || ts.isNumericLiteral(expression)) {
+    return expression.text;
+  }
   return undefined;
 }
 
