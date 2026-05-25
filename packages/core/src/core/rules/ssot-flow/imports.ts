@@ -1,5 +1,6 @@
 import ts from 'typescript';
 import { moduleSpecifierCandidates } from '../../module-specifier.js';
+import type { FlowImportResolution } from './types.js';
 
 /* @drift
 version: 1
@@ -24,9 +25,12 @@ llm:
     - Type-only imports must not create trusted runtime values.
     - NodeNext module specifier alternatives must remain supported.
 */
-export function findTrustedImports(sourceFile: ts.SourceFile, ssotPath: string): Set<string> {
+export function findTrustedImports(sourceFile: ts.SourceFile, ssotPath: string): FlowImportResolution {
   const candidates = moduleSpecifierCandidates(ssotPath);
-  const names = new Set<string>();
+  const imports: FlowImportResolution = {
+    values: new Set<string>(),
+    namespaces: new Set<string>(),
+  };
 
   for (const statement of sourceFile.statements) {
     if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) continue;
@@ -34,20 +38,18 @@ export function findTrustedImports(sourceFile: ts.SourceFile, ssotPath: string):
     const clause = statement.importClause;
     if (!clause || clause.isTypeOnly) continue;
 
-    if (clause.name) names.add(clause.name.text);
-
     const bindings = clause.namedBindings;
     if (!bindings) continue;
     if (ts.isNamespaceImport(bindings)) {
-      names.add(bindings.name.text);
+      imports.namespaces.add(bindings.name.text);
       continue;
     }
 
     for (const specifier of bindings.elements) {
       if (specifier.isTypeOnly) continue;
-      names.add(specifier.name.text);
+      imports.values.add(specifier.name.text);
     }
   }
 
-  return names;
+  return imports;
 }

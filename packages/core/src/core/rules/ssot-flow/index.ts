@@ -80,7 +80,7 @@ function checkFunctionFlow(context: FlowContext, functionNode: FunctionLikeWithB
   const trustedImports = findTrustedImports(context.sourceFile, ssotPath);
   const helperImports = findHelperImports(context.sourceFile, context.contract.file, options.helperContracts ?? [], ssotPath);
 
-  if (trustedImports.size === 0 && helperImports.size === 0) {
+  if (trustedImports.values.size === 0 && trustedImports.namespaces.size === 0 && helperImports.size === 0) {
     return sinks.map((sink) => flowNotProven(context, sink));
   }
 

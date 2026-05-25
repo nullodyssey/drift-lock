@@ -684,6 +684,70 @@ describe('drift ssot flow', () => {
     });
   });
 
+  it('proves ssot flow for named import aliases', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource()
+        .replace(
+          "import { BILLING_PRICES } from '@/features/billing/pricing';",
+          "import { BILLING_PRICES as PRICES } from '@/features/billing/pricing';",
+        )
+        .replace('const price = BILLING_PRICES[payload.plan];', 'const price = PRICES[payload.plan];'),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('proves ssot flow for static namespace import access', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource()
+        .replace(
+          "import { BILLING_PRICES } from '@/features/billing/pricing';",
+          "import * as pricing from '@/features/billing/pricing';",
+        )
+        .replace('const price = BILLING_PRICES[payload.plan];', 'const price = pricing.BILLING_PRICES[payload.plan];'),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('keeps default imports from ssot modules untrusted', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource()
+        .replace(
+          "import { BILLING_PRICES } from '@/features/billing/pricing';",
+          "import pricing from '@/features/billing/pricing';",
+        )
+        .replace('const price = BILLING_PRICES[payload.plan];', 'const price = pricing.BILLING_PRICES[payload.plan];'),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.priceId')).toMatchObject({
+      code: 'DRIFT013_SSOT_FLOW_NOT_PROVEN',
+    });
+  });
+
+  it('rejects computed namespace import access as unsupported', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource()
+        .replace(
+          "import { BILLING_PRICES } from '@/features/billing/pricing';",
+          "import * as pricing from '@/features/billing/pricing';",
+        )
+        .replace('const price = BILLING_PRICES[payload.plan];', `const key = 'BILLING_PRICES';
+  const price = pricing[key][payload.plan];`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.priceId')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unsupported-pattern',
+      },
+    });
+  });
+
   it('treats parameters that shadow trusted imports as untrusted', async () => {
     const root = await createProject({
       'src/actions.ts': validFlowSource()
@@ -693,6 +757,23 @@ describe('drift ssot flow', () => {
 
     const result = await checkContracts({ root });
     expect(result.errors.map((error) => error.code)).toContain('DRIFT013_SSOT_FLOW_NOT_PROVEN');
+  });
+
+  it('treats local variables that shadow trusted imports as untrusted', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource().replace(
+        'const price = BILLING_PRICES[payload.plan];',
+        `const BILLING_PRICES = {
+    pro: { priceId: 'price_local', monthlyAmount: 1000, currency: 'USD' },
+  };
+  const price = BILLING_PRICES[payload.plan];`,
+      ),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.priceId')).toMatchObject({
+      code: 'DRIFT013_SSOT_FLOW_NOT_PROVEN',
+    });
   });
 
   it('rejects delete mutations in ssot flow bodies', async () => {

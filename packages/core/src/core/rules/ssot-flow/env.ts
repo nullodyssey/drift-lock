@@ -1,5 +1,5 @@
 import ts from 'typescript';
-import type { FlowEnv, FlowHelperImports, FlowReason, FlowValue } from './types.js';
+import type { FlowEnv, FlowHelperImports, FlowImportResolution, FlowReason, FlowValue } from './types.js';
 import { trusted, untrusted, unsupported } from './types.js';
 
 /* @drift
@@ -20,7 +20,7 @@ llm:
     - Only supported immutable local patterns may propagate provenance.
 */
 export function createInitialEnv(
-  trustedImports: Set<string>,
+  trustedImports: FlowImportResolution,
   parameters: ts.NodeArray<ts.ParameterDeclaration>,
   helperImports: FlowHelperImports = new Map(),
 ): FlowEnv {
@@ -28,7 +28,8 @@ export function createInitialEnv(
   for (const [name, helperSummary] of helperImports) {
     env.set(name, helperSummary ? { trust: 'unsupported', reason: 'unverified-helper-call', helperSummary } : { ...unsupported, reason: 'unverified-helper-call' });
   }
-  for (const name of trustedImports) env.set(name, trusted);
+  for (const name of trustedImports.values) env.set(name, trusted);
+  for (const name of trustedImports.namespaces) env.set(name, { ...unsupported, namespaceImport: true });
   for (const parameter of parameters) {
     for (const name of bindingNames(parameter.name)) env.set(name, untrusted);
   }
@@ -64,12 +65,14 @@ export function expressionFlow(expression: ts.Expression, env: FlowEnv): FlowVal
 
   if (ts.isPropertyAccessExpression(expression)) {
     const base = expressionFlow(expression.expression, env);
+    if (base.namespaceImport) return trusted;
     if (base.objectSummary) return flowForSummaryPath(base, expression.name.text, expression);
     return base;
   }
 
   if (ts.isElementAccessExpression(expression)) {
     const base = expressionFlow(expression.expression, env);
+    if (base.namespaceImport) return unsupportedFlow('unsupported-pattern', expression);
     if (base.objectSummary) return unsupportedFlow('unverified-helper-call', expression);
     return base;
   }

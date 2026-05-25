@@ -39,12 +39,18 @@ export type FlowHelperSummary = {
   returns: string[];
 };
 
+export type FlowImportResolution = {
+  values: Set<string>;
+  namespaces: Set<string>;
+};
+
 export type FlowValue = {
   trust: FlowTrust;
   reason?: FlowReason;
   nodeKind?: string;
   objectSummary?: FlowObjectSummary;
   helperSummary?: FlowHelperSummary;
+  namespaceImport?: true;
 };
 
 export type FlowEnv = Map<string, FlowValue>;
