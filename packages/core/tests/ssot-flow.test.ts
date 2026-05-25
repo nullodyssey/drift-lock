@@ -441,6 +441,208 @@ describe('drift ssot flow', () => {
     expect(result.errors.map((error) => error.code)).toContain('DRIFT014_UNSUPPORTED_FLOW_PATTERN');
   });
 
+  it('rejects trusted object destructuring until destructuring flow is explicit', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`const price = BILLING_PRICES[input.plan];
+  const { priceId } = price;
+  return { priceId };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.priceId')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unsupported-pattern',
+        foundExpression: 'priceId',
+        foundNodeKind: 'Identifier',
+      },
+    });
+  });
+
+  it.each([
+    ['rest destructuring', 'const { ...rest } = price;\n  return { priceId: rest.priceId };'],
+    ['computed destructuring keys', 'const field = "priceId";\n  const { [field]: priceId } = price;\n  return { priceId };'],
+    ['destructuring defaults', 'const { priceId = resolveFallback(input) } = price;\n  return { priceId };'],
+    ['nested destructuring', 'const { nested: { priceId } } = price;\n  return { priceId };'],
+  ])('rejects unsupported %s until destructuring support is explicit', async (_label, body) => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`const price = BILLING_PRICES[input.plan];
+  ${body}`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT014_UNSUPPORTED_FLOW_PATTERN');
+  });
+
+  it('keeps destructured values mixed with unsupported calls unsupported', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`const price = BILLING_PRICES[input.plan];
+  const { priceId } = price;
+  return { priceId: priceId + resolveLabel(input) };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.priceId')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+    });
+  });
+
+  it('rejects trusted object spreads until resolvable spread support exists', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`const price = BILLING_PRICES[input.plan];
+  return {
+    ...price,
+    priceId: price.priceId,
+  };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.priceId')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unsupported-spread',
+      },
+    });
+  });
+
+  it('rejects spreads that can overwrite an explicitly proven sink', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`const price = BILLING_PRICES[input.plan];
+  const override = { priceId: "price_local" };
+  return {
+    priceId: price.priceId,
+    ...override,
+  };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.priceId')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unsupported-spread',
+      },
+    });
+  });
+
+  it('rejects helper spreads until helper object keys and overwrite order are modeled', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`const price = resolvePrice(input.plan);
+  return {
+    ...price,
+  };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.priceId')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unsupported-spread',
+      },
+    });
+  });
+
+  it('rejects inline array map callbacks until collection flow is explicit', async () => {
+    const root = await createProject({
+      'src/actions.ts': collectionFlowSourceWithBody(`const prices = BILLING_PRICES[input.plan].items;
+  return {
+    items: prices.map((price) => ({ priceId: price.priceId })),
+  };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.items')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unsupported-call',
+        foundNodeKind: 'CallExpression',
+      },
+    });
+  });
+
+  it.each([
+    ['external callbacks', 'prices.map(buildLineItem)'],
+    ['async callbacks', 'prices.map(async (price) => ({ priceId: price.priceId }))'],
+    ['helper calls inside callbacks', 'prices.map((price) => buildLineItem(price))'],
+  ])('rejects %s in array map collection flow', async (_label, expression) => {
+    const root = await createProject({
+      'src/actions.ts': collectionFlowSourceWithBody(`const prices = BILLING_PRICES[input.plan].items;
+  return {
+    items: ${expression},
+  };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.items')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unsupported-call',
+      },
+    });
+  });
+
+  it('proves nested helper summary paths that are explicitly indexed', async () => {
+    const root = await createProject(nestedHelperSummaryProject());
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('rejects nested helper summary sibling fields that are not indexed', async () => {
+    const files = nestedHelperSummaryProject();
+    files['src/actions.ts'] = nestedHelperCallSiteSource('./pricing-source.ts').replace(
+      'priceId: summary.price.id,',
+      'priceId: summary.price.localFallback,',
+    );
+    const root = await createProject(files);
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.priceId')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unverified-helper-call',
+        foundExpression: 'summary.price.localFallback',
+        foundNodeKind: 'PropertyAccessExpression',
+      },
+    });
+  });
+
+  it('rejects element access into helper summaries until collection summaries exist', async () => {
+    const files = nestedHelperSummaryProject();
+    files['src/pricing.ts'] = verifiedNestedHelperSource(['return.price.items.id']);
+    files['src/actions.ts'] = nestedHelperCallSiteSource('./pricing-source.ts').replace(
+      'priceId: summary.price.id,',
+      'priceId: summary.price.items[0].id,',
+    );
+    const root = await createProject(files);
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.priceId')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unverified-helper-call',
+      },
+    });
+  });
+
+  it('keeps nested helper summaries mixed with unsupported dependencies unsupported', async () => {
+    const files = nestedHelperSummaryProject();
+    files['src/actions.ts'] = nestedHelperCallSiteSource('./pricing-source.ts').replace(
+      'priceId: summary.price.id,',
+      'priceId: summary.price.id + resolveLabel(input),',
+    );
+    const root = await createProject(files);
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.priceId')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unsupported-call',
+        foundExpression: 'summary.price.id + resolveLabel(input)',
+        foundNodeKind: 'BinaryExpression',
+      },
+    });
+  });
+
   it('detects missing nested ssot flow sinks', async () => {
     const root = await createProject({
       'src/actions.ts': validNestedFlowSource().replace('amount: amount,', 'total: amount,'),
@@ -578,6 +780,113 @@ export function createCheckoutSession(input: { plan: 'pro'; seats: number }) {
     priceId: price.priceId,
     amount: price.monthlyAmount * input.seats,
     currency: price.currency,
+  };
+}
+`;
+}
+
+function collectionFlowSourceWithBody(body: string, id = 'billing.create-checkout-session'): string {
+  return `import { BILLING_PRICES } from '@/features/billing/pricing';
+
+/* @drift
+version: 1
+id: ${id}
+scope: declaration
+stability: locked
+
+intent: >
+  Create a checkout response while proving returned collection values come from pricing.
+
+ssot:
+  pricing: "@/features/billing/pricing.ts"
+
+invariants:
+  - id: checkout-items-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.items
+*/
+export function createCheckoutSession(input: { plan: 'pro' | 'team' }) {
+  ${body}
+}
+`;
+}
+
+function nestedHelperSummaryProject(): Record<string, string> {
+  return {
+    'src/actions.ts': nestedHelperCallSiteSource('./pricing-source.ts'),
+    'src/pricing.ts': verifiedNestedHelperSource(['return.price.id']),
+    'src/pricing-source.ts': `export const BILLING_PRICES = {
+  pro: { priceId: 'price_pro', monthlyAmount: 1000, currency: 'USD' },
+};
+`,
+  };
+}
+
+function nestedHelperCallSiteSource(ssotPath: string): string {
+  return `import { buildPriceSummary } from './pricing';
+
+/* @drift
+version: 1
+id: billing.create-checkout-session
+scope: declaration
+stability: locked
+
+intent: >
+  Create a Stripe Checkout session from a nested helper-provided pricing summary.
+
+ssot:
+  pricing: "${ssotPath}"
+
+invariants:
+  - id: checkout-price-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+      - return.priceId
+*/
+export function createCheckoutSession(input: { plan: 'pro' }) {
+  const summary = buildPriceSummary(input.plan);
+
+  return {
+    priceId: summary.price.id,
+  };
+}
+`;
+}
+
+function verifiedNestedHelperSource(sinks: string[]): string {
+  return `import { BILLING_PRICES } from './pricing-source';
+
+/* @drift
+version: 1
+id: billing.build-price-summary
+scope: declaration
+stability: locked
+
+intent: >
+  Resolve a nested billing price summary from the pricing source of truth.
+
+ssot:
+  pricing: "./pricing-source.ts"
+
+invariants:
+  - id: return-price-summary-from-pricing
+    enforce: drift/ssot-flow
+    ssot: pricing
+    sinks:
+${sinks.map((sink) => `      - ${sink}`).join('\n')}
+*/
+export function buildPriceSummary(plan: 'pro') {
+  const price = BILLING_PRICES[plan];
+  return {
+    price: {
+      id: price.priceId,
+      items: {
+        id: price.priceId,
+      },
+    },
   };
 }
 `;
