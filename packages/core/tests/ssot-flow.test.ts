@@ -600,6 +600,60 @@ describe('drift ssot flow', () => {
     });
   });
 
+  it('proves later explicit properties after dynamic computed overwrites', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`const price = BILLING_PRICES[input.plan];
+  const summary = {
+    priceId: price.priceId,
+  };
+  const field = input.plan === 'pro' ? 'priceId' : 'metadata';
+  return {
+    ...summary,
+    [field]: input.priceId,
+    priceId: price.priceId,
+  };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('proves later known object spreads after dynamic computed properties', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`const price = BILLING_PRICES[input.plan];
+  const summary = {
+    priceId: price.priceId,
+  };
+  const field = input.plan === 'pro' ? 'priceId' : 'metadata';
+  return {
+    [field]: input.priceId,
+    ...summary,
+  };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('proves later explicit properties after accessor overwrites', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`const price = BILLING_PRICES[input.plan];
+  const summary = {
+    priceId: price.priceId,
+  };
+  return {
+    ...summary,
+    get priceId() {
+      return input.priceId;
+    },
+    priceId: price.priceId,
+  };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
   it('rejects accessors that overwrite known object alias spreads', async () => {
     const root = await createProject({
       'src/actions.ts': flowSourceWithBody(`const price = BILLING_PRICES[input.plan];

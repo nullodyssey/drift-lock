@@ -193,12 +193,16 @@ function resolveSinkExpression(expression: ts.ObjectLiteralExpression, path: Sin
   if (!segment) return { kind: 'found', expression };
 
   let resolved: SinkResolution | undefined;
+  let pendingUnsupported: SinkResolution | undefined;
 
   for (const property of expression.properties) {
     if (ts.isSpreadAssignment(property)) {
       const spreadResolution = resolveSpreadSegment(property.expression, segment, rest, env);
       if (spreadResolution.kind === 'unsupported') return spreadResolution;
-      if (spreadResolution.kind !== 'missing') resolved = spreadResolution;
+      if (spreadResolution.kind !== 'missing') {
+        resolved = spreadResolution;
+        pendingUnsupported = undefined;
+      }
       continue;
     }
 
@@ -206,28 +210,26 @@ function resolveSinkExpression(expression: ts.ObjectLiteralExpression, path: Sin
       const match = propertyNameMatch(property.name, segment.name);
       if (match === 'match') {
         resolved = resolvePropertyAssignment(property.initializer, segment, rest, env);
+        pendingUnsupported = undefined;
         continue;
       }
-      if (match === 'unknown' && resolved) {
-        return { kind: 'unsupported', reason: 'unsupported-pattern', expression: property };
-      }
+      if (match === 'unknown') pendingUnsupported = { kind: 'unsupported', reason: 'unsupported-pattern', expression: property };
       continue;
     }
 
     if (ts.isShorthandPropertyAssignment(property) && property.name.text === segment.name) {
       resolved = resolveShorthandProperty(property.name, segment, rest, env);
+      pendingUnsupported = undefined;
       continue;
     }
 
     if (ts.isMethodDeclaration(property) || ts.isGetAccessorDeclaration(property) || ts.isSetAccessorDeclaration(property)) {
       const match = propertyNameMatch(property.name, segment.name);
-      if (match === 'match' || (match === 'unknown' && resolved)) {
-        return { kind: 'unsupported', reason: 'unsupported-pattern', expression: property };
-      }
+      if (match === 'match' || match === 'unknown') pendingUnsupported = { kind: 'unsupported', reason: 'unsupported-pattern', expression: property };
     }
   }
 
-  return resolved ?? { kind: 'missing' };
+  return pendingUnsupported ?? resolved ?? { kind: 'missing' };
 }
 
 function resolvePropertyAssignment(
