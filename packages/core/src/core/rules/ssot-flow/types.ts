@@ -82,8 +82,14 @@ export type FlowErrorDetails = {
 
 export type FunctionLikeWithBody = ts.FunctionDeclaration | ts.FunctionExpression | ts.ArrowFunction;
 
+export type SinkPathSegment = {
+  name: string;
+  collection: boolean;
+};
+
 export type SinkResolution =
   | { kind: 'found'; expression: ts.Expression }
+  | { kind: 'collection'; expression: ts.Expression; itemPath: SinkPathSegment[] }
   | { kind: 'missing' }
   | { kind: 'unsupported' };
 

@@ -2,8 +2,9 @@ import ts from 'typescript';
 import type { DriftError } from '../../../types.js';
 import { flowNotProven, sourceExpressionDetails, unsupportedForSinks, unsupportedPattern } from './diagnostics.js';
 import { applyVariableStatement, cloneEnv, expressionFlow } from './env.js';
-import { findSinkExpression } from './sinks.js';
-import type { FlowCheckResult, FlowContext, FlowEnv } from './types.js';
+import { findSinkExpression, parseReturnSinkPath } from './sinks.js';
+import type { FlowCheckResult, FlowContext, FlowEnv, FlowReason, FlowValue, SinkResolution } from './types.js';
+import { trusted } from './types.js';
 
 /* @drift
 version: 1
@@ -86,36 +87,152 @@ export function checkReturnExpression(context: FlowContext, expression: ts.Expre
   }
 
   for (const sink of sinks) {
-    const path = sink.slice('return.'.length).split('.');
-    const property = findSinkExpression(returnExpression, path);
-
-    if (property.kind === 'missing') {
-      errors.push(flowNotProven(context, sink, 'missing-sink'));
-      continue;
-    }
-
-    if (property.kind === 'unsupported') {
+    const path = parseReturnSinkPath(sink);
+    if (!path) {
       errors.push(unsupportedPattern(context, sink, 'unsupported-pattern'));
       continue;
     }
 
-    const flow = expressionFlow(property.expression, env);
-    if (flow.trust === 'trusted') continue;
-    const expressionDetails = sourceExpressionDetails(context.sourceFile, property.expression);
-    errors.push(
-      flow.trust === 'unsupported'
-        ? unsupportedPattern(context, sink, flow.reason ?? 'unsupported-pattern', {
-            nodeKind: flow.nodeKind,
-            ...expressionDetails,
-          })
-        : flowNotProven(context, sink, 'untrusted-value', {
-            nodeKind: flow.nodeKind,
-            ...expressionDetails,
-          }),
-    );
+    const property = findSinkExpression(returnExpression, path);
+    const error = checkSinkResolution(context, sink, property, env);
+    if (error) errors.push(error);
   }
 
   return errors;
+}
+
+function checkSinkResolution(context: FlowContext, sink: string, property: SinkResolution, env: FlowEnv): DriftError | undefined {
+  if (property.kind === 'missing') {
+    return flowNotProven(context, sink, 'missing-sink');
+  }
+
+  if (property.kind === 'unsupported') {
+    return unsupportedPattern(context, sink, 'unsupported-pattern');
+  }
+
+  if (property.kind === 'collection') {
+    return checkCollectionSink(context, sink, property, env);
+  }
+
+  return flowErrorForExpression(context, sink, property.expression, env);
+}
+
+function checkCollectionSink(
+  context: FlowContext,
+  sink: string,
+  property: Extract<SinkResolution, { kind: 'collection' }>,
+  env: FlowEnv,
+): DriftError | undefined {
+  const collectionExpression = unwrapReturnExpression(property.expression);
+
+  if (!ts.isCallExpression(collectionExpression)) {
+    return unsupportedPattern(context, sink, 'unsupported-pattern', sourceExpressionDetails(context.sourceFile, collectionExpression));
+  }
+
+  const callee = collectionExpression.expression;
+  if (!ts.isPropertyAccessExpression(callee) || callee.name.text !== 'map') {
+    return unsupportedPattern(context, sink, 'unsupported-call', sourceExpressionDetails(context.sourceFile, collectionExpression));
+  }
+
+  const receiverFlow = expressionFlow(callee.expression, env);
+  const receiverError = flowError(context, sink, callee.expression, receiverFlow);
+  if (receiverError) return receiverError;
+
+  const [callback] = collectionExpression.arguments;
+  if (!callback || collectionExpression.arguments.length !== 1 || !isSupportedMapCallback(callback)) {
+    return unsupportedPattern(context, sink, 'unsupported-call', sourceExpressionDetails(context.sourceFile, collectionExpression));
+  }
+
+  if (callback.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.AsyncKeyword)) {
+    return unsupportedPattern(context, sink, 'unsupported-call', sourceExpressionDetails(context.sourceFile, callback));
+  }
+
+  if (callback.parameters.length !== 1 || !ts.isIdentifier(callback.parameters[0].name)) {
+    return unsupportedPattern(context, sink, 'unsupported-pattern', sourceExpressionDetails(context.sourceFile, callback));
+  }
+
+  if (hasUnsupportedMutation(callback.body)) {
+    return unsupportedPattern(context, sink, 'unsupported-mutation', sourceExpressionDetails(context.sourceFile, callback.body));
+  }
+
+  const callbackEnv = cloneEnv(env);
+  callbackEnv.set(callback.parameters[0].name.text, trusted);
+  const callbackReturn = mapCallbackReturnObject(callback, callbackEnv);
+
+  if (callbackReturn.kind === 'unsupported') {
+    return unsupportedPattern(
+      context,
+      sink,
+      callbackReturn.reason,
+      sourceExpressionDetails(context.sourceFile, callbackReturn.expression),
+    );
+  }
+
+  if (callbackReturn.expression.properties.some(ts.isSpreadAssignment)) {
+    return unsupportedPattern(context, sink, 'unsupported-spread', sourceExpressionDetails(context.sourceFile, callbackReturn.expression));
+  }
+
+  const itemProperty = findSinkExpression(callbackReturn.expression, property.itemPath);
+  return checkSinkResolution(context, sink, itemProperty, callbackEnv);
+}
+
+function flowErrorForExpression(context: FlowContext, sink: string, expression: ts.Expression, env: FlowEnv): DriftError | undefined {
+  return flowError(context, sink, expression, expressionFlow(expression, env));
+}
+
+function flowError(context: FlowContext, sink: string, expression: ts.Expression, flow: FlowValue): DriftError | undefined {
+  if (flow.trust === 'trusted') return undefined;
+  const expressionDetails = sourceExpressionDetails(context.sourceFile, expression);
+  return flow.trust === 'unsupported'
+    ? unsupportedPattern(context, sink, flow.reason ?? 'unsupported-pattern', {
+        nodeKind: flow.nodeKind,
+        ...expressionDetails,
+      })
+    : flowNotProven(context, sink, 'untrusted-value', {
+        nodeKind: flow.nodeKind,
+        ...expressionDetails,
+      });
+}
+
+function isSupportedMapCallback(expression: ts.Expression): expression is ts.ArrowFunction | ts.FunctionExpression {
+  return ts.isArrowFunction(expression) || ts.isFunctionExpression(expression);
+}
+
+function mapCallbackReturnObject(
+  callback: ts.ArrowFunction | ts.FunctionExpression,
+  env: FlowEnv,
+): { kind: 'found'; expression: ts.ObjectLiteralExpression } | { kind: 'unsupported'; reason: FlowReason; expression: ts.Node } {
+  if (!ts.isBlock(callback.body)) {
+    const expression = unwrapReturnExpression(callback.body);
+    if (ts.isObjectLiteralExpression(expression)) return { kind: 'found', expression };
+    return { kind: 'unsupported', reason: ts.isCallExpression(expression) ? 'unsupported-call' : 'unsupported-return', expression };
+  }
+
+  for (const statement of callback.body.statements) {
+    if (ts.isVariableStatement(statement)) {
+      applyVariableStatement(statement, env);
+      continue;
+    }
+
+    if (ts.isReturnStatement(statement) && statement.expression) {
+      const expression = unwrapReturnExpression(statement.expression);
+      if (ts.isObjectLiteralExpression(expression)) return { kind: 'found', expression };
+      return {
+        kind: 'unsupported',
+        reason: ts.isCallExpression(expression) ? 'unsupported-call' : 'unsupported-return',
+        expression,
+      };
+    }
+
+    return { kind: 'unsupported', reason: 'unsupported-pattern', expression: statementExpression(statement) };
+  }
+
+  return { kind: 'unsupported', reason: 'unsupported-return', expression: callback };
+}
+
+function statementExpression(statement: ts.Statement): ts.Node {
+  if (ts.isExpressionStatement(statement)) return statement.expression;
+  return statement;
 }
 
 export function checkIfStatement(context: FlowContext, statement: ts.IfStatement, env: FlowEnv): FlowCheckResult {

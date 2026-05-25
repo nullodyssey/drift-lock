@@ -205,7 +205,7 @@ function validateInvariants(
       } else {
         const seen = new Set<string>();
         for (const sink of invariant.sinks) {
-          if (!isString(sink) || !/^return\.[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/.test(sink.trim()) || seen.has(sink.trim())) {
+          if (!isString(sink) || !isValidSsotFlowSink(sink.trim()) || seen.has(sink.trim())) {
             errors.push(driftError('DRIFT004_INVALID_FIELD_VALUE', file, { field: `${fieldPrefix}.sinks` }, position));
             break;
           }
@@ -218,6 +218,13 @@ function validateInvariants(
   }
 
   return errors;
+}
+
+function isValidSsotFlowSink(sink: string): boolean {
+  if (!/^return\.[A-Za-z_$][\w$]*(\[\])?(\.[A-Za-z_$][\w$]*(\[\])?)*$/.test(sink)) return false;
+  const segments = sink.slice('return.'.length).split('.');
+  const collectionIndexes = segments.flatMap((segment, index) => (segment.endsWith('[]') ? [index] : []));
+  return collectionIndexes.length <= 1 && (collectionIndexes.length === 0 || collectionIndexes[0] < segments.length - 1);
 }
 
 function validateLlm(value: unknown, file: string, position: { line: number; column: number }): DriftError[] {

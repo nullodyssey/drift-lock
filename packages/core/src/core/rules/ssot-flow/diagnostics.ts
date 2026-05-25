@@ -77,7 +77,7 @@ export function unsupportedPattern(
   );
 }
 
-export function sourceExpressionDetails(sourceFile: ts.SourceFile, expression: ts.Expression): FlowErrorDetails {
+export function sourceExpressionDetails(sourceFile: ts.SourceFile, expression: ts.Node): FlowErrorDetails {
   return {
     foundExpression: expression.getText(sourceFile),
     foundNodeKind: ts.SyntaxKind[expression.kind],

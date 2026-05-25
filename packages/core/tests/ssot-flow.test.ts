@@ -563,20 +563,69 @@ describe('drift ssot flow', () => {
     });
   });
 
-  it('rejects inline array map callbacks until collection flow is explicit', async () => {
+  it('proves ssot flow for inline array map callback collection sinks', async () => {
     const root = await createProject({
       'src/actions.ts': collectionFlowSourceWithBody(`const prices = BILLING_PRICES[input.plan].items;
   return {
-    items: prices.map((price) => ({ priceId: price.priceId })),
+    items: prices.map((price) => ({
+      priceId: price.priceId,
+      currency: price.currency,
+    })),
+  };`, ['return.items[].priceId', 'return.items[].currency']),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('proves ssot flow for block-bodied array map callbacks', async () => {
+    const root = await createProject({
+      'src/actions.ts': collectionFlowSourceWithBody(`const prices = BILLING_PRICES[input.plan].items;
+  return {
+    items: prices.map((price) => {
+      const priceId = price.priceId;
+      return { priceId };
+    }),
   };`),
     });
 
     const result = await checkContracts({ root });
-    expect(result.errors.find((error) => error.details?.sink === 'return.items')).toMatchObject({
+    expect(result.errors).toEqual([]);
+  });
+
+  it('rejects mixed trusted and local array elements for collection sinks', async () => {
+    const root = await createProject({
+      'src/actions.ts': collectionFlowSourceWithBody(`const price = BILLING_PRICES[input.plan].items[0];
+  const local = { priceId: 'price_local' };
+  return {
+    items: [price, local],
+  };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.items[].priceId')).toMatchObject({
       code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
       details: {
-        reason: 'unsupported-call',
-        foundNodeKind: 'CallExpression',
+        reason: 'unsupported-pattern',
+        foundNodeKind: 'ArrayLiteralExpression',
+      },
+    });
+  });
+
+  it('rejects numeric index access as proof for collection wildcard sinks', async () => {
+    const root = await createProject({
+      'src/actions.ts': collectionFlowSourceWithBody(`const prices = BILLING_PRICES[input.plan].items;
+  return {
+    items: prices[0],
+  };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.items[].priceId')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unsupported-pattern',
+        foundNodeKind: 'ElementAccessExpression',
       },
     });
   });
@@ -585,6 +634,7 @@ describe('drift ssot flow', () => {
     ['external callbacks', 'prices.map(buildLineItem)'],
     ['async callbacks', 'prices.map(async (price) => ({ priceId: price.priceId }))'],
     ['helper calls inside callbacks', 'prices.map((price) => buildLineItem(price))'],
+    ['chained array helpers', 'prices.filter(Boolean).map((price) => ({ priceId: price.priceId }))'],
   ])('rejects %s in array map collection flow', async (_label, expression) => {
     const root = await createProject({
       'src/actions.ts': collectionFlowSourceWithBody(`const prices = BILLING_PRICES[input.plan].items;
@@ -594,10 +644,31 @@ describe('drift ssot flow', () => {
     });
 
     const result = await checkContracts({ root });
-    expect(result.errors.find((error) => error.details?.sink === 'return.items')).toMatchObject({
+    expect(result.errors.find((error) => error.details?.sink === 'return.items[].priceId')).toMatchObject({
       code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
       details: {
         reason: 'unsupported-call',
+      },
+    });
+  });
+
+  it('keeps callback-local shadows from reusing outer ssot trust', async () => {
+    const root = await createProject({
+      'src/actions.ts': collectionFlowSourceWithBody(`const prices = BILLING_PRICES[input.plan].items;
+  return {
+    items: prices.map((price) => {
+      const BILLING_PRICES = { priceId: 'price_local' };
+      return { priceId: BILLING_PRICES.priceId };
+    }),
+  };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.items[].priceId')).toMatchObject({
+      code: 'DRIFT013_SSOT_FLOW_NOT_PROVEN',
+      details: {
+        reason: 'untrusted-value',
+        foundExpression: 'BILLING_PRICES.priceId',
       },
     });
   });
@@ -870,10 +941,28 @@ describe('drift ssot flow', () => {
     expect(result.errors.map((error) => error.code)).toContain('DRIFT004_INVALID_FIELD_VALUE');
   });
 
-  it('rejects collection wildcard ssot flow sinks in the P0 schema', () => {
+  it('accepts collection wildcard ssot flow sinks', () => {
     const result = extractContractsFromSource(
       'src/actions.ts',
       validFlowSource().replace('      - return.priceId', '      - return.items[].priceId'),
+    );
+
+    expect(result.errors).toEqual([]);
+  });
+
+  it('rejects terminal collection wildcard ssot flow sinks', () => {
+    const result = extractContractsFromSource(
+      'src/actions.ts',
+      validFlowSource().replace('      - return.priceId', '      - return.items[]'),
+    );
+
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT004_INVALID_FIELD_VALUE');
+  });
+
+  it('rejects numeric index ssot flow sinks', () => {
+    const result = extractContractsFromSource(
+      'src/actions.ts',
+      validFlowSource().replace('      - return.priceId', '      - return.items[0].priceId'),
     );
 
     expect(result.errors.map((error) => error.code)).toContain('DRIFT004_INVALID_FIELD_VALUE');
@@ -938,7 +1027,11 @@ export function createCheckoutSession(input: { plan: 'pro'; seats: number }) {
 `;
 }
 
-function collectionFlowSourceWithBody(body: string, id = 'billing.create-checkout-session'): string {
+function collectionFlowSourceWithBody(
+  body: string,
+  sinks = ['return.items[].priceId'],
+  id = 'billing.create-checkout-session',
+): string {
   return `import { BILLING_PRICES } from '@/features/billing/pricing';
 
 /* @drift
@@ -958,7 +1051,7 @@ invariants:
     enforce: drift/ssot-flow
     ssot: pricing
     sinks:
-      - return.items
+${sinks.map((sink) => `      - ${sink}`).join('\n')}
 */
 export function createCheckoutSession(input: { plan: 'pro' | 'team' }) {
   ${body}
