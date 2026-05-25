@@ -44,17 +44,7 @@ export function applyVariableStatement(statement: ts.VariableStatement, env: Flo
   const isConst = (statement.declarationList.flags & ts.NodeFlags.Const) !== 0;
 
   for (const declaration of statement.declarationList.declarations) {
-    if (!ts.isIdentifier(declaration.name)) {
-      for (const name of bindingNames(declaration.name)) env.set(name, unsupported);
-      continue;
-    }
-
-    if (!isConst || !declaration.initializer) {
-      env.set(declaration.name.text, unsupported);
-      continue;
-    }
-
-    env.set(declaration.name.text, expressionFlow(declaration.initializer, env));
+    applyVariableDeclaration(declaration, isConst, env);
   }
 }
 
@@ -65,9 +55,7 @@ export function expressionFlow(expression: ts.Expression, env: FlowEnv): FlowVal
 
   if (ts.isPropertyAccessExpression(expression)) {
     const base = expressionFlow(expression.expression, env);
-    if (base.namespaceImport) return trusted;
-    if (base.objectSummary) return flowForSummaryPath(base, expression.name.text, expression);
-    return base;
+    return flowForProperty(base, expression.name.text, expression, { allowNamespace: true });
   }
 
   if (ts.isElementAccessExpression(expression)) {
@@ -139,6 +127,61 @@ function flowForSummaryPath(value: FlowValue, segment: string, node: ts.Node): F
   return unsupportedFlow('unverified-helper-call', node);
 }
 
+function flowForProperty(
+  value: FlowValue,
+  segment: string,
+  node: ts.Node,
+  options: { allowNamespace?: boolean } = {},
+): FlowValue {
+  if (value.namespaceImport) return options.allowNamespace ? trusted : unsupportedFlow('unsupported-pattern', node);
+  if (value.objectSummary) return flowForSummaryPath(value, segment, node);
+  return value;
+}
+
+function applyVariableDeclaration(declaration: ts.VariableDeclaration, isConst: boolean, env: FlowEnv): void {
+  if (ts.isIdentifier(declaration.name)) {
+    env.set(declaration.name.text, isConst && declaration.initializer ? expressionFlow(declaration.initializer, env) : unsupported);
+    return;
+  }
+
+  if (!isConst || !declaration.initializer || !ts.isObjectBindingPattern(declaration.name)) {
+    markBindings(declaration.name, unsupported, env);
+    return;
+  }
+
+  applyObjectBindingPattern(declaration.name, declaration.initializer, env);
+}
+
+function applyObjectBindingPattern(pattern: ts.ObjectBindingPattern, initializer: ts.Expression, env: FlowEnv): void {
+  if (!isSupportedObjectBindingPattern(pattern)) {
+    markBindings(pattern, unsupported, env);
+    return;
+  }
+
+  const base = expressionFlow(initializer, env);
+  for (const element of pattern.elements) {
+    if (!ts.isIdentifier(element.name)) continue;
+    const segment = element.propertyName ? propertyNameText(element.propertyName) : element.name.text;
+    if (!segment) {
+      env.set(element.name.text, unsupported);
+      continue;
+    }
+    env.set(element.name.text, flowForProperty(base, segment, element));
+  }
+}
+
+function isSupportedObjectBindingPattern(pattern: ts.ObjectBindingPattern): boolean {
+  return pattern.elements.every((element) => {
+    if (element.dotDotDotToken || element.initializer) return false;
+    if (!ts.isIdentifier(element.name)) return false;
+    return !element.propertyName || propertyNameText(element.propertyName) !== undefined;
+  });
+}
+
+function markBindings(name: ts.BindingName, value: FlowValue, env: FlowEnv): void {
+  for (const binding of bindingNames(name)) env.set(binding, value);
+}
+
 function calledHelper(expression: ts.CallExpression, env: FlowEnv): FlowValue | undefined {
   const callee = expression.expression;
   if (!ts.isIdentifier(callee)) return undefined;
@@ -159,6 +202,11 @@ function isDerivedBinaryOperator(kind: ts.SyntaxKind): boolean {
     kind === ts.SyntaxKind.PlusToken ||
     kind === ts.SyntaxKind.MinusToken
   );
+}
+
+function propertyNameText(name: ts.PropertyName): string | undefined {
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) return name.text;
+  return undefined;
 }
 
 function bindingNames(name: ts.BindingName): string[] {

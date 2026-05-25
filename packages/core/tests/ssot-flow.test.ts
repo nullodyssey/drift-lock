@@ -441,7 +441,7 @@ describe('drift ssot flow', () => {
     expect(result.errors.map((error) => error.code)).toContain('DRIFT014_UNSUPPORTED_FLOW_PATTERN');
   });
 
-  it('rejects trusted object destructuring until destructuring flow is explicit', async () => {
+  it('proves ssot flow through trusted object destructuring', async () => {
     const root = await createProject({
       'src/actions.ts': flowSourceWithBody(`const price = BILLING_PRICES[input.plan];
   const { priceId } = price;
@@ -449,10 +449,32 @@ describe('drift ssot flow', () => {
     });
 
     const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('proves ssot flow through trusted object destructuring aliases', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`const price = BILLING_PRICES[input.plan];
+  const { priceId: id } = price;
+  return { priceId: id };`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('keeps destructuring from local objects untrusted', async () => {
+    const root = await createProject({
+      'src/actions.ts': flowSourceWithBody(`const local = { priceId: 'price_local' };
+  const { priceId } = local;
+  return { priceId };`),
+    });
+
+    const result = await checkContracts({ root });
     expect(result.errors.find((error) => error.details?.sink === 'return.priceId')).toMatchObject({
-      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      code: 'DRIFT013_SSOT_FLOW_NOT_PROVEN',
       details: {
-        reason: 'unsupported-pattern',
+        reason: 'untrusted-value',
         foundExpression: 'priceId',
         foundNodeKind: 'Identifier',
       },
@@ -582,6 +604,22 @@ describe('drift ssot flow', () => {
 
   it('proves nested helper summary paths that are explicitly indexed', async () => {
     const root = await createProject(nestedHelperSummaryProject());
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('proves destructured nested helper summary paths that are explicitly indexed', async () => {
+    const files = nestedHelperSummaryProject();
+    files['src/actions.ts'] = nestedHelperCallSiteSource('./pricing-source.ts').replace(
+      'return {\n    priceId: summary.price.id,\n  };',
+      `const { price } = summary;
+
+  return {
+    priceId: price.id,
+  };`,
+    );
+    const root = await createProject(files);
 
     const result = await checkContracts({ root });
     expect(result.errors).toEqual([]);
