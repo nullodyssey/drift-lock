@@ -31,4 +31,14 @@ describe('drift ssot usage rule', () => {
 
     expect(checkSsotUsage(contract!, text)).toEqual([]);
   });
+
+  it('accepts NodeNext imports for Windows-like SSOT paths', () => {
+    const text = validActionsSource()
+      .replace(`ssot:\n  pricing: "@/features/billing/pricing.ts"`, String.raw`ssot:
+  pricing: '.\pricing.ts'`)
+      .replace("import { PRO_PRICE_ID } from '@/features/billing/pricing';", "import { PRO_PRICE_ID } from './pricing.js';");
+    const contract = extractContractsFromSource('src/actions.ts', text).contracts[0];
+
+    expect(checkSsotUsage(contract!, text)).toEqual([]);
+  });
 });

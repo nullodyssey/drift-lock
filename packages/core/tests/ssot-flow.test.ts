@@ -1072,6 +1072,21 @@ describe('drift ssot flow', () => {
     expect(result.errors).toEqual([]);
   });
 
+  it('proves ssot flow for named import aliases with NodeNext imports and Windows-like ssot paths', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource()
+        .replace(
+          "import { BILLING_PRICES } from '@/features/billing/pricing';",
+          "import { BILLING_PRICES as PRICES } from './pricing-source.js';",
+        )
+        .replace('pricing: "@/features/billing/pricing.ts"', String.raw`pricing: '.\pricing-source.ts'`)
+        .replace('const price = BILLING_PRICES[payload.plan];', 'const price = PRICES[payload.plan];'),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
   it('proves ssot flow for static namespace import access', async () => {
     const root = await createProject({
       'src/actions.ts': validFlowSource()
@@ -1097,6 +1112,25 @@ describe('drift ssot flow', () => {
           'const price = BILLING_PRICES[payload.plan];',
           `const { BILLING_PRICES } = pricing;
   const price = BILLING_PRICES[payload.plan];`,
+        ),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
+  it('proves ssot flow for renamed namespace import destructuring with Windows-like ssot paths', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource()
+        .replace(
+          "import { BILLING_PRICES } from '@/features/billing/pricing';",
+          "import * as pricing from './pricing-source.js';",
+        )
+        .replace('pricing: "@/features/billing/pricing.ts"', String.raw`pricing: '.\pricing-source.ts'`)
+        .replace(
+          'const price = BILLING_PRICES[payload.plan];',
+          `const { BILLING_PRICES: PRICES } = pricing;
+  const price = PRICES[payload.plan];`,
         ),
     });
 

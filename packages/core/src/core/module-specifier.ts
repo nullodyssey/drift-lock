@@ -15,7 +15,15 @@ llm:
     - Candidate order must remain deterministic.
 */
 export function moduleSpecifierCandidates(modulePath: string): string[] {
-  const candidates = new Set([modulePath]);
+  const candidates = new Set<string>();
+  addCandidates(candidates, modulePath);
+  addCandidates(candidates, modulePath.replace(/\\/g, '/'));
+
+  return [...candidates];
+}
+
+function addCandidates(candidates: Set<string>, modulePath: string): void {
+  candidates.add(modulePath);
   const extensionless = modulePath.replace(/\.(tsx|ts|jsx|js)$/, '');
   candidates.add(extensionless);
 
@@ -23,6 +31,4 @@ export function moduleSpecifierCandidates(modulePath: string): string[] {
   if (modulePath.endsWith('.tsx')) candidates.add(`${extensionless}.jsx`);
   if (modulePath.endsWith('.js')) candidates.add(`${extensionless}.ts`);
   if (modulePath.endsWith('.jsx')) candidates.add(`${extensionless}.tsx`);
-
-  return [...candidates];
 }
