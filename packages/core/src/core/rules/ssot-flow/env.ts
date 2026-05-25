@@ -166,7 +166,7 @@ function applyObjectBindingPattern(pattern: ts.ObjectBindingPattern, initializer
       env.set(element.name.text, unsupported);
       continue;
     }
-    env.set(element.name.text, flowForProperty(base, segment, element));
+    env.set(element.name.text, flowForProperty(base, segment, element, { allowNamespace: true }));
   }
 }
 

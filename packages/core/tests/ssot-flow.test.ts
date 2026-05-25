@@ -750,6 +750,24 @@ describe('drift ssot flow', () => {
     expect(result.errors).toEqual([]);
   });
 
+  it('proves ssot flow for static namespace import destructuring', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource()
+        .replace(
+          "import { BILLING_PRICES } from '@/features/billing/pricing';",
+          "import * as pricing from '@/features/billing/pricing';",
+        )
+        .replace(
+          'const price = BILLING_PRICES[payload.plan];',
+          `const { BILLING_PRICES } = pricing;
+  const price = BILLING_PRICES[payload.plan];`,
+        ),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors).toEqual([]);
+  });
+
   it('keeps default imports from ssot modules untrusted', async () => {
     const root = await createProject({
       'src/actions.ts': validFlowSource()
