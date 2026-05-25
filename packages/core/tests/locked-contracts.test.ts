@@ -71,6 +71,27 @@ describe('drift locked contracts', () => {
     expect(result.errors).toEqual([]);
   });
 
+  it('reports invalid acceptance files for locked contract changes', async () => {
+    const root = await createProject({ 'src/actions.ts': validActionsSource() });
+    const extracted = await extractContracts({ root });
+    await writeIndex(root, undefined, toIndex(extracted.contracts));
+
+    await writeFile(
+      path.join(root, 'src/actions.ts'),
+      validActionsSource().replace('the Pro subscription.', 'the Premium subscription.'),
+      'utf8',
+    );
+    await mkdir(path.join(root, '.drift/accepted-contract-changes'), { recursive: true });
+    await writeFile(
+      path.join(root, '.drift/accepted-contract-changes/billing.create-checkout-session.md'),
+      'contract: billing.other-contract\nreason: Product terminology changed intentionally.\n',
+      'utf8',
+    );
+
+    const result = await checkContracts({ root });
+    expect(result.errors.map((error) => error.code)).toContain('DRIFT012_INVALID_ACCEPTANCE_FILE');
+  });
+
   it('keeps locked removals blocking when changedOnly is enabled', async () => {
     const root = await createProject({ 'src/actions.ts': validActionsSource() });
     const extracted = await extractContracts({ root });

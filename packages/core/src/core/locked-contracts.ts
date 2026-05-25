@@ -1,6 +1,7 @@
 import path from 'node:path';
 import ts from 'typescript';
 import type { DriftContractsIndex, DriftDiagnostic, DriftError, DriftExtractedContract } from '../types.js';
+import { isAcceptanceForContract } from './acceptance-file.js';
 import type { CheckRunContext } from './check-run.js';
 import { driftError, toDiagnostic } from './errors.js';
 
@@ -80,10 +81,7 @@ function readAcceptanceSync(root: string, id: string): { exists: boolean; valid:
     const fs = ts.sys;
     const content = fs.readFile(file);
     if (content === undefined) return { exists: false, valid: false };
-    if (!content) return { exists: true, valid: false };
-    const contract = content.match(/^contract:\s*(.+)$/m)?.[1]?.trim();
-    const reason = content.match(/^reason:\s*(.+)$/m)?.[1]?.trim();
-    return { exists: true, valid: contract === id && typeof reason === 'string' && reason.length >= 20 };
+    return { exists: true, valid: isAcceptanceForContract(content, id) };
   } catch {
     return { exists: false, valid: false };
   }

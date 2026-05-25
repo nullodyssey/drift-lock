@@ -63,6 +63,36 @@
     },
     {
       "version": 1,
+      "id": "core.acceptance-file",
+      "scope": "file",
+      "stability": "locked",
+      "intent": "Keep locked-contract acceptance file parsing and serialization on one shared, validated format.",
+      "ssot": {
+        "validator": "./validator.ts"
+      },
+      "invariants": [
+        {
+          "id": "acceptance-uses-contract-id-validator",
+          "enforce": "drift/ssot-usage",
+          "ssot": "validator"
+        }
+      ],
+      "llm": {
+        "must_not_change": [
+          "Acceptance files must keep the contract and reason line format stable.",
+          "Contract ids must be validated through the shared contract id validator.",
+          "Reasons shorter than 20 characters must stay invalid."
+        ]
+      },
+      "file": "packages/core/src/core/acceptance-file.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:bee63dda4662bd894685c0b0e3671e8f01c2d38054c089be6720485af42d02e5",
+      "bodyHash": "sha256:15b9c955baaa7af132297339afd5bc3e1368d40d0e636d0667973a1dbb3bdc68"
+    },
+    {
+      "version": 1,
       "id": "core.check-run",
       "scope": "file",
       "stability": "locked",
@@ -276,7 +306,7 @@
         "type": "file"
       },
       "contentHash": "sha256:1179f789ce55d66eaff12f42cfde0c214aed2c8072a8aeea770a6c7af5392381",
-      "bodyHash": "sha256:6b41175983a324039b3dbb68c5404512323d354d66f93ce3386a2b3b8d7b849a"
+      "bodyHash": "sha256:14898e8540dbf35d97a09a100f6c5c1da2f7f429e433dcd242689f25249d6dd9"
     },
     {
       "version": 1,
@@ -637,7 +667,7 @@
         "type": "file"
       },
       "contentHash": "sha256:ee6500cc3cc4e20788237623ba485fdca96e34d20a4208b081ee3b195899b133",
-      "bodyHash": "sha256:d209c6977ae00b36d43facc3928f0ca88e6b1464c1bc85a94cd31a12991f0e55"
+      "bodyHash": "sha256:f0c6f04ef5425ef9824822e52bc6bae9d864b2d203edf2f8726d567a2d7c7b3b"
     },
     {
       "version": 1,

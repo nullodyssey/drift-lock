@@ -12,11 +12,11 @@ import type {
   DriftInvariantChangeField,
   DriftIndexedContract,
 } from '../types.js';
+import { serializeAcceptanceFile } from './acceptance-file.js';
 import { extractContracts, type ExtractOptions } from './extractor.js';
 import { filterContractsByFiles, filterIndexByFiles, resolveGitFileScope } from './git-scope.js';
 import { canonicalize } from './hash.js';
 import { readIndex, toIndex } from './index-file.js';
-import { isValidContractId } from './validator.js';
 
 /* @drift
 version: 1
@@ -142,15 +142,11 @@ export function formatContractDiffSummary(diff: DriftContractDiff): string {
 }
 
 export async function writeAcceptanceFile(options: AcceptContractChangeOptions): Promise<{ path: string }> {
-  const reason = options.reason.trim();
-  if (reason.length < 20) throw new Error('Acceptance reason must be at least 20 characters long.');
-  if (!isValidContractId(options.contractId)) throw new Error(`Invalid contract id "${options.contractId}".`);
-
+  const content = serializeAcceptanceFile({ contractId: options.contractId, reason: options.reason });
   const relativePath = path.join('.drift', 'accepted-contract-changes', `${options.contractId}.md`);
   const file = path.resolve(options.root, relativePath);
   await mkdir(path.dirname(file), { recursive: true });
 
-  const content = `contract: ${options.contractId}\nreason: ${reason}\n`;
   const flag = options.force ? 'w' : 'wx';
   try {
     await writeFile(file, content, { encoding: 'utf8', flag });
