@@ -147,7 +147,18 @@ function checkCollectionSink(
     return unsupportedPattern(context, sink, 'unsupported-call', sourceExpressionDetails(context.sourceFile, callback));
   }
 
-  if (callback.parameters.length !== 1 || !ts.isIdentifier(callback.parameters[0].name)) {
+  if (ts.isFunctionExpression(callback) && callback.asteriskToken) {
+    return unsupportedPattern(context, sink, 'unsupported-call', sourceExpressionDetails(context.sourceFile, callback));
+  }
+
+  const [parameter] = callback.parameters;
+  if (
+    callback.parameters.length !== 1 ||
+    !parameter ||
+    !ts.isIdentifier(parameter.name) ||
+    parameter.initializer ||
+    parameter.dotDotDotToken
+  ) {
     return unsupportedPattern(context, sink, 'unsupported-pattern', sourceExpressionDetails(context.sourceFile, callback));
   }
 
@@ -156,7 +167,7 @@ function checkCollectionSink(
   }
 
   const callbackEnv = cloneEnv(env);
-  callbackEnv.set(callback.parameters[0].name.text, trusted);
+  callbackEnv.set(parameter.name.text, trusted);
   const callbackReturn = mapCallbackReturnObject(callback, callbackEnv);
 
   if (callbackReturn.kind === 'unsupported') {

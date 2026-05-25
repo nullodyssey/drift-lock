@@ -633,6 +633,7 @@ describe('drift ssot flow', () => {
   it.each([
     ['external callbacks', 'prices.map(buildLineItem)'],
     ['async callbacks', 'prices.map(async (price) => ({ priceId: price.priceId }))'],
+    ['generator callbacks', 'prices.map(function* (price) { return { priceId: price.priceId }; })'],
     ['helper calls inside callbacks', 'prices.map((price) => buildLineItem(price))'],
     ['chained array helpers', 'prices.filter(Boolean).map((price) => ({ priceId: price.priceId }))'],
   ])('rejects %s in array map collection flow', async (_label, expression) => {
@@ -648,6 +649,35 @@ describe('drift ssot flow', () => {
       code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
       details: {
         reason: 'unsupported-call',
+      },
+    });
+  });
+
+  it.each([
+    [
+      'default callback parameters',
+      `const local = { priceId: 'price_local' };
+  return {
+    items: prices.map((price = local) => ({ priceId: price.priceId })),
+  };`,
+    ],
+    [
+      'rest callback parameters',
+      `return {
+    items: prices.map((...price) => ({ priceId: price.priceId })),
+  };`,
+    ],
+  ])('rejects %s in array map collection flow', async (_label, body) => {
+    const root = await createProject({
+      'src/actions.ts': collectionFlowSourceWithBody(`const prices = BILLING_PRICES[input.plan].items;
+  ${body}`),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.items[].priceId')).toMatchObject({
+      code: 'DRIFT014_UNSUPPORTED_FLOW_PATTERN',
+      details: {
+        reason: 'unsupported-pattern',
       },
     });
   });
