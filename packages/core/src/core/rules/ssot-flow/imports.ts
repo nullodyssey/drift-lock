@@ -47,6 +47,7 @@ export function findTrustedImports(sourceFile: ts.SourceFile, ssotPath: string):
 
     for (const specifier of bindings.elements) {
       if (specifier.isTypeOnly) continue;
+      if (specifier.propertyName?.text === 'default') continue;
       imports.values.add(specifier.name.text);
     }
   }

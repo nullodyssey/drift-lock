@@ -728,6 +728,22 @@ describe('drift ssot flow', () => {
     });
   });
 
+  it('keeps named default import aliases from ssot modules untrusted', async () => {
+    const root = await createProject({
+      'src/actions.ts': validFlowSource()
+        .replace(
+          "import { BILLING_PRICES } from '@/features/billing/pricing';",
+          "import { default as pricing } from '@/features/billing/pricing';",
+        )
+        .replace('const price = BILLING_PRICES[payload.plan];', 'const price = pricing.BILLING_PRICES[payload.plan];'),
+    });
+
+    const result = await checkContracts({ root });
+    expect(result.errors.find((error) => error.details?.sink === 'return.priceId')).toMatchObject({
+      code: 'DRIFT013_SSOT_FLOW_NOT_PROVEN',
+    });
+  });
+
   it('rejects computed namespace import access as unsupported', async () => {
     const root = await createProject({
       'src/actions.ts': validFlowSource()

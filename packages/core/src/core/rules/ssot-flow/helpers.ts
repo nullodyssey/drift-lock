@@ -37,6 +37,7 @@ export function findHelperImports(
     const fileCandidates = importFileCandidates(currentFile, statement.moduleSpecifier.text);
     for (const specifier of bindings.elements) {
       if (specifier.isTypeOnly) continue;
+      if (specifier.propertyName?.text === 'default') continue;
       const importedName = specifier.propertyName?.text ?? specifier.name.text;
       const summary = findMatchingSummary(helperContracts, fileCandidates, importedName, ssotPath);
       imports.set(specifier.name.text, summary);
