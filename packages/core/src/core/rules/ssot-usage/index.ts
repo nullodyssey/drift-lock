@@ -2,6 +2,7 @@ import ts from 'typescript';
 import type { DriftError, DriftExtractedContract } from '../../../types.js';
 import { driftError } from '../../errors.js';
 import { moduleSpecifierCandidates } from '../../module-specifier.js';
+import { parseSourceInput, type ParsedSource, type SourceInput } from '../../source-cache.js';
 
 /* @drift
 version: 1
@@ -31,16 +32,17 @@ llm:
     - NodeNext TypeScript and emitted JavaScript module specifier alternatives must remain supported.
     - Missing SSOT references must report DRIFT010_SSOT_NOT_USED.
 */
-export function checkSsotUsage(contract: DriftExtractedContract, text: string): DriftError[] {
+export function checkSsotUsage(contract: DriftExtractedContract, source: SourceInput): DriftError[] {
   const errors: DriftError[] = [];
   const invariants = contract.invariants ?? [];
   const ssot = contract.ssot ?? {};
+  const parsed = parseSourceInput(contract.file, source);
 
   for (const invariant of invariants) {
     if (invariant.enforce !== 'drift/ssot-usage' || !invariant.ssot) continue;
     const ssotPath = ssot[invariant.ssot];
     if (!ssotPath) continue;
-    if (!usesSsot(text, contract, ssotPath)) {
+    if (!usesSsot(parsed, contract, ssotPath)) {
       errors.push(
         driftError(
           'DRIFT010_SSOT_NOT_USED',
@@ -55,15 +57,14 @@ export function checkSsotUsage(contract: DriftExtractedContract, text: string): 
   return errors;
 }
 
-function usesSsot(text: string, contract: DriftExtractedContract, ssotPath: string): boolean {
-  const anchoredText = text.slice(contract.bodyStart, contract.bodyEnd);
+function usesSsot(source: ParsedSource, contract: DriftExtractedContract, ssotPath: string): boolean {
+  const anchoredText = source.text.slice(contract.bodyStart, contract.bodyEnd);
   const ssotCandidates = moduleSpecifierCandidates(ssotPath);
   if (ssotCandidates.some((candidate) => anchoredText.includes(candidate))) return true;
 
   // V1 treats imports as sufficient SSOT usage. This is intentionally shallow:
   // the goal is catching obvious local replacements, not proving data flow.
-  const sourceFile = ts.createSourceFile(contract.file, text, ts.ScriptTarget.Latest, true);
-  return sourceFile.statements.some((statement) => {
+  return source.sourceFile.statements.some((statement) => {
     if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) return false;
     const importedPath = statement.moduleSpecifier.text;
     return ssotCandidates.includes(importedPath);

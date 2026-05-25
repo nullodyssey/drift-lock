@@ -46,9 +46,9 @@ export async function runInvariantChecks(run: CheckRunContext): Promise<DriftDia
   // Run invariant checks only after extraction. Schema/ancrage errors should not
   // prevent other valid contracts in the repo from being checked.
   for (const contract of run.contractsToCheck) {
-    const text = await run.sourceCache.readText(contract.file);
-    diagnostics.push(...checkSsotUsage(contract, text).map((error) => toDiagnostic(error)));
-    diagnostics.push(...checkSsotFlow(contract, text, { helperContracts: run.helperContracts }).map((error) => toDiagnostic(error)));
+    const source = await run.sourceCache.readParsed(contract.file);
+    diagnostics.push(...checkSsotUsage(contract, source).map((error) => toDiagnostic(error)));
+    diagnostics.push(...checkSsotFlow(contract, source, { helperContracts: run.helperContracts }).map((error) => toDiagnostic(error)));
   }
 
   return diagnostics;

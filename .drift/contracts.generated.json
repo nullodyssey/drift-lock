@@ -617,7 +617,7 @@
         "type": "file"
       },
       "contentHash": "sha256:be8030fb3d9d40bce1c41af40923a865924e56398655fabae075d68f36ea23ea",
-      "bodyHash": "sha256:4a6464ddc58cb1edd57094e13c69b731763812ba9410f02104f4d6104f3d78ae"
+      "bodyHash": "sha256:9e6bcc5a4537d8bed65007e06623f9834c2c56e09ca7ff3946348848b7a03e90"
     },
     {
       "version": 1,
@@ -865,7 +865,7 @@
         "type": "file"
       },
       "contentHash": "sha256:d508f5d10722f9259ecd8828b5d51497de1bfc7406a57d74275500012f386e6b",
-      "bodyHash": "sha256:d4b9f671a7b6f6d2c460c7372515170f861166868928141bc87250641504e24b"
+      "bodyHash": "sha256:80de7a312a3418510eebcd26ad53aa80d178bb6942bdafa90337fb939489afb6"
     },
     {
       "version": 1,
@@ -940,27 +940,28 @@
         "type": "file"
       },
       "contentHash": "sha256:7bad1652c8ce1f1511ebb657be1516ee532b3f4ff596560d761e8e2d5a133812",
-      "bodyHash": "sha256:d13b2908e930823fdd48b5355e05ba6e2e7c1b8002c1da5da09c527143176ff0"
+      "bodyHash": "sha256:d9d7385e44a91a3cfb572682cabc8cb3b537e6ad91576371f032c6af1b01eb54"
     },
     {
       "version": 1,
       "id": "core.source-cache",
       "scope": "file",
       "stability": "locked",
-      "intent": "Cache source text reads within a single Drift check run without sharing stale file content across commands or coupling rules to TypeScript AST objects.",
+      "intent": "Cache source text reads and parsed TypeScript source files within a single Drift check run without sharing stale file content across commands.",
       "llm": {
         "must_not_change": [
           "SourceCache instances must remain scoped to one check run.",
           "Concurrent reads for the same file must share the same Promise.",
-          "readText must resolve files from the configured project root."
+          "readText must resolve files from the configured project root.",
+          "readParsed must reuse the cached source text and parsed SourceFile per file."
         ]
       },
       "file": "packages/core/src/core/source-cache.ts",
       "anchor": {
         "type": "file"
       },
-      "contentHash": "sha256:983b6d21d8a05fc9130a35fc788c758585af4da6e9894752feca6b2fc3266bfb",
-      "bodyHash": "sha256:520c52032cb1d33a17c3de57abd9594ff067a2fb25391cbe6da6afaf4038e238"
+      "contentHash": "sha256:b87cf1f3ac4b9a42b7c54d9a419941849c9f9c77beac42869c7fb14db76c9132",
+      "bodyHash": "sha256:bf6364dbce5037c48d1215311bbfaa64bb61002a9f12cf357985c6d923c13430"
     },
     {
       "version": 1,

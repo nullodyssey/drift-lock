@@ -1,5 +1,6 @@
 import ts from 'typescript';
 import type { DriftError, DriftExtractedContract } from '../../../types.js';
+import { parseSourceInput, type SourceInput } from '../../source-cache.js';
 import { checkReturnExpression, checkStatements, hasUnsupportedMutation } from './control.js';
 import { flowNotProven, unsupportedForSinks } from './diagnostics.js';
 import { createInitialEnv } from './env.js';
@@ -45,22 +46,22 @@ llm:
 */
 export type CheckSsotFlowOptions = FlowOptions;
 
-export function checkSsotFlow(contract: DriftExtractedContract, text: string, options: CheckSsotFlowOptions = {}): DriftError[] {
+export function checkSsotFlow(contract: DriftExtractedContract, source: SourceInput, options: CheckSsotFlowOptions = {}): DriftError[] {
   const errors: DriftError[] = [];
   const invariants = contract.invariants ?? [];
   const ssot = contract.ssot ?? {};
   const flowInvariants = invariants.filter((invariant) => invariant.enforce === 'drift/ssot-flow' && invariant.ssot);
   if (flowInvariants.length === 0) return errors;
 
-  const sourceFile = ts.createSourceFile(contract.file, text, ts.ScriptTarget.Latest, true, scriptKind(contract.file));
-  const functionNode = findAnchoredFunctionLike(sourceFile, contract);
+  const parsed = parseSourceInput(contract.file, source);
+  const functionNode = findAnchoredFunctionLike(parsed.sourceFile, contract);
 
   for (const invariant of flowInvariants) {
     const sinks = invariant.sinks ?? [];
     const ssotPath = ssot[invariant.ssot as string];
     if (!ssotPath) continue;
 
-    const context: FlowContext = { sourceFile, contract, invariant };
+    const context: FlowContext = { sourceFile: parsed.sourceFile, contract, invariant };
     if (!functionNode?.body) {
       errors.push(...unsupportedForSinks(context, sinks, 'unsupported-return'));
       continue;
@@ -125,8 +126,4 @@ function findAnchoredFunctionLike(sourceFile: ts.SourceFile, contract: DriftExtr
   }
 
   return undefined;
-}
-
-function scriptKind(file: string): ts.ScriptKind {
-  return file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
 }

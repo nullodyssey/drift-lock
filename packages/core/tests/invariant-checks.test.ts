@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import ts from 'typescript';
 import type { CheckRunContext } from '../src/core/check-run.js';
 import { extractContractsFromSource } from '../src/core/extractor.js';
 import { runInvariantChecks } from '../src/core/invariant-checks.js';
@@ -52,10 +53,18 @@ export function secondCheckout() {
 `;
     const extracted = extractContractsFromSource('src/actions.ts', text);
     let reads = 0;
-    const sourceCache = new SourceCache('/repo', async () => {
-      reads += 1;
-      return text;
-    });
+    let parses = 0;
+    const sourceCache = new SourceCache(
+      '/repo',
+      async () => {
+        reads += 1;
+        return text;
+      },
+      (file, sourceText) => {
+        parses += 1;
+        return ts.createSourceFile(file, sourceText, ts.ScriptTarget.Latest, true);
+      },
+    );
     const run = {
       root: '/repo',
       options: { root: '/repo' },
@@ -67,5 +76,6 @@ export function secondCheckout() {
 
     await expect(runInvariantChecks(run)).resolves.toEqual([]);
     expect(reads).toBe(1);
+    expect(parses).toBe(1);
   });
 });
