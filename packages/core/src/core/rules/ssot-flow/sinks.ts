@@ -14,7 +14,8 @@ intent: >
 llm:
   must_not_change:
     - Missing sinks must stay distinguishable from unsupported sink patterns.
-    - Spread assignments must remain unsupported until resolvable spread support exists.
+    - This parser must not independently prove spread assignments; resolvable spread provenance belongs in control.ts.
+    - Collection wildcard sink paths must stay limited to one non-terminal [] segment.
     - Sink path behavior must stay compatible with schema-v1 return.<path> sinks.
 */
 export function parseReturnSinkPath(sink: string): SinkPathSegment[] | undefined {

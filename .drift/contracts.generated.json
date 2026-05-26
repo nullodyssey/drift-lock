@@ -906,7 +906,8 @@
       "llm": {
         "must_not_change": [
           "Missing sinks must stay distinguishable from unsupported sink patterns.",
-          "Spread assignments must remain unsupported until resolvable spread support exists.",
+          "This parser must not independently prove spread assignments; resolvable spread provenance belongs in control.ts.",
+          "Collection wildcard sink paths must stay limited to one non-terminal [] segment.",
           "Sink path behavior must stay compatible with schema-v1 return.<path> sinks."
         ]
       },
@@ -914,8 +915,8 @@
       "anchor": {
         "type": "file"
       },
-      "contentHash": "sha256:589fed73147dc00e231099d5be2da163da422e8219f79f602b111cd3e34b75e9",
-      "bodyHash": "sha256:ff219d0d26771f2e47eb2f7321b83d424f75cd3f2d7cd8b2c8dbe5ef6147c385"
+      "contentHash": "sha256:89305f283d579d1ddf9876d5887d037925fed846775b691b2a0c324cedf995dd",
+      "bodyHash": "sha256:dd7dcd31faf49759bc8a8735bb1141d8a3ca37bd5ee78779b4ee07eb8898765e"
     },
     {
       "version": 1,
