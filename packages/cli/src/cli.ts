@@ -9,9 +9,12 @@ import {
   formatContractDiffSummary,
   formatCoverageSummary,
   formatExplanations,
+  formatProofReportJson,
+  formatProofReportMarkdown,
   extractContracts,
   formatDiagnostics,
   formatErrors,
+  getProofReport,
   getCoverage,
   readDriftConfig,
   renderContext,
@@ -39,7 +42,7 @@ stability: locked
 
 intent: >
   Expose the DriftLock command surface for install, extraction, context, checks,
-  coverage, diffs, explanations, acceptance, and bundled skills.
+  coverage, diffs, proof reports, explanations, acceptance, and bundled skills.
 
 llm:
   must_not_change:
@@ -244,6 +247,36 @@ program
   });
 
 program
+  .command('proof')
+  .description('Generate a pull request proof report from current Drift signals')
+  .option('--root <dir>', 'project root', process.cwd())
+  .option('--source <dir>', 'source directory to scan')
+  .option('--index <file>', 'index path')
+  .requiredOption('--git-base <ref>', 'Git ref used as the pull request base')
+  .option('--format <format>', 'output format: md or json', 'md')
+  .action(async (options: { root: string; source?: string; index?: string; gitBase: string; format: string }) => {
+    const format = parseProofFormat(options.format);
+    const root = path.resolve(options.root);
+    const config = await readDriftConfig(root);
+    const result = await getProofReport({
+      root,
+      sourceDir: options.source ?? config.source,
+      indexPath: options.index ?? config.index,
+      gitBase: options.gitBase,
+      requireContracts: config.requireContracts,
+      adoptionMode: config.adoption.mode,
+    });
+    if (result.errors.length > 0) fail(result.errors);
+
+    if (format === 'json') {
+      console.log(JSON.stringify(formatProofReportJson(result.report), null, 2));
+      return;
+    }
+
+    console.log(formatProofReportMarkdown(result.report));
+  });
+
+program
   .command('accept')
   .description('Create an acceptance file for an intentional locked contract change')
   .argument('<contractId>', 'contract id to accept')
@@ -314,6 +347,11 @@ function parseAdoptionMode(value: string): DriftAdoptionMode {
 function parseProvider(value: string): SkillProvider {
   if (value === 'openai' || value === 'claude' || value === 'cursor') return value;
   throw new Error(`Unsupported skills provider "${value}". Expected openai, claude, or cursor.`);
+}
+
+function parseProofFormat(value: string): 'md' | 'json' {
+  if (value === 'md' || value === 'json') return value;
+  throw new Error(`Unsupported proof format "${value}". Use "md" or "json".`);
 }
 
 type InstallCommandOptions = {

@@ -6,7 +6,7 @@
       "id": "cli.command-surface",
       "scope": "file",
       "stability": "locked",
-      "intent": "Expose the DriftLock command surface for install, extraction, context, checks, coverage, diffs, explanations, acceptance, and bundled skills.",
+      "intent": "Expose the DriftLock command surface for install, extraction, context, checks, coverage, diffs, proof reports, explanations, acceptance, and bundled skills.",
       "llm": {
         "must_not_change": [
           "Commands must read .drift/config.json before falling back to defaults.",
@@ -18,8 +18,8 @@
       "anchor": {
         "type": "file"
       },
-      "contentHash": "sha256:66c8f1881b14d1d39e2a02f90491d8d150515ec5b14a97f81a70a91977d6e955",
-      "bodyHash": "sha256:9ce14cbf2b92a261c9a770ebf6a8a704b1350e4588cc6f01aae36617c2a26ed8"
+      "contentHash": "sha256:f5738634c03cab54b05531276b46997f677d98d655883477755efb5ea13efd79",
+      "bodyHash": "sha256:7dbec9006563c3cf34eb6ad195ef552601498ccd34ced0ffd9c868a262655b66"
     },
     {
       "version": 1,
@@ -667,7 +667,7 @@
         "type": "file"
       },
       "contentHash": "sha256:ee6500cc3cc4e20788237623ba485fdca96e34d20a4208b081ee3b195899b133",
-      "bodyHash": "sha256:f0c6f04ef5425ef9824822e52bc6bae9d864b2d203edf2f8726d567a2d7c7b3b"
+      "bodyHash": "sha256:3ca96ded703272e0c3155464c0a0b93b979567718c87454caa7e558a2b59f244"
     },
     {
       "version": 1,
@@ -688,6 +688,60 @@
       },
       "contentHash": "sha256:1adf2166190128b1d4dfa240fe0fe897cf60f003ba823a9f4292f9550cb3ba70",
       "bodyHash": "sha256:aeab9e0b785e92a8c7bc6e218393f095d22907b2ba8542caa7b9b0a79665802e"
+    },
+    {
+      "version": 1,
+      "id": "core.proof-report",
+      "scope": "file",
+      "stability": "draft",
+      "intent": "Compose existing DriftLock check, diff, coverage, and Git scope signals into a stateless pull request proof report.",
+      "ssot": {
+        "checker": "./checker.ts",
+        "contract-diff": "./contract-diff.ts",
+        "coverage": "./coverage.ts",
+        "git-scope": "./git-scope.ts",
+        "locked-contracts": "./locked-contracts.ts"
+      },
+      "invariants": [
+        {
+          "id": "proof-runs-checks",
+          "enforce": "drift/ssot-usage",
+          "ssot": "checker"
+        },
+        {
+          "id": "proof-uses-contract-diff",
+          "enforce": "drift/ssot-usage",
+          "ssot": "contract-diff"
+        },
+        {
+          "id": "proof-uses-coverage",
+          "enforce": "drift/ssot-usage",
+          "ssot": "coverage"
+        },
+        {
+          "id": "proof-reuses-git-scope",
+          "enforce": "drift/ssot-usage",
+          "ssot": "git-scope"
+        },
+        {
+          "id": "proof-reuses-acceptance-status",
+          "enforce": "drift/ssot-usage",
+          "ssot": "locked-contracts"
+        }
+      ],
+      "llm": {
+        "must_not_change": [
+          "Proof must compose existing Drift checks instead of creating a second verifier.",
+          "Stateless proof must not claim counterfactual regressions were prevented.",
+          "Unresolved drift must stay report-only in the MVP."
+        ]
+      },
+      "file": "packages/core/src/core/proof.ts",
+      "anchor": {
+        "type": "file"
+      },
+      "contentHash": "sha256:4c7dea307f4c90d9e4f8f26b74e5f505dc2a67f03925ccf6e08be16d3abe725c",
+      "bodyHash": "sha256:384d19c750956ea146eef2044cbf4b15866f8ec5362344d4f6f2d693b6208d23"
     },
     {
       "version": 1,
@@ -1072,7 +1126,7 @@
         "type": "file"
       },
       "contentHash": "sha256:3e5f0855ba5ec04e4d68d834a2e7cb67d880e564c764048cea188f8354de72d7",
-      "bodyHash": "sha256:d08f36edad67b7b4630931aff9b1b61a58766cf7c163fa9feae1d5581308180c"
+      "bodyHash": "sha256:b7dd3ec71639aaf7cade5e616ce39a11d74d158ef2311197879cf2e06edd9a8c"
     },
     {
       "version": 1,
@@ -1092,7 +1146,7 @@
         "type": "file"
       },
       "contentHash": "sha256:7f30472dfbcc354b26bb803a203110f3035691b2ca8877ff986100fcbd8bf6f0",
-      "bodyHash": "sha256:9f952c19d5c4223df8aa4e4fc867de68a7bb05253a0e07c7ef92e93abd1d07d8"
+      "bodyHash": "sha256:17253941deea1e0a5d71b12b3670a3857d77acbddc28c8515a64f1839895b381"
     },
     {
       "version": 1,

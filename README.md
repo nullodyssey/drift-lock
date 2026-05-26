@@ -195,6 +195,8 @@ drift-lock coverage
 drift-lock coverage --json
 drift-lock diff --summary
 drift-lock diff --summary --json
+drift-lock proof --git-base origin/main
+drift-lock proof --git-base origin/main --format json
 drift-lock explain [contract-id]
 drift-lock accept <contract-id> --reason "<reason>"
 drift-lock skills list
@@ -228,6 +230,10 @@ missing contracts. Use `--json` for agent-readable output.
 `diff --summary` summarizes contract changes for review. It is useful before a
 PR or before accepting an intentional contract change.
 
+`proof --git-base <ref>` composes changed checks, contract diffs, acceptances,
+and coverage into a non-blocking pull request proof report. Use `--format json`
+for CI or app integrations.
+
 `explain [contract-id]` turns current failures into actionable diagnostics. Use
 `--json` when CI or an agent needs stable fields.
 
@@ -254,6 +260,7 @@ drift-lock diff --summary
 drift-lock check --changed
 drift-lock diff --summary --git-base origin/main
 drift-lock check --changed --git-base origin/main
+drift-lock proof --git-base origin/main
 drift-lock accept billing.create-checkout-session --reason "Intentional billing contract change"
 ```
 

@@ -152,6 +152,52 @@ export type DriftDiagnostic = DriftError & {
   severity: DriftDiagnosticSeverity;
 };
 
+export type DriftProofResolution = 'preserved' | 'explicit_change' | 'unresolved' | 'unknown';
+
+export type DriftProofAcceptanceStatus = 'not_required' | 'missing' | 'valid' | 'invalid';
+
+export type DriftProofContractOutcome = {
+  contractId: string;
+  file: string;
+  resolution: DriftProofResolution;
+  changeKind?: DriftContractChangeKind;
+  fields?: DriftContractChangeField[];
+  acceptance: {
+    status: DriftProofAcceptanceStatus;
+    path?: string;
+    issue?: string;
+  };
+  diagnostics: DriftDiagnostic[];
+};
+
+export type DriftProofSummary = {
+  protectedContractsTouched: number;
+  contractChanges: {
+    added: number;
+    changed: number;
+    removed: number;
+    accepted: number;
+    unresolved: number;
+  };
+  currentViolations: number;
+  intentPreservationRate: number;
+};
+
+export type DriftProofCoverageSnapshot = {
+  requiredFilesCovered: number;
+  requiredFilesUncovered: number;
+};
+
+export type DriftProofReport = {
+  version: 1;
+  gitBase: string;
+  changedFiles: string[];
+  summary: DriftProofSummary;
+  outcomes: DriftProofContractOutcome[];
+  diagnostics: DriftDiagnostic[];
+  coverage: DriftProofCoverageSnapshot;
+};
+
 export type DriftExplanation = {
   code: DriftErrorCode;
   message: string;

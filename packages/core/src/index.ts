@@ -25,6 +25,7 @@ export { formatErrors, formatDiagnostics } from './core/errors.js';
 export { explainContracts, formatExplanations } from './core/explain.js';
 export { extractContracts, extractContractsFromSource } from './core/extractor.js';
 export { toIndex, validateIndexObject, writeIndex } from './core/index-file.js';
+export { getProofReport, formatProofReportJson, formatProofReportMarkdown, type ProofReportOptions } from './core/proof.js';
 export type {
   DriftAdoptionMode,
   DriftContract,
@@ -36,6 +37,10 @@ export type {
   DriftExtractedContract,
   DriftIndexedContract,
   DriftInvariant,
+  DriftProofContractOutcome,
+  DriftProofReport,
+  DriftProofResolution,
+  DriftProofSummary,
   DriftResult,
   DriftSource,
 } from './types.js';

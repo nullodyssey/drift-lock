@@ -49,6 +49,8 @@ drift-lock coverage
 drift-lock coverage --json
 drift-lock diff --summary
 drift-lock diff --summary --json
+drift-lock proof --git-base origin/main
+drift-lock proof --git-base origin/main --format json
 drift-lock explain [contract-id]
 drift-lock accept <contract-id> --reason "<reason>"
 drift-lock skills list
@@ -60,7 +62,8 @@ drift-lock skills install --provider openai
 invariants locally or in CI. `coverage` shows adoption and missing required
 contracts. `diff --summary` reviews contract changes in PRs. `explain` prints
 actionable diagnostics after a failed check. `accept` records intentional locked
-contract changes. `skills list` and `skills install` manage bundled agent
+contract changes. `proof --git-base <ref>` emits a non-blocking PR proof report
+in Markdown or JSON. `skills list` and `skills install` manage bundled agent
 skills.
 
 Useful install options:

@@ -5,8 +5,8 @@ deterministic checks for DriftLock.
 
 This package exposes the runtime facade used by the DriftLock CLI and ESLint
 plugin: contract extraction, index validation, context/task rendering,
-contract diffs and acceptance files, coverage/explain output, and the
-`ssot-usage` / `ssot-flow` rule helpers.
+contract diffs and acceptance files, pull request proof reports,
+coverage/explain output, and the `ssot-usage` / `ssot-flow` rule helpers.
 
 Most users should install `@drift-lock/cli` instead:
 
