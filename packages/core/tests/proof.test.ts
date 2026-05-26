@@ -113,6 +113,69 @@ describe('drift pull request proof reports', () => {
     expect(result.report.diagnostics[0]).toMatchObject({ code: 'DRIFT013_SSOT_FLOW_NOT_PROVEN' });
   });
 
+  it('allows proof reports when the base commit has no Drift index', async () => {
+    const root = await createProject({
+      'src/actions.ts': validActionsSource('billing.changed'),
+    });
+    await createGitBaseline(root);
+    await writeCurrentIndex(root);
+    await writeFile(
+      path.join(root, 'src/actions.ts'),
+      validActionsSource('billing.changed').replace('return { payload, price: PRO_PRICE_ID };', 'return { payload, price: PRO_PRICE_ID, ok: true };'),
+      'utf8',
+    );
+
+    const result = await getProofReport({ root, sourceDir: 'src', gitBase: 'HEAD' });
+
+    expect(result.errors).toEqual([]);
+    expect(result.report.outcomes[0]).toMatchObject({
+      contractId: 'billing.changed',
+      changeKind: 'added',
+      resolution: 'explicit_change',
+    });
+  });
+
+  it('reads base indexes larger than execFile default buffers without treating them as absent', async () => {
+    const root = await createProject({
+      'src/actions.ts': validActionsSource('billing.changed'),
+    });
+    await writeLargeIndex(root);
+    await createGitBaseline(root);
+    await writeFile(
+      path.join(root, 'src/actions.ts'),
+      validActionsSource('billing.changed').replace('return { payload, price: PRO_PRICE_ID };', 'return { payload, price: PRO_PRICE_ID, ok: true };'),
+      'utf8',
+    );
+
+    const result = await getProofReport({ root, sourceDir: 'src', gitBase: 'HEAD' });
+
+    expect(result.report.outcomes[0]).toMatchObject({
+      contractId: 'billing.changed',
+      changeKind: 'changed',
+      resolution: 'preserved',
+    });
+    expect(result.report.summary.contractChanges).toMatchObject({ added: 0, changed: 1 });
+  });
+
+  it('rejects invalid base indexes instead of treating them as absent', async () => {
+    const root = await createProject({
+      'src/actions.ts': validActionsSource('billing.changed'),
+    });
+    await mkdir(path.join(root, '.drift'), { recursive: true });
+    await writeFile(path.join(root, '.drift/contracts.generated.json'), '{ invalid json', 'utf8');
+    await createGitBaseline(root);
+    await writeCurrentIndex(root);
+    await writeFile(
+      path.join(root, 'src/actions.ts'),
+      validActionsSource('billing.changed').replace('return { payload, price: PRO_PRICE_ID };', 'return { payload, price: PRO_PRICE_ID, ok: true };'),
+      'utf8',
+    );
+
+    await expect(getProofReport({ root, sourceDir: 'src', gitBase: 'HEAD' })).rejects.toThrow(
+      'Invalid Drift contracts index at "HEAD:.drift/contracts.generated.json".',
+    );
+  });
+
   it('includes contracts impacted by changed SSOT files', async () => {
     const root = await createProofProject({
       'src/actions.ts': validFlowSource('billing.changed'),
@@ -189,6 +252,27 @@ async function createProofProject(files: Record<string, string>): Promise<string
 async function writeCurrentIndex(root: string): Promise<void> {
   const extracted = await extractContracts({ root, sourceDir: 'src' });
   await writeIndex(root, undefined, toIndex(extracted.contracts));
+}
+
+async function writeLargeIndex(root: string): Promise<void> {
+  const extracted = await extractContracts({ root, sourceDir: 'src' });
+  const index = toIndex(extracted.contracts);
+  const template = index.contracts[0];
+  if (!template) throw new Error('Expected a contract fixture.');
+  const longIntent = 'Preserve synthetic baseline entries for large proof index coverage. '.repeat(20);
+
+  for (let indexNumber = 0; indexNumber < 1_500; indexNumber += 1) {
+    index.contracts.push({
+      ...template,
+      id: `synthetic.contract.${indexNumber.toString().padStart(4, '0')}`,
+      intent: `${longIntent}${indexNumber}`,
+      file: `src/synthetic/${indexNumber}.ts`,
+      anchor: { type: 'file' },
+      summaries: undefined,
+    });
+  }
+
+  await writeIndex(root, undefined, index);
 }
 
 async function writeAcceptance(root: string, contractId: string): Promise<void> {

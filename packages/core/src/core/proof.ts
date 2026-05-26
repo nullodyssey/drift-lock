@@ -6,6 +6,7 @@ import type {
   DriftContractChange,
   DriftDiagnostic,
   DriftError,
+  DriftContractsIndex,
   DriftIndexedContract,
   DriftProofAcceptanceStatus,
   DriftProofContractOutcome,
@@ -70,6 +71,7 @@ export type ProofReportOptions = {
 };
 
 const execFileAsync = promisify(execFile);
+const gitIndexMaxBufferBytes = 64 * 1024 * 1024;
 
 export async function getProofReport(options: ProofReportOptions): Promise<{
   report: DriftProofReport;
@@ -254,15 +256,53 @@ function plural(count: number, singular: string): string {
   return count === 1 ? singular : `${singular}s`;
 }
 
-async function readIndexAtGitBase(root: string, gitBase: string, indexPath = defaultIndexPath) {
+async function readIndexAtGitBase(root: string, gitBase: string, indexPath = defaultIndexPath): Promise<DriftContractsIndex | undefined> {
   const relativeIndexPath = normalizeGitIndexPath(root, indexPath);
-  let stdout: string;
+  const objectRef = `${gitBase}:${relativeIndexPath}`;
+
+  await verifyGitBase(root, gitBase);
+  if (!(await gitObjectExists(root, objectRef))) return undefined;
+
   try {
-    ({ stdout } = await execFileAsync('git', ['show', `${gitBase}:${relativeIndexPath}`], { cwd: root }));
-  } catch {
-    return undefined;
+    const { stdout } = await execFileAsync('git', ['cat-file', 'blob', objectRef], {
+      cwd: root,
+      maxBuffer: gitIndexMaxBufferBytes,
+    });
+    return validateIndexObject(parseIndexJson(stdout, objectRef), objectRef);
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith('Invalid Drift contracts index')) throw error;
+    throw new Error(`Unable to read Drift index at "${objectRef}": ${errorMessage(error)}`);
   }
-  return validateIndexObject(JSON.parse(stdout) as unknown, `${gitBase}:${relativeIndexPath}`);
+}
+
+async function verifyGitBase(root: string, gitBase: string): Promise<void> {
+  try {
+    await execFileAsync('git', ['rev-parse', '--verify', `${gitBase}^{commit}`], { cwd: root });
+  } catch (error) {
+    throw new Error(`Unable to verify Git base "${gitBase}": ${errorMessage(error)}`);
+  }
+}
+
+async function gitObjectExists(root: string, objectRef: string): Promise<boolean> {
+  try {
+    await execFileAsync('git', ['cat-file', '-e', objectRef], { cwd: root });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function parseIndexJson(value: string, file: string): unknown {
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    throw new Error(`Invalid Drift contracts index at "${file}".`);
+  }
+}
+
+function errorMessage(error: unknown): string {
+  if (error instanceof Error && error.message.trim().length > 0) return error.message;
+  return String(error);
 }
 
 function normalizeGitIndexPath(root: string, indexPath: string): string {
