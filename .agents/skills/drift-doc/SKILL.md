@@ -17,7 +17,9 @@ implementation work.
    - report-only when the user asks to verify, audit, review, or check docs;
    - edit mode only when the user asks to update, fix, rewrite, or realign docs.
 3. Identify the implementation truth before reading docs:
-   - recent changes with `git log --oneline`, `git diff`, and `git diff --cached`;
+   - recent working tree changes with `git diff` and `git diff --cached`;
+   - committed changes with `git log --oneline`, `git show --stat --patch HEAD`, or `git diff HEAD~1..HEAD`;
+   - when the user mentions a commit/range or the worktree is clean, inspect the committed patch, not only the commit subject;
    - source and tests under `packages/core`, `packages/cli`, and `packages/eslint-plugin`;
    - package scripts and exports in `package.json` and `packages/*/package.json`;
    - `.drift/config.json`, `.drift/contracts.generated.json`, and CI workflows.
@@ -26,7 +28,8 @@ implementation work.
    - `docs/*.md`;
    - `packages/*/README.md`;
    - `apps/*/README.md`;
-   - bundled CLI skills under `packages/cli/skills`.
+   - bundled CLI skills under `packages/cli/skills/**`;
+   - repo-local Codex skills under `.agents/skills/**`.
 5. Read `references/doc-alignment-checklist.md` for the comparison checklist.
 6. Compare docs against implementation and classify gaps as:
    - `false`: documented behavior is not implemented;
@@ -46,6 +49,8 @@ Use these for grounding and verification:
 ```bash
 git status --short
 git log --oneline -n 20
+git show --stat --patch HEAD
+git diff HEAD~1..HEAD
 git diff --stat
 git diff -- README.md docs packages
 pnpm check

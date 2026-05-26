@@ -27,6 +27,7 @@ implementation.
   `packages/eslint-plugin/README.md`.
 - Demo docs: `apps/*/README.md`.
 - Agent-facing bundled skills: `packages/cli/skills/**`.
+- Repo-local Codex skills: `.agents/skills/**`.
 
 ## Claims To Verify
 
@@ -48,6 +49,9 @@ implementation.
 - ESLint docs match exported rule names and preset contents.
 - Release docs match package names, scripts, CI workflow names, and npm publish
   order.
+- Agent skill docs match their actual workflow, references, `agents/openai.yaml`
+  metadata, and triggering promises. Check both `packages/cli/skills/**` and
+  `.agents/skills/**`.
 
 ## Reporting Format
 
