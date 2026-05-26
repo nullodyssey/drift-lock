@@ -23,6 +23,9 @@ DriftLock reads `.drift/config.json` from the project root.
 - `requireContracts`: optional list of project-relative glob patterns for files that must contain at least one valid `@drift` contract.
 - `adoption.mode`: optional mode for required-contract gaps: `audit`, `warn`, or `enforce`. Defaults to `enforce`.
 
+The config is strict: unknown root fields and unknown `adoption` fields are
+invalid instead of being silently ignored.
+
 ## Required Contracts
 
 Use `requireContracts` to mark critical zones that should not stay undocumented.

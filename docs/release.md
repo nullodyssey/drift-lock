@@ -16,7 +16,8 @@ The public CLI binary is:
 drift-lock
 ```
 
-Use Node 22 or newer, and npm 11.5.1 or newer for Trusted Publishing:
+Use Node 22 or newer. The GitHub release workflow installs `npm@^11.10.0` for
+Trusted Publishing, so local release machines should use npm 11.10.0 or newer:
 
 ```bash
 nvm use
@@ -46,12 +47,14 @@ npm whoami
 
 ### 2. Verify the repo
 
-The working tree must be clean and the release tag must point to the intended commit.
+The working tree must be clean and the release tag must point to the intended
+commit. Use `<VERSION>` below for the package version being published, for
+example `0.1.4-alpha`.
 
 ```bash
 git status
 git log -1 --oneline
-git tag -n --list 'v0.1.1-alpha'
+git tag -n --list 'v<VERSION>'
 ```
 
 Run the full checks:
@@ -79,14 +82,14 @@ pnpm --filter @drift-lock/eslint-plugin pack --pack-destination /tmp/drift-lock-
 Inspect internal dependency conversion:
 
 ```bash
-tar -xOf /tmp/drift-lock-packs/drift-lock-cli-0.1.1-alpha.tgz package/package.json
-tar -xOf /tmp/drift-lock-packs/drift-lock-eslint-plugin-0.1.1-alpha.tgz package/package.json
+tar -xOf /tmp/drift-lock-packs/drift-lock-cli-<VERSION>.tgz package/package.json
+tar -xOf /tmp/drift-lock-packs/drift-lock-eslint-plugin-<VERSION>.tgz package/package.json
 ```
 
 Expected dependency:
 
 ```json
-"@drift-lock/core": "0.1.1-alpha"
+"@drift-lock/core": "<VERSION>"
 ```
 
 ### 4. Publish in dependency order
@@ -97,9 +100,9 @@ provenance generation only works from supported CI providers such as GitHub
 Actions. The CI release workflow enables provenance explicitly.
 
 ```bash
-npm publish /tmp/drift-lock-packs/drift-lock-core-0.1.1-alpha.tgz --access public --tag alpha --provenance=false
-npm publish /tmp/drift-lock-packs/drift-lock-cli-0.1.1-alpha.tgz --access public --tag alpha --provenance=false
-npm publish /tmp/drift-lock-packs/drift-lock-eslint-plugin-0.1.1-alpha.tgz --access public --tag alpha --provenance=false
+npm publish /tmp/drift-lock-packs/drift-lock-core-<VERSION>.tgz --access public --tag alpha --provenance=false
+npm publish /tmp/drift-lock-packs/drift-lock-cli-<VERSION>.tgz --access public --tag alpha --provenance=false
+npm publish /tmp/drift-lock-packs/drift-lock-eslint-plugin-<VERSION>.tgz --access public --tag alpha --provenance=false
 ```
 
 ### 5. Verify npm
@@ -154,9 +157,9 @@ permissions:
 Bump package versions before publishing. Example:
 
 ```bash
-pnpm --filter @drift-lock/core version 0.1.1-alpha --no-git-tag-version
-pnpm --filter @drift-lock/cli version 0.1.1-alpha --no-git-tag-version
-pnpm --filter @drift-lock/eslint-plugin version 0.1.1-alpha --no-git-tag-version
+pnpm --filter @drift-lock/core version <VERSION> --no-git-tag-version
+pnpm --filter @drift-lock/cli version <VERSION> --no-git-tag-version
+pnpm --filter @drift-lock/eslint-plugin version <VERSION> --no-git-tag-version
 ```
 
 Update the root workspace version if desired, then verify:
@@ -172,10 +175,10 @@ Commit and tag:
 
 ```bash
 git add .
-git commit -m "chore: release v0.1.1-alpha"
-git tag -a v0.1.1-alpha -m "v0.1.1-alpha"
+git commit -m "chore: release v<VERSION>"
+git tag -a v<VERSION> -m "v<VERSION>"
 git push origin main
-git push origin v0.1.1-alpha
+git push origin v<VERSION>
 ```
 
 ### 3. Run the GitHub workflow
@@ -193,7 +196,8 @@ The workflow:
 2. builds the workspace
 3. runs typecheck and tests
 4. packs the three packages
-5. publishes the tarballs with npm provenance
+5. derives the npm dist-tag from the version suffix
+6. publishes the tarballs with npm provenance
 ```
 
 ### 4. Verify after CI publish
@@ -214,7 +218,7 @@ npx --yes @drift-lock/cli@latest skills list
 ## Notes
 
 - Create one Git tag per npm publish.
-- Use SemVer prerelease syntax: `0.1.1-alpha`, not `0.1.1.alpha`.
+- Use SemVer prerelease syntax: `0.1.4-alpha`, not `0.1.4.alpha`.
 - Use the `alpha` npm dist-tag for prereleases.
 - Publish order matters: core first, then CLI and ESLint plugin.
 - Keep provenance explicit in the release path: disabled for local P1 publishes,

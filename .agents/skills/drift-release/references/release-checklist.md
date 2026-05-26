@@ -10,7 +10,7 @@ node --version
 ```
 
 Use Node 22 or newer for release publishing. The CI Trusted Publishing path
-also requires npm 11.5.1 or newer.
+installs `npm@^11.10.0`; local release machines should use npm 11.10.0 or newer.
 
 ## Version Bump
 

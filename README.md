@@ -94,6 +94,9 @@ npx --yes @drift-lock/cli@latest install --agent cursor
 # Add GitHub Actions CI
 npx --yes @drift-lock/cli@latest install --ci github
 
+# Add the bundled Next billing example
+npx --yes @drift-lock/cli@latest install --example next-billing
+
 # Skip ESLint or CI when you do not want them
 npx --yes @drift-lock/cli@latest install --no-eslint --no-ci
 
@@ -186,8 +189,12 @@ drift-lock context --task "<user prompt>"
 drift-lock extract
 drift-lock check
 drift-lock check --changed
+drift-lock check --changed --git-base origin/main
+drift-lock check --adoption-mode warn
 drift-lock coverage
+drift-lock coverage --json
 drift-lock diff --summary
+drift-lock diff --summary --json
 drift-lock explain [contract-id]
 drift-lock accept <contract-id> --reason "<reason>"
 drift-lock skills list
@@ -228,7 +235,8 @@ PR or before accepting an intentional contract change.
 change. The reason must be explicit and should describe the product decision.
 
 `skills list` shows bundled DriftLock agent skills. `skills install --provider
-openai|claude|cursor` installs them for your agent environment.
+openai|claude|cursor` installs them for your agent environment. Use
+`--drift-command "<command>"` when skills should call a repo-specific wrapper.
 
 For the AI-assisted workflow, run context before planning:
 
@@ -359,7 +367,7 @@ DriftLock V1 catches supported forms of:
 - invalid `@drift` contract syntax or schema
 - locked contract changes without explicit acceptance
 - missing usage of declared sources of truth
-- return fields or nested return paths that no longer derive from a declared source of truth
+- return fields, nested return paths, and supported collection sinks that no longer derive from a declared source of truth
 
 The practical failure mode is simple: if an agent replaces a declared pricing
 source with a hardcoded local object, `drift-lock check` can fail before that
@@ -377,10 +385,17 @@ V1 is intentionally narrow:
 - `drift/ssot-usage`
 - `drift/ssot-flow` for declaration-scoped function return-object flows with explicit `return.<path>` sinks
 
-`drift/ssot-flow` does not try to prove arbitrary program correctness. Complex
-helpers, mutations, spreads, collections, and callback-heavy flows may be
-unsupported in V1 and should fail clearly rather than create a false sense of
-safety. `drift/ssot-flow` is rejected on `scope: file` contracts.
+`drift/ssot-flow` does not try to prove arbitrary program correctness. The
+supported local subset includes nested return paths, const aliases, simple
+branches, simple destructuring, resolvable spreads, direct `array.map`
+collection sinks with one non-terminal `[]` segment, import aliases, namespace
+imports, and verified helper summaries.
+
+Unsupported or ambiguous patterns still fail clearly rather than create a false
+sense of safety: mutations and reassignments, unverified helper calls, raw or
+dynamic spreads, complex destructuring, callback-heavy collection chains,
+default imports, computed namespace access, and any `drift/ssot-flow` invariant
+declared on a `scope: file` contract.
 
 ## Packages
 

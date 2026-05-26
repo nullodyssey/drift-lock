@@ -14,3 +14,15 @@ export default [
   },
 ];
 ```
+
+The recommended config enables the same DriftLock feedback in the editor loop:
+
+```txt
+drift-lock/valid-contract
+drift-lock/no-locked-contract-change
+drift-lock/ssot-usage
+drift-lock/ssot-flow
+```
+
+Commit `.drift/contracts.generated.json` when using locked-contract checks so
+ESLint can compare contract text against the extracted baseline.

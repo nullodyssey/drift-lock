@@ -1,7 +1,15 @@
 # @drift-lock/core
 
-Core parser, extractor, context renderer, and deterministic checks for DriftLock.
+Core parser, extractor, context renderer, diff engine, coverage reporter, and
+deterministic checks for DriftLock.
 
-This package is intended for the DriftLock CLI and ESLint plugin. Most users
-should install `@drift-lock/cli` instead.
-Use `npx --yes @drift-lock/cli install` for project setup.
+This package exposes the runtime facade used by the DriftLock CLI and ESLint
+plugin: contract extraction, index validation, context/task rendering,
+contract diffs and acceptance files, coverage/explain output, and the
+`ssot-usage` / `ssot-flow` rule helpers.
+
+Most users should install `@drift-lock/cli` instead:
+
+```bash
+npx --yes @drift-lock/cli@latest install
+```

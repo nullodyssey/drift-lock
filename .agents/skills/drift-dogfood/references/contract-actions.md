@@ -37,7 +37,7 @@ Use this reference after classifying the task as add, modify, fix, or audit.
    - `DRIFT010`: restore real usage of the declared SSOT or correct the contract if dependency changed.
    - `DRIFT011`: restore the locked contract or intentionally accept/change it with rationale.
    - `DRIFT013`: make the sink derive from the SSOT; do not hardcode or merely mention the SSOT.
-   - `DRIFT014`: simplify the flow to supported const aliases, property access, derived expressions, and explicit return fields.
+   - `DRIFT014`: simplify the flow to supported const aliases, property access, derived expressions, simple destructuring, resolvable spreads, direct collection maps, verified helper summaries, and explicit return fields.
    - `DRIFT015`: add a useful contract to the required file or justify changing required coverage.
 5. Regenerate the index only after the desired state is clear.
 
