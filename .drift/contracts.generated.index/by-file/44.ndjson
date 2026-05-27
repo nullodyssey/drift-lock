@@ -1,4 +1,2 @@
-{"file":"../types","impactedContractIds":["core.errors"]}
-{"file":"eslint-plugin/src/rules/ssot-usage.ts","ownedContractIds":["eslint.ssot-usage-rule"],"helperCandidateContractIds":["eslint.ssot-usage-rule"]}
 {"file":"packages/core/src/core/context.js","ownedContractIds":["core.context-renderer"],"helperCandidateContractIds":["core.context-renderer"]}
 {"file":"packages/core/src/core/rules/ssot-flow/imports.ts","ownedContractIds":["core.ssot-flow.imports"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.imports"]}

@@ -1,4 +1,1 @@
-{"file":"cli/src/cli.tsx","ownedContractIds":["cli.command-surface"],"helperCandidateContractIds":["cli.command-surface"]}
-{"file":"eslint-plugin/src/rules/ssot-flow.tsx","ownedContractIds":["eslint.ssot-flow-rule"],"helperCandidateContractIds":["eslint.ssot-flow-rule"]}
 {"file":"packages/core/src/index.jsx","ownedContractIds":["core.public-api"],"helperCandidateContractIds":["core.public-api"]}
-{"file":"rules/ssot-flow/index.js","impactedContractIds":["core.invariant-checks","core.ssot-flow"]}

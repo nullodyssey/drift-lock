@@ -1,3 +1,1 @@
-{"file":"core/src/core/helper-summaries.tsx","ownedContractIds":["core.helper-summaries"],"impactedContractIds":["core.check-run"],"helperCandidateContractIds":["core.helper-summaries"]}
-{"file":"core/src/core/rules/ssot-flow/env.jsx","ownedContractIds":["core.ssot-flow.env"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.env"]}
 {"file":"packages/core/src/index.js","ownedContractIds":["core.public-api"],"helperCandidateContractIds":["core.public-api"]}

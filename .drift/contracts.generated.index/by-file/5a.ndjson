@@ -1,2 +1,1 @@
-{"file":"core/src/core/contract-diff.ts","ownedContractIds":["core.contract-diff"],"impactedContractIds":["core.contract-selection","core.proof-report"],"helperCandidateContractIds":["core.contract-diff"]}
 {"file":"packages/eslint-plugin/src/index.jsx","ownedContractIds":["eslint.surface"],"helperCandidateContractIds":["eslint.surface"]}

@@ -1,4 +1,1 @@
-{"file":"check-run","impactedContractIds":["core.checker"]}
-{"file":"core/src/core/required-contracts","ownedContractIds":["core.required-contracts"],"helperCandidateContractIds":["core.required-contracts"]}
-{"file":"imports","impactedContractIds":["core.ssot-flow.rule"]}
 {"file":"packages/eslint-plugin/src/rules/ssot-flow.ts","ownedContractIds":["eslint.ssot-flow-rule"],"helperCandidateContractIds":["eslint.ssot-flow-rule"]}

@@ -28,7 +28,7 @@ describe('drift sharded index store', () => {
   it('reads contract ids by file and impacted ssot file', async () => {
     const root = await createProject({ 'src/actions.ts': validFlowSource('billing.changed') });
     const extracted = await extractContracts({ root });
-    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts), { sourceDir: 'src' });
 
     const store = await openIndexStore({ kind: 'working-tree', root });
 
@@ -51,6 +51,85 @@ describe('drift sharded index store', () => {
     await expect(store?.getContractsByIds(['billing.changed'])).resolves.toEqual([
       expect.objectContaining({ id: 'billing.changed' }),
     ]);
+  });
+
+  it('reads index stores from Git refs when the index path is absolute', async () => {
+    const root = await createProject({ 'src/actions.ts': validActionsSource('billing.absolute') });
+    const extracted = await extractContracts({ root });
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
+    await createGitBaseline(root);
+
+    const store = await openIndexStore({
+      kind: 'git-ref',
+      root,
+      ref: 'HEAD',
+      indexPath: path.join(root, '.drift/contracts.generated.index'),
+    });
+
+    await expect(store?.getContractsByIds(['billing.absolute'])).resolves.toEqual([
+      expect.objectContaining({ id: 'billing.absolute' }),
+    ]);
+  });
+
+  it('does not collapse unrelated top-level monorepo paths during file lookups', async () => {
+    const root = await createProject({
+      'apps/foo/src/actions.ts': validActionsSource('billing.app'),
+      'packages/foo/src/actions.ts': validActionsSource('billing.package'),
+    });
+    const sourceDir = ['apps/foo/src', 'packages/foo/src'];
+    const extracted = await extractContracts({ root, sourceDir });
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts), { sourceDir });
+
+    const store = await openIndexStore({ kind: 'working-tree', root });
+
+    await expect(store?.getContractIdsForFiles(['apps/foo/src/actions.ts'], { includeOwned: true })).resolves.toMatchObject({
+      ownedContractIds: ['billing.app'],
+    });
+    await expect(store?.getContractIdsForFiles(['packages/foo/src/actions.ts'], { includeOwned: true })).resolves.toMatchObject({
+      ownedContractIds: ['billing.package'],
+    });
+    await expect(store?.getContractIdsForFiles(['foo/src/actions.ts'], { includeOwned: true })).resolves.toMatchObject({
+      ownedContractIds: [],
+      missingFiles: expect.arrayContaining(['foo/src/actions.ts']),
+    });
+  });
+
+  it('stores alias ssot impacts as exact source-root physical paths', async () => {
+    const root = await createProject({ 'src/actions.ts': validFlowSource('billing.source-root') });
+    const extracted = await extractContracts({ root, sourceDir: 'src' });
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts), { sourceDir: 'src' });
+
+    const store = await openIndexStore({ kind: 'working-tree', root });
+
+    await expect(store?.getContractIdsForFiles(['src/features/billing/pricing.ts'], { includeImpacted: true })).resolves.toMatchObject({
+      impactedContractIds: ['billing.source-root'],
+    });
+    await expect(store?.getContractIdsForFiles(['features/billing/pricing.ts'], { includeImpacted: true })).resolves.toMatchObject({
+      impactedContractIds: [],
+      missingFiles: expect.arrayContaining(['features/billing/pricing.ts']),
+    });
+  });
+
+  it('resolves alias ssot paths against the declaring contract source root', async () => {
+    const root = await createProject({
+      'apps/foo/src/actions.ts': validFlowSource('billing.app'),
+      'packages/foo/src/actions.ts': validFlowSource('billing.package'),
+    });
+    const sourceDir = ['apps/foo/src', 'packages/foo/src'];
+    const extracted = await extractContracts({ root, sourceDir });
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts), { sourceDir });
+
+    const store = await openIndexStore({ kind: 'working-tree', root });
+
+    await expect(store?.getContractIdsForFiles(['apps/foo/src/features/billing/pricing.ts'], { includeImpacted: true })).resolves.toMatchObject({
+      impactedContractIds: ['billing.app'],
+    });
+    await expect(store?.getContractIdsForFiles(['packages/foo/src/features/billing/pricing.ts'], { includeImpacted: true })).resolves.toMatchObject({
+      impactedContractIds: ['billing.package'],
+    });
+    await expect(store?.getContractIdsForFiles(['features/billing/pricing.ts'], { includeImpacted: true })).resolves.toMatchObject({
+      impactedContractIds: [],
+    });
   });
 
   it('rejects invalid manifests', async () => {

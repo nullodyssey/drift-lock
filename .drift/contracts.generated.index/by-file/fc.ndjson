@@ -1,3 +1,2 @@
-{"file":"locked-contracts.ts","impactedContractIds":["core.proof-report"]}
 {"file":"packages/core/src/core/hash","ownedContractIds":["core.hash"],"helperCandidateContractIds":["core.hash"]}
-{"file":"packages/core/src/core/module-specifier","ownedContractIds":["core.module-specifier"],"impactedContractIds":["core.git-scope","core.ssot-flow.imports","core.ssot-usage.rule"],"helperCandidateContractIds":["core.module-specifier"]}
+{"file":"packages/core/src/core/module-specifier","ownedContractIds":["core.module-specifier"],"impactedContractIds":["core.contract-paths","core.git-scope","core.ssot-flow.imports","core.ssot-usage.rule"],"helperCandidateContractIds":["core.module-specifier"]}

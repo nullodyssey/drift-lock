@@ -52,7 +52,7 @@ export const ssotFlowRule = {
         const text = context.sourceCode.getText();
         const result = extractContractsFromSource(file, text);
 
-        const helperContracts = readIndexHelperContractsForFileSync(options.root, options.indexPath, file, text);
+        const helperContracts = readIndexHelperContractsForFileSync(options.root, options.indexPath, file, text, options.source);
 
         for (const contract of result.contracts) {
           for (const error of checkSsotFlow(contract, text, { helperContracts })) {

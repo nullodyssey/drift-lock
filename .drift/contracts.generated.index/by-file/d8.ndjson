@@ -1,3 +1,1 @@
-{"file":"core/src/core/rules/ssot-flow/sinks.ts","ownedContractIds":["core.ssot-flow.sinks"],"helperCandidateContractIds":["core.ssot-flow.sinks"]}
-{"file":"eslint-plugin/src/utils.js","ownedContractIds":["eslint.utils"],"impactedContractIds":["eslint.no-locked-contract-change-rule","eslint.ssot-flow-rule","eslint.ssot-usage-rule","eslint.valid-contract-rule"],"helperCandidateContractIds":["eslint.utils"]}
 {"file":"packages/core/src/types.js","ownedContractIds":["core.types"],"impactedContractIds":["core.errors"],"helperCandidateContractIds":["core.types"]}

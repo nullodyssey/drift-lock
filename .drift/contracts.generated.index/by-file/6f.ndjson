@@ -1,2 +1,0 @@
-{"file":"source-cache.ts","impactedContractIds":["core.check-run","core.invariant-checks"]}
-{"file":"utils","impactedContractIds":["eslint.no-locked-contract-change-rule","eslint.ssot-flow-rule","eslint.ssot-usage-rule","eslint.valid-contract-rule"]}

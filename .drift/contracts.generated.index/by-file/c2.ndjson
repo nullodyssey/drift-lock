@@ -1,2 +1,0 @@
-{"file":"../errors.js","impactedContractIds":["core.ssot-flow.diagnostics","core.ssot-usage.rule"]}
-{"file":"core/src/core/source-cache.jsx","ownedContractIds":["core.source-cache"],"impactedContractIds":["core.check-run","core.invariant-checks"],"helperCandidateContractIds":["core.source-cache"]}

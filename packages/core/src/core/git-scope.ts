@@ -3,8 +3,8 @@ import { access } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import type { DriftContractsIndex, DriftSource } from '../types.js';
-import { normalizePath, normalizeSourceDirs } from './files.js';
-import { moduleSpecifierCandidates } from './module-specifier.js';
+import { moduleFileCandidates } from './contract-paths.js';
+import { normalizePath } from './files.js';
 import type { DriftIndexStore } from './index-file.js';
 
 /* @drift
@@ -51,14 +51,13 @@ export async function resolveGitFileScope(
   sourceDir: DriftSource = 'src',
   index?: DriftContractsIndex,
 ): Promise<GitFileScope> {
-  const normalizedSourceDirs = normalizeSourceDirs(sourceDir).map(normalizeGitPath);
   const changedFiles = await gitChangedFiles(root, gitBase);
   const contractFiles = new Set(changedFiles.filter(isTypeScriptFile));
   const impactedContractIds = new Set<string>();
 
   for (const contract of index?.contracts ?? []) {
     if (!contract.ssot) continue;
-    if (Object.values(contract.ssot).some((ssotPath) => changedFiles.some((file) => matchesSsotFile(file, ssotPath, normalizedSourceDirs)))) {
+    if (Object.values(contract.ssot).some((ssotPath) => changedFiles.some((file) => matchesSsotFile(file, contract.file, ssotPath, sourceDir)))) {
       contractFiles.add(contract.file);
       impactedContractIds.add(contract.id);
     }
@@ -159,35 +158,10 @@ async function existingFiles(root: string, files: string[]): Promise<string[]> {
   return existing.sort();
 }
 
-function matchesSsotFile(changedFile: string, ssotPath: string, sourceDirs: string[]): boolean {
+function matchesSsotFile(changedFile: string, contractFile: string, ssotPath: string, sourceDir: DriftSource): boolean {
   const changed = normalizeGitPath(changedFile);
-  const candidates = ssotFileCandidates(ssotPath, sourceDirs);
-  return candidates.some((candidate) => changed === candidate || changed.endsWith(`/${candidate}`));
-}
-
-function ssotFileCandidates(ssotPath: string, sourceDirs: string[]): string[] {
-  const candidates = new Set<string>();
-
-  for (const modulePath of moduleSpecifierCandidates(ssotPath)) {
-    const normalized = normalizeGitPath(modulePath);
-    addCandidate(candidates, normalized);
-
-    const stripped = stripModulePrefix(normalized);
-    addCandidate(candidates, stripped);
-    for (const sourceDir of sourceDirs) {
-      if (!stripped.startsWith(`${sourceDir}/`)) addCandidate(candidates, normalizePath(path.posix.join(sourceDir, stripped)));
-    }
-  }
-
-  return [...candidates];
-}
-
-function addCandidate(candidates: Set<string>, value: string): void {
-  if (value.length > 0) candidates.add(value);
-}
-
-function stripModulePrefix(value: string): string {
-  return value.replace(/^(@\/|~\/|\.\/|\/)/, '');
+  const candidates = moduleFileCandidates(ssotPath, { currentFile: contractFile, sourceDir });
+  return candidates.some((candidate) => changed === candidate);
 }
 
 function normalizeGitPath(file: string): string {

@@ -1,2 +1,1 @@
-{"file":"../utils.ts","impactedContractIds":["eslint.no-locked-contract-change-rule","eslint.ssot-flow-rule","eslint.ssot-usage-rule","eslint.valid-contract-rule"]}
 {"file":"packages/core/src/core/extractor.jsx","ownedContractIds":["core.extractor"],"impactedContractIds":["core.check-run","core.context-renderer","core.coverage"],"helperCandidateContractIds":["core.extractor"]}

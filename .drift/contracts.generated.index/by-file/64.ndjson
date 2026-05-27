@@ -1,4 +1,2 @@
-{"file":"../types.tsx","impactedContractIds":["core.errors"]}
-{"file":"core/src/core/check-run","ownedContractIds":["core.check-run"],"impactedContractIds":["core.checker"],"helperCandidateContractIds":["core.check-run"]}
 {"file":"packages/cli/src/install.tsx","ownedContractIds":["cli.install-project"],"helperCandidateContractIds":["cli.install-project"]}
 {"file":"packages/core/src/core/rules/ssot-flow/diagnostics.jsx","ownedContractIds":["core.ssot-flow.diagnostics"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.diagnostics"]}

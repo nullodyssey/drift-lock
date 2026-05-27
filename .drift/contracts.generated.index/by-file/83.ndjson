@@ -1,2 +1,0 @@
-{"file":"../types.js","impactedContractIds":["core.errors"]}
-{"file":"eslint-plugin/src/index","ownedContractIds":["eslint.surface"],"helperCandidateContractIds":["eslint.surface"]}

@@ -1,5 +1,2 @@
-{"file":"../errors","impactedContractIds":["core.ssot-flow.diagnostics","core.ssot-usage.rule"]}
-{"file":"contract-selection.js","impactedContractIds":["core.check-run"]}
-{"file":"eslint-plugin/src/rules/valid-contract","ownedContractIds":["eslint.valid-contract-rule"],"helperCandidateContractIds":["eslint.valid-contract-rule"]}
 {"file":"packages/core/src/core/proof.tsx","ownedContractIds":["core.proof-report"],"helperCandidateContractIds":["core.proof-report"]}
 {"file":"packages/eslint-plugin/src/index","ownedContractIds":["eslint.surface"],"helperCandidateContractIds":["eslint.surface"]}

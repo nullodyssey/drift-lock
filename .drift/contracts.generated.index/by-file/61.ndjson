@@ -1,3 +1,0 @@
-{"file":"checker.js","impactedContractIds":["core.explain","core.proof-report"]}
-{"file":"eslint-plugin/src/rules/valid-contract.js","ownedContractIds":["eslint.valid-contract-rule"],"helperCandidateContractIds":["eslint.valid-contract-rule"]}
-{"file":"index-file","impactedContractIds":["core.check-run","core.config","core.config.default-index-flow","core.contract-diff","core.contract-selection"]}

@@ -1,3 +1,0 @@
-{"file":"contract-diff.tsx","impactedContractIds":["core.contract-selection","core.proof-report"]}
-{"file":"control.ts","impactedContractIds":["core.ssot-flow.rule"]}
-{"file":"rules/ssot-usage/index.js","impactedContractIds":["core.invariant-checks"]}

@@ -1,3 +1,2 @@
-{"file":"core/src/core/rules/ssot-usage/index.jsx","ownedContractIds":["core.ssot-usage.rule"],"impactedContractIds":["core.invariant-checks"],"helperCandidateContractIds":["core.ssot-usage.rule"]}
 {"file":"packages/eslint-plugin/src/rules/ssot-usage.ts","ownedContractIds":["eslint.ssot-usage-rule"],"helperCandidateContractIds":["eslint.ssot-usage-rule"]}
 {"file":"packages/eslint-plugin/src/rules/valid-contract.js","ownedContractIds":["eslint.valid-contract-rule"],"helperCandidateContractIds":["eslint.valid-contract-rule"]}

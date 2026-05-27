@@ -1,3 +1,2 @@
 {"file":"packages/core/src/core/rules/ssot-flow/sinks.jsx","ownedContractIds":["core.ssot-flow.sinks"],"helperCandidateContractIds":["core.ssot-flow.sinks"]}
 {"file":"packages/eslint-plugin/src/rules/ssot-flow","ownedContractIds":["eslint.ssot-flow-rule"],"helperCandidateContractIds":["eslint.ssot-flow-rule"]}
-{"file":"rules/ssot-flow/index","impactedContractIds":["core.invariant-checks","core.ssot-flow"]}

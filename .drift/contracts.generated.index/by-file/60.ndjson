@@ -1,2 +1,1 @@
-{"file":"core/src/core/ssot-flow","ownedContractIds":["core.ssot-flow"],"helperCandidateContractIds":["core.ssot-flow"]}
 {"file":"packages/core/src/core/rules/ssot-flow/env.js","ownedContractIds":["core.ssot-flow.env"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.env"]}

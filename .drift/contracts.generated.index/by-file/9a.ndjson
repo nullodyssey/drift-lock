@@ -1,3 +1,2 @@
 {"file":"packages/core/src/core/coverage.ts","ownedContractIds":["core.coverage"],"impactedContractIds":["core.proof-report","core.required-contracts"],"helperCandidateContractIds":["core.coverage"]}
 {"file":"packages/core/src/index.ts","ownedContractIds":["core.public-api"],"helperCandidateContractIds":["core.public-api"]}
-{"file":"ssot-flow/index","impactedContractIds":["core.invariant-checks","core.ssot-flow"]}

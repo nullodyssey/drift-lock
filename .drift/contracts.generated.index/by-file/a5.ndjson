@@ -1,3 +1,0 @@
-{"file":"core/src/core/contract-selection.jsx","ownedContractIds":["core.contract-selection"],"impactedContractIds":["core.check-run"],"helperCandidateContractIds":["core.contract-selection"]}
-{"file":"core/src/core/rules/ssot-flow/env.ts","ownedContractIds":["core.ssot-flow.env"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.env"]}
-{"file":"rules/ssot-usage/index.tsx","impactedContractIds":["core.invariant-checks"]}

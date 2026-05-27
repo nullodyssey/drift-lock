@@ -1,3 +1,0 @@
-{"file":"cli/src/cli.ts","ownedContractIds":["cli.command-surface"],"helperCandidateContractIds":["cli.command-surface"]}
-{"file":"core/src/core/contract-diff.js","ownedContractIds":["core.contract-diff"],"impactedContractIds":["core.contract-selection","core.proof-report"],"helperCandidateContractIds":["core.contract-diff"]}
-{"file":"core/src/core/hash.jsx","ownedContractIds":["core.hash"],"helperCandidateContractIds":["core.hash"]}

@@ -1,3 +1,0 @@
-{"file":"../../errors.ts","impactedContractIds":["core.ssot-flow.diagnostics","core.ssot-usage.rule"]}
-{"file":"errors.jsx","impactedContractIds":["core.invariant-checks","core.required-contracts","core.validator"]}
-{"file":"git-scope","impactedContractIds":["core.contract-selection","core.proof-report"]}

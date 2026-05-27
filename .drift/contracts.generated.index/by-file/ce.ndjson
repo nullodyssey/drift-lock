@@ -1,5 +1,0 @@
-{"file":"../module-specifier","impactedContractIds":["core.ssot-flow.imports","core.ssot-usage.rule"]}
-{"file":"control.jsx","impactedContractIds":["core.ssot-flow.rule"]}
-{"file":"core/src/core/files","ownedContractIds":["core.files"],"impactedContractIds":["core.git-scope","core.required-contracts"],"helperCandidateContractIds":["core.files"]}
-{"file":"core/src/core/rules/ssot-flow/imports","ownedContractIds":["core.ssot-flow.imports"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.imports"]}
-{"file":"core/src/core/rules/ssot-flow/types.ts","ownedContractIds":["core.ssot-flow.types"],"helperCandidateContractIds":["core.ssot-flow.types"]}

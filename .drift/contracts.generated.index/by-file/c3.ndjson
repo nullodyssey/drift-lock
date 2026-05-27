@@ -1,2 +1,0 @@
-{"file":"core/src/core/rules/ssot-flow/index.js","ownedContractIds":["core.ssot-flow.rule"],"impactedContractIds":["core.invariant-checks","core.ssot-flow"],"helperCandidateContractIds":["core.ssot-flow.rule"]}
-{"file":"coverage","impactedContractIds":["core.proof-report","core.required-contracts"]}

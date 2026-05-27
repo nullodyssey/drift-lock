@@ -1,2 +1,1 @@
-{"file":"diagnostics","impactedContractIds":["core.ssot-flow.rule"]}
 {"file":"packages/core/src/core/rules/ssot-flow/control.ts","ownedContractIds":["core.ssot-flow.control"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.control"]}

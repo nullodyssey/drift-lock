@@ -1,5 +1,3 @@
-{"file":"core/src/core/disable-directives.jsx","ownedContractIds":["core.disable-directives"],"impactedContractIds":["core.coverage"],"helperCandidateContractIds":["core.disable-directives"]}
-{"file":"core/src/core/git-scope.ts","ownedContractIds":["core.git-scope"],"impactedContractIds":["core.contract-selection","core.proof-report"],"helperCandidateContractIds":["core.git-scope"]}
 {"file":"packages/cli/src/install.ts","ownedContractIds":["cli.install-project"],"helperCandidateContractIds":["cli.install-project"]}
 {"file":"packages/core/src/core/rules/ssot-flow/types.jsx","ownedContractIds":["core.ssot-flow.types"],"helperCandidateContractIds":["core.ssot-flow.types"]}
 {"file":"packages/eslint-plugin/src/index.tsx","ownedContractIds":["eslint.surface"],"helperCandidateContractIds":["eslint.surface"]}

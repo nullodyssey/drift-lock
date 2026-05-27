@@ -1,4 +1,2 @@
-{"file":"check-run.tsx","impactedContractIds":["core.checker"]}
-{"file":"core/src/core/contract-selection.js","ownedContractIds":["core.contract-selection"],"impactedContractIds":["core.check-run"],"helperCandidateContractIds":["core.contract-selection"]}
 {"file":"packages/core/src/core/config.js","ownedContractIds":["core.config","core.config.default-index-flow"],"helperCandidateContractIds":["core.config","core.config.default-index-flow"]}
 {"file":"packages/core/src/core/rules/ssot-flow/control.jsx","ownedContractIds":["core.ssot-flow.control"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.control"]}

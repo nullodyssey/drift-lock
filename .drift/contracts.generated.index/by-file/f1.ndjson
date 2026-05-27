@@ -1,3 +1,2 @@
-{"file":"core/src/core/check-run.tsx","ownedContractIds":["core.check-run"],"impactedContractIds":["core.checker"],"helperCandidateContractIds":["core.check-run"]}
 {"file":"packages/core/src/core/check-run.tsx","ownedContractIds":["core.check-run"],"impactedContractIds":["core.checker"],"helperCandidateContractIds":["core.check-run"]}
 {"file":"packages/eslint-plugin/src/rules/no-locked-contract-change.js","ownedContractIds":["eslint.no-locked-contract-change-rule"],"helperCandidateContractIds":["eslint.no-locked-contract-change-rule"]}

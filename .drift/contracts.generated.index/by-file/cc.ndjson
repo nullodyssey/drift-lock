@@ -1,2 +1,0 @@
-{"file":"core.ts","impactedContractIds":["eslint.no-locked-contract-change-rule","eslint.ssot-flow-rule","eslint.ssot-usage-rule","eslint.utils","eslint.valid-contract-rule"]}
-{"file":"core/src/core/rules/ssot-flow/diagnostics.jsx","ownedContractIds":["core.ssot-flow.diagnostics"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.diagnostics"]}

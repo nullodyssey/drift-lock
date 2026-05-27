@@ -1,5 +1,2 @@
-{"file":"core/src/core/contract-diff.jsx","ownedContractIds":["core.contract-diff"],"impactedContractIds":["core.contract-selection","core.proof-report"],"helperCandidateContractIds":["core.contract-diff"]}
-{"file":"core/src/core/rules/ssot-flow/diagnostics.tsx","ownedContractIds":["core.ssot-flow.diagnostics"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.diagnostics"]}
-{"file":"extractor.js","impactedContractIds":["core.check-run","core.context-renderer","core.coverage"]}
 {"file":"packages/cli/src/skills.tsx","ownedContractIds":["cli.skills"],"helperCandidateContractIds":["cli.skills"]}
 {"file":"packages/core/src/core/validator.tsx","ownedContractIds":["core.validator"],"impactedContractIds":["core.acceptance-file"],"helperCandidateContractIds":["core.validator"]}

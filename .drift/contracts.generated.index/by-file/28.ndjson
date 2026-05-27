@@ -1,3 +1,1 @@
-{"file":"core/src/core/rules/ssot-usage/index","ownedContractIds":["core.ssot-usage.rule"],"impactedContractIds":["core.invariant-checks"],"helperCandidateContractIds":["core.ssot-usage.rule"]}
 {"file":"packages/core/src/core/proof","ownedContractIds":["core.proof-report"],"helperCandidateContractIds":["core.proof-report"]}
-{"file":"ssot-flow/index.tsx","impactedContractIds":["core.invariant-checks","core.ssot-flow"]}

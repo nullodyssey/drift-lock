@@ -1,2 +1,1 @@
-{"file":"checker.jsx","impactedContractIds":["core.explain","core.proof-report"]}
 {"file":"packages/cli/src/cli.tsx","ownedContractIds":["cli.command-surface"],"helperCandidateContractIds":["cli.command-surface"]}

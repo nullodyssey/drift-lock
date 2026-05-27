@@ -1,3 +1,2 @@
-{"file":"extractor.jsx","impactedContractIds":["core.check-run","core.context-renderer","core.coverage"]}
 {"file":"packages/core/src/core/git-scope.js","ownedContractIds":["core.git-scope"],"impactedContractIds":["core.contract-selection","core.proof-report"],"helperCandidateContractIds":["core.git-scope"]}
 {"file":"packages/core/src/core/hash.jsx","ownedContractIds":["core.hash"],"helperCandidateContractIds":["core.hash"]}

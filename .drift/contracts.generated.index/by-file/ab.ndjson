@@ -1,2 +1,0 @@
-{"file":"core/src/core/rules/ssot-usage/index.js","ownedContractIds":["core.ssot-usage.rule"],"impactedContractIds":["core.invariant-checks"],"helperCandidateContractIds":["core.ssot-usage.rule"]}
-{"file":"rules/ssot-usage/index","impactedContractIds":["core.invariant-checks"]}

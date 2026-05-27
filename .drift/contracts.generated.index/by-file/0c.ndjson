@@ -1,7 +1,4 @@
-{"file":"../module-specifier.jsx","impactedContractIds":["core.ssot-flow.imports","core.ssot-usage.rule"]}
-{"file":"core/src/core/helper-summaries.ts","ownedContractIds":["core.helper-summaries"],"impactedContractIds":["core.check-run"],"helperCandidateContractIds":["core.helper-summaries"]}
-{"file":"core/src/core/rules/ssot-flow/helpers.jsx","ownedContractIds":["core.ssot-flow.helpers"],"helperCandidateContractIds":["core.ssot-flow.helpers"]}
 {"file":"packages/core/src/core/contract-selection.tsx","ownedContractIds":["core.contract-selection"],"impactedContractIds":["core.check-run"],"helperCandidateContractIds":["core.contract-selection"]}
 {"file":"packages/core/src/core/explain.ts","ownedContractIds":["core.explain"],"helperCandidateContractIds":["core.explain"]}
 {"file":"packages/core/src/core/explain.tsx","ownedContractIds":["core.explain"],"helperCandidateContractIds":["core.explain"]}
-{"file":"packages/core/src/core/module-specifier.js","ownedContractIds":["core.module-specifier"],"impactedContractIds":["core.git-scope","core.ssot-flow.imports","core.ssot-usage.rule"],"helperCandidateContractIds":["core.module-specifier"]}
+{"file":"packages/core/src/core/module-specifier.js","ownedContractIds":["core.module-specifier"],"impactedContractIds":["core.contract-paths","core.git-scope","core.ssot-flow.imports","core.ssot-usage.rule"],"helperCandidateContractIds":["core.module-specifier"]}

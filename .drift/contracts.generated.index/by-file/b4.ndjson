@@ -1,4 +1,1 @@
-{"file":"eslint-plugin/src/index.tsx","ownedContractIds":["eslint.surface"],"helperCandidateContractIds":["eslint.surface"]}
-{"file":"eslint-plugin/src/rules/no-locked-contract-change.tsx","ownedContractIds":["eslint.no-locked-contract-change-rule"],"helperCandidateContractIds":["eslint.no-locked-contract-change-rule"]}
-{"file":"extractor.tsx","impactedContractIds":["core.check-run","core.context-renderer","core.coverage"]}
 {"file":"packages/eslint-plugin/src/rules/no-locked-contract-change.tsx","ownedContractIds":["eslint.no-locked-contract-change-rule"],"helperCandidateContractIds":["eslint.no-locked-contract-change-rule"]}

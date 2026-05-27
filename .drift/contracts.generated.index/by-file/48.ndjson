@@ -1,4 +1,4 @@
-{"file":"module-specifier.ts","impactedContractIds":["core.git-scope"]}
+{"file":"packages/core/src/core/contract-paths.js","ownedContractIds":["core.contract-paths"],"helperCandidateContractIds":["core.contract-paths"]}
 {"file":"packages/core/src/core/contract-selection.ts","ownedContractIds":["core.contract-selection"],"impactedContractIds":["core.check-run"],"helperCandidateContractIds":["core.contract-selection"]}
-{"file":"packages/core/src/core/module-specifier.jsx","ownedContractIds":["core.module-specifier"],"impactedContractIds":["core.git-scope","core.ssot-flow.imports","core.ssot-usage.rule"],"helperCandidateContractIds":["core.module-specifier"]}
+{"file":"packages/core/src/core/module-specifier.jsx","ownedContractIds":["core.module-specifier"],"impactedContractIds":["core.contract-paths","core.git-scope","core.ssot-flow.imports","core.ssot-usage.rule"],"helperCandidateContractIds":["core.module-specifier"]}
 {"file":"packages/core/src/core/ssot-flow.tsx","ownedContractIds":["core.ssot-flow"],"helperCandidateContractIds":["core.ssot-flow"]}

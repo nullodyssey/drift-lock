@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import type { DriftError } from '@drift-lock/core';
+import type { DriftError, DriftSource } from '@drift-lock/core';
 
 /* @drift
 version: 1
@@ -31,13 +31,18 @@ export type RuleOptions = {
   indexPath?: string;
 };
 
-export function getRuleOptions(context: any): Required<RuleOptions> {
+export type ResolvedRuleOptions = Required<RuleOptions> & {
+  source: DriftSource;
+};
+
+export function getRuleOptions(context: any): ResolvedRuleOptions {
   const options = (context.options?.[0] ?? {}) as RuleOptions;
   const root = path.resolve(options.root ?? process.cwd());
   const config = readConfigSync(root);
   return {
     root,
     indexPath: options.indexPath ?? config.index,
+    source: config.source,
   };
 }
 
@@ -57,12 +62,19 @@ export function reportDriftError(context: any, error: DriftError): void {
   });
 }
 
-function readConfigSync(root: string): { index: string } {
+function readConfigSync(root: string): { index: string; source: DriftSource } {
   try {
-    const parsed = JSON.parse(readFileSync(path.join(root, '.drift/config.json'), 'utf8')) as { index?: unknown };
-    if (typeof parsed.index === 'string' && parsed.index.trim()) return { index: parsed.index };
+    const parsed = JSON.parse(readFileSync(path.join(root, '.drift/config.json'), 'utf8')) as { index?: unknown; source?: unknown };
+    const index = typeof parsed.index === 'string' && parsed.index.trim() ? parsed.index : '.drift/contracts.generated.index';
+    const source = isValidSource(parsed.source) ? parsed.source : 'src';
+    return { index, source };
   } catch {
     // ESLint rules should keep the historical default when config is absent.
   }
-  return { index: '.drift/contracts.generated.index' };
+  return { index: '.drift/contracts.generated.index', source: 'src' };
+}
+
+function isValidSource(value: unknown): value is DriftSource {
+  if (typeof value === 'string') return value.trim().length > 0;
+  return Array.isArray(value) && value.length > 0 && value.every((source) => typeof source === 'string' && source.trim().length > 0);
 }

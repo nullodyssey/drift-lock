@@ -1,2 +1,1 @@
-{"file":"coverage.js","impactedContractIds":["core.proof-report","core.required-contracts"]}
 {"file":"packages/core/src/core/helper-summaries.ts","ownedContractIds":["core.helper-summaries"],"impactedContractIds":["core.check-run"],"helperCandidateContractIds":["core.helper-summaries"]}

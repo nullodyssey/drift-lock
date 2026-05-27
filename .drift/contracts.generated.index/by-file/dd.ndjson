@@ -1,3 +1,1 @@
-{"file":"core/src/core/invariant-checks.ts","ownedContractIds":["core.invariant-checks"],"helperCandidateContractIds":["core.invariant-checks"]}
-{"file":"core/src/core/rules/ssot-flow/helpers.ts","ownedContractIds":["core.ssot-flow.helpers"],"helperCandidateContractIds":["core.ssot-flow.helpers"]}
-{"file":"packages/core/src/core/files.jsx","ownedContractIds":["core.files"],"impactedContractIds":["core.git-scope","core.required-contracts"],"helperCandidateContractIds":["core.files"]}
+{"file":"packages/core/src/core/files.jsx","ownedContractIds":["core.files"],"impactedContractIds":["core.contract-paths","core.git-scope","core.required-contracts"],"helperCandidateContractIds":["core.files"]}

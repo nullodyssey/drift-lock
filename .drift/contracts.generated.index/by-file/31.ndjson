@@ -1,2 +1,1 @@
-{"file":"core/src/core/rules/ssot-flow/imports.tsx","ownedContractIds":["core.ssot-flow.imports"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.imports"]}
 {"file":"packages/core/src/core/rules/ssot-flow/imports","ownedContractIds":["core.ssot-flow.imports"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.imports"]}

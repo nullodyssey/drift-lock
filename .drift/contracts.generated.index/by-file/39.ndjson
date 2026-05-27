@@ -1,2 +1,1 @@
-{"file":"checker.tsx","impactedContractIds":["core.explain","core.proof-report"]}
 {"file":"packages/eslint-plugin/src/rules/ssot-usage","ownedContractIds":["eslint.ssot-usage-rule"],"helperCandidateContractIds":["eslint.ssot-usage-rule"]}

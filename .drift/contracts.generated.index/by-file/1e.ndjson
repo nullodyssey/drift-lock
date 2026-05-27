@@ -1,5 +1,2 @@
-{"file":"core/src/core/config.js","ownedContractIds":["core.config","core.config.default-index-flow"],"helperCandidateContractIds":["core.config","core.config.default-index-flow"]}
-{"file":"core/src/core/rules/ssot-flow/helpers.js","ownedContractIds":["core.ssot-flow.helpers"],"helperCandidateContractIds":["core.ssot-flow.helpers"]}
-{"file":"core/src/index.tsx","ownedContractIds":["core.public-api"],"helperCandidateContractIds":["core.public-api"]}
 {"file":"packages/core/src/core/acceptance-file","ownedContractIds":["core.acceptance-file"],"helperCandidateContractIds":["core.acceptance-file"]}
 {"file":"packages/core/src/core/rules/ssot-flow/diagnostics.js","ownedContractIds":["core.ssot-flow.diagnostics"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.diagnostics"]}

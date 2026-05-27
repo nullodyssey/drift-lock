@@ -1,6 +1,2 @@
-{"file":"core/src/core/files.tsx","ownedContractIds":["core.files"],"impactedContractIds":["core.git-scope","core.required-contracts"],"helperCandidateContractIds":["core.files"]}
-{"file":"core/src/core/locked-contracts.jsx","ownedContractIds":["core.locked-contracts"],"impactedContractIds":["core.proof-report"],"helperCandidateContractIds":["core.locked-contracts"]}
-{"file":"diagnostics.js","impactedContractIds":["core.ssot-flow.rule"]}
 {"file":"packages/core/src/core/check-run.ts","ownedContractIds":["core.check-run"],"impactedContractIds":["core.checker"],"helperCandidateContractIds":["core.check-run"]}
 {"file":"packages/core/src/core/rules/ssot-flow/sinks.tsx","ownedContractIds":["core.ssot-flow.sinks"],"helperCandidateContractIds":["core.ssot-flow.sinks"]}
-{"file":"types.tsx","impactedContractIds":["core.errors"]}

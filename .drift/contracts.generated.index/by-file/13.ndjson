@@ -1,3 +1,0 @@
-{"file":"core/src/core/rules/ssot-flow/sinks.tsx","ownedContractIds":["core.ssot-flow.sinks"],"helperCandidateContractIds":["core.ssot-flow.sinks"]}
-{"file":"eslint-plugin/src/rules/no-locked-contract-change.ts","ownedContractIds":["eslint.no-locked-contract-change-rule"],"helperCandidateContractIds":["eslint.no-locked-contract-change-rule"]}
-{"file":"validator.ts","impactedContractIds":["core.acceptance-file"]}

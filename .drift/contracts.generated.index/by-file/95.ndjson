@@ -1,3 +1,0 @@
-{"file":"../../errors.tsx","impactedContractIds":["core.ssot-flow.diagnostics","core.ssot-usage.rule"]}
-{"file":"core/src/core/proof.jsx","ownedContractIds":["core.proof-report"],"helperCandidateContractIds":["core.proof-report"]}
-{"file":"core/src/core/rules/ssot-flow/sinks.js","ownedContractIds":["core.ssot-flow.sinks"],"helperCandidateContractIds":["core.ssot-flow.sinks"]}

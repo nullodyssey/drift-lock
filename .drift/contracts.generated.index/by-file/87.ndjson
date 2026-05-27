@@ -1,3 +1,1 @@
-{"file":"cli/src/cli.js","ownedContractIds":["cli.command-surface"],"helperCandidateContractIds":["cli.command-surface"]}
-{"file":"env.ts","impactedContractIds":["core.ssot-flow.rule"]}
 {"file":"packages/eslint-plugin/src/utils.jsx","ownedContractIds":["eslint.utils"],"impactedContractIds":["eslint.no-locked-contract-change-rule","eslint.ssot-flow-rule","eslint.ssot-usage-rule","eslint.valid-contract-rule"],"helperCandidateContractIds":["eslint.utils"]}

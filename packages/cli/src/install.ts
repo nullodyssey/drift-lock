@@ -83,7 +83,7 @@ export async function installProject(options: InstallProjectOptions): Promise<In
       if (extracted.errors.length > 0) {
         throw new Error(extracted.errors.map((error) => error.message).join('\n'));
       }
-      await writeIndexStore(root, config.index, toIndex(extracted.contracts));
+      await writeIndexStore(root, config.index, toIndex(extracted.contracts), { sourceDir: source });
       summary.created.push(config.index);
     }
   } else {

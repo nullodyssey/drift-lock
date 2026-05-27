@@ -1,5 +1,2 @@
-{"file":"contract-selection","impactedContractIds":["core.check-run"]}
-{"file":"core/src/core/contract-selection.ts","ownedContractIds":["core.contract-selection"],"impactedContractIds":["core.check-run"],"helperCandidateContractIds":["core.contract-selection"]}
-{"file":"core/src/core/rules/ssot-flow/imports.jsx","ownedContractIds":["core.ssot-flow.imports"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.imports"]}
 {"file":"packages/eslint-plugin/src/index.js","ownedContractIds":["eslint.surface"],"helperCandidateContractIds":["eslint.surface"]}
 {"file":"packages/eslint-plugin/src/rules/ssot-flow.tsx","ownedContractIds":["eslint.ssot-flow-rule"],"helperCandidateContractIds":["eslint.ssot-flow-rule"]}

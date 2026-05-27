@@ -1,4 +1,2 @@
-{"file":"core/src/core/helper-summaries.jsx","ownedContractIds":["core.helper-summaries"],"impactedContractIds":["core.check-run"],"helperCandidateContractIds":["core.helper-summaries"]}
-{"file":"locked-contracts","impactedContractIds":["core.proof-report"]}
 {"file":"packages/core/src/core/errors.js","ownedContractIds":["core.errors"],"impactedContractIds":["core.invariant-checks","core.required-contracts","core.ssot-flow.diagnostics","core.ssot-usage.rule","core.validator"],"helperCandidateContractIds":["core.errors"]}
-{"file":"packages/core/src/core/files","ownedContractIds":["core.files"],"impactedContractIds":["core.git-scope","core.required-contracts"],"helperCandidateContractIds":["core.files"]}
+{"file":"packages/core/src/core/files","ownedContractIds":["core.files"],"impactedContractIds":["core.contract-paths","core.git-scope","core.required-contracts"],"helperCandidateContractIds":["core.files"]}

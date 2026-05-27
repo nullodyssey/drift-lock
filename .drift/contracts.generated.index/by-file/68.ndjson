@@ -1,3 +1,0 @@
-{"file":"../types.ts","impactedContractIds":["core.errors"]}
-{"file":"core/src/core/required-contracts.jsx","ownedContractIds":["core.required-contracts"],"helperCandidateContractIds":["core.required-contracts"]}
-{"file":"files.ts","impactedContractIds":["core.git-scope","core.required-contracts"]}

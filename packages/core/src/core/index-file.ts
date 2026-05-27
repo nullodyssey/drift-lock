@@ -9,9 +9,10 @@ import type {
   DriftContractsIndex,
   DriftExtractedContract,
   DriftIndexedContract,
+  DriftSource,
 } from '../types.js';
+import { fileLookupCandidates, helperImportFileCandidates, moduleFileCandidates } from './contract-paths.js';
 import { normalizePath } from './files.js';
-import { moduleSpecifierCandidates } from './module-specifier.js';
 
 /* @drift
 version: 1
@@ -86,6 +87,10 @@ export type DriftFileContractLookup = {
   missingFiles: string[];
 };
 
+export type DriftIndexWriteOptions = {
+  sourceDir?: DriftSource;
+};
+
 export type DriftIndexStore = {
   format: 'sharded-v1';
   exists(): Promise<boolean>;
@@ -137,11 +142,11 @@ export function toIndex(contracts: DriftExtractedContract[]): DriftContractsInde
   };
 }
 
-export async function writeIndexStore(root: string, output = defaultIndexPath, index: DriftContractsIndex): Promise<void> {
+export async function writeIndexStore(root: string, output = defaultIndexPath, index: DriftContractsIndex, options: DriftIndexWriteOptions = {}): Promise<void> {
   validateIndexObject(index, output);
   const absoluteOutput = path.resolve(root, output);
   const byContract = bucketContracts(index.contracts);
-  const byFile = bucketFiles(buildFileRecords(index.contracts));
+  const byFile = bucketFiles(buildFileRecords(index.contracts, options.sourceDir));
   const manifest = createManifest(index.contracts, byContract, byFile);
 
   await rm(absoluteOutput, { recursive: true, force: true });
@@ -159,11 +164,11 @@ export async function writeIndexStore(root: string, output = defaultIndexPath, i
   await writeFile(path.join(absoluteOutput, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
 }
 
-export function writeIndexStoreSync(root: string, output = defaultIndexPath, index: DriftContractsIndex): void {
+export function writeIndexStoreSync(root: string, output = defaultIndexPath, index: DriftContractsIndex, options: DriftIndexWriteOptions = {}): void {
   validateIndexObject(index, output);
   const absoluteOutput = path.resolve(root, output);
   const byContract = bucketContracts(index.contracts);
-  const byFile = bucketFiles(buildFileRecords(index.contracts));
+  const byFile = bucketFiles(buildFileRecords(index.contracts, options.sourceDir));
   const manifest = createManifest(index.contracts, byContract, byFile);
 
   rmSync(absoluteOutput, { recursive: true, force: true });
@@ -199,13 +204,14 @@ export async function openIndexStore(location: DriftIndexLocation): Promise<Drif
     return new LocalIndexStore(indexPath, absoluteIndexPath, manifest);
   }
 
-  await verifyGitRef(location.root, location.ref);
-  const relativeIndexPath = normalizeGitPath(indexPath);
+  const root = path.resolve(location.root);
+  await verifyGitRef(root, location.ref);
+  const relativeIndexPath = gitIndexPath(root, indexPath);
   const manifestRef = `${location.ref}:${relativeIndexPath}/manifest.json`;
-  if (!(await gitObjectExists(location.root, manifestRef))) return undefined;
-  const manifestText = await readGitBlob(location.root, manifestRef);
+  if (!(await gitObjectExists(root, manifestRef))) return undefined;
+  const manifestText = await readGitBlob(root, manifestRef);
   const manifest = validateManifest(parseJson(manifestText, manifestRef), manifestRef);
-  return new GitIndexStore(path.resolve(location.root), relativeIndexPath, location.ref, manifest);
+  return new GitIndexStore(root, relativeIndexPath, location.ref, manifest);
 }
 
 export function openSyncLocalIndexStore(root: string, indexPath = defaultIndexPath): SyncLocalIndexStore | undefined {
@@ -231,11 +237,17 @@ export function readIndexContractsForFileSync(
   }
 }
 
-export function readIndexHelperContractsForFileSync(root: string, indexPath: string, file: string, source: string): DriftIndexedContract[] {
+export function readIndexHelperContractsForFileSync(
+  root: string,
+  indexPath: string,
+  file: string,
+  source: string,
+  sourceDir?: DriftSource,
+): DriftIndexedContract[] {
   try {
     const store = openSyncLocalIndexStore(root, indexPath);
     if (!store) return [];
-    const helperFiles = helperImportFileCandidates(file, source);
+    const helperFiles = helperImportFileCandidates(file, source, sourceDir);
     const lookup = store.getContractIdsForFiles(helperFiles, { includeHelperCandidates: true });
     return store.getContractsByIds(lookup.helperCandidateContractIds);
   } catch {
@@ -520,7 +532,7 @@ function createManifest(
   };
 }
 
-function buildFileRecords(contracts: DriftIndexedContract[]): FileBucketRecord[] {
+function buildFileRecords(contracts: DriftIndexedContract[], sourceDir?: DriftSource): FileBucketRecord[] {
   const byFile = new Map<string, Required<FileBucketRecord>>();
 
   for (const contract of contracts) {
@@ -528,7 +540,7 @@ function buildFileRecords(contracts: DriftIndexedContract[]): FileBucketRecord[]
     addFileRecordId(byFile, contract.file, 'helperCandidateContractIds', contract.id);
 
     for (const ssotPath of Object.values(contract.ssot ?? {})) {
-      for (const candidate of ssotFileCandidates(contract.file, ssotPath)) {
+      for (const candidate of moduleFileCandidates(ssotPath, { currentFile: contract.file, sourceDir })) {
         addFileRecordId(byFile, candidate, 'impactedContractIds', contract.id);
       }
     }
@@ -732,67 +744,6 @@ function normalizeLookupFiles(files: string[]): Set<string> {
   return values;
 }
 
-function fileLookupCandidates(file: string): string[] {
-  const normalized = normalizePath(file).replace(/^\.\//, '');
-  const candidates = new Set<string>();
-  addFileCandidates(candidates, normalized);
-  const [, ...withoutFirstSegment] = normalized.split('/');
-  if (withoutFirstSegment.length > 0) addFileCandidates(candidates, withoutFirstSegment.join('/'));
-  return [...candidates].filter((candidate) => candidate.length > 0);
-}
-
-function ssotFileCandidates(contractFile: string, ssotPath: string): string[] {
-  const candidates = new Set<string>();
-  for (const modulePath of moduleSpecifierCandidates(ssotPath)) {
-    const normalized = normalizePath(modulePath);
-    if (normalized.startsWith('.')) {
-      addFileCandidates(candidates, normalizePath(path.posix.join(path.posix.dirname(contractFile), normalized)));
-    }
-    addFileCandidates(candidates, normalized);
-    addFileCandidates(candidates, stripModulePrefix(normalized));
-  }
-  return [...candidates].filter((candidate) => candidate.length > 0);
-}
-
-function helperImportFileCandidates(currentFile: string, source: string): string[] {
-  const candidates = new Set<string>();
-  for (const moduleSpecifier of importModuleSpecifiers(source)) {
-    if (moduleSpecifier.startsWith('.')) {
-      addFileCandidates(candidates, normalizePath(path.posix.join(path.posix.dirname(currentFile), moduleSpecifier)));
-    } else {
-      addFileCandidates(candidates, normalizePath(moduleSpecifier));
-      addFileCandidates(candidates, stripModulePrefix(normalizePath(moduleSpecifier)));
-    }
-  }
-  return [...candidates].filter((candidate) => candidate.length > 0);
-}
-
-function importModuleSpecifiers(source: string): string[] {
-  const modules = new Set<string>();
-  const pattern = /\bimport\s+(?:type\s+)?(?:[^'"]+?\s+from\s+)?['"]([^'"]+)['"]/g;
-  let match: RegExpExecArray | null;
-  while ((match = pattern.exec(source)) !== null) {
-    if (match[1]) modules.add(match[1]);
-  }
-  return [...modules];
-}
-
-function addFileCandidates(candidates: Set<string>, value: string): void {
-  const normalized = normalizePath(value).replace(/^\.\//, '');
-  if (!normalized) return;
-  candidates.add(normalized);
-  const extensionless = normalized.replace(/\.(tsx|ts|jsx|js)$/, '');
-  candidates.add(extensionless);
-  candidates.add(`${extensionless}.ts`);
-  candidates.add(`${extensionless}.tsx`);
-  candidates.add(`${extensionless}.js`);
-  candidates.add(`${extensionless}.jsx`);
-}
-
-function stripModulePrefix(value: string): string {
-  return value.replace(/^(@\/|~\/|\.\/|\/)/, '');
-}
-
 async function verifyGitRef(root: string, ref: string): Promise<void> {
   try {
     await execFileAsync('git', ['rev-parse', '--verify', `${ref}^{commit}`], { cwd: root });
@@ -830,6 +781,15 @@ async function readGitBlob(root: string, objectRef: string): Promise<string> {
 
 function normalizeGitPath(file: string): string {
   return normalizePath(file).replace(/^\.\//, '');
+}
+
+function gitIndexPath(root: string, indexPath: string): string {
+  const absoluteIndexPath = path.isAbsolute(indexPath) ? indexPath : path.resolve(root, indexPath);
+  const relativeIndexPath = path.relative(root, absoluteIndexPath);
+  if (!relativeIndexPath || relativeIndexPath.startsWith('..') || path.isAbsolute(relativeIndexPath)) {
+    throw new Error(`Git index path "${indexPath}" must be inside repository root "${root}".`);
+  }
+  return normalizeGitPath(relativeIndexPath);
 }
 
 function parseJson(value: string, file: string): unknown {

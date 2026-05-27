@@ -1,2 +1,1 @@
 {"file":"packages/core/src/core/ssot-flow.jsx","ownedContractIds":["core.ssot-flow"],"helperCandidateContractIds":["core.ssot-flow"]}
-{"file":"utils.jsx","impactedContractIds":["eslint.no-locked-contract-change-rule","eslint.ssot-flow-rule","eslint.ssot-usage-rule","eslint.valid-contract-rule"]}

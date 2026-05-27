@@ -1,2 +1,1 @@
-{"file":"core/src/core/context","ownedContractIds":["core.context-renderer"],"helperCandidateContractIds":["core.context-renderer"]}
 {"file":"packages/eslint-plugin/src/rules/valid-contract.jsx","ownedContractIds":["eslint.valid-contract-rule"],"helperCandidateContractIds":["eslint.valid-contract-rule"]}

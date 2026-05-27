@@ -100,7 +100,7 @@ program
     const out = options.out ?? config.index;
     const result = await extractContracts({ root, sourceDir: source });
     if (result.errors.length > 0) fail(result.errors);
-    await writeIndexStore(root, out, toIndex(result.contracts));
+    await writeIndexStore(root, out, toIndex(result.contracts), { sourceDir: source });
     console.log(`Extracted ${result.contracts.length} @drift contract(s) to ${out}.`);
   });
 

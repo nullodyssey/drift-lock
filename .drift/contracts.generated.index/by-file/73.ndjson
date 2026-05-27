@@ -1,3 +1,0 @@
-{"file":"core/src/core/contract-diff.tsx","ownedContractIds":["core.contract-diff"],"impactedContractIds":["core.contract-selection","core.proof-report"],"helperCandidateContractIds":["core.contract-diff"]}
-{"file":"core/src/core/errors.ts","ownedContractIds":["core.errors"],"impactedContractIds":["core.invariant-checks","core.required-contracts","core.ssot-flow.diagnostics","core.ssot-usage.rule","core.validator"],"helperCandidateContractIds":["core.errors"]}
-{"file":"imports.tsx","impactedContractIds":["core.ssot-flow.rule"]}

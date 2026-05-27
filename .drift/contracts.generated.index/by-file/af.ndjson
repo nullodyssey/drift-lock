@@ -1,2 +1,1 @@
-{"file":"diagnostics.ts","impactedContractIds":["core.ssot-flow.rule"]}
 {"file":"packages/core/src/core/contract-diff","ownedContractIds":["core.contract-diff"],"impactedContractIds":["core.contract-selection","core.proof-report"],"helperCandidateContractIds":["core.contract-diff"]}

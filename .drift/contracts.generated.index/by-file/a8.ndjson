@@ -1,3 +1,1 @@
-{"file":"core/src/core/locked-contracts.tsx","ownedContractIds":["core.locked-contracts"],"impactedContractIds":["core.proof-report"],"helperCandidateContractIds":["core.locked-contracts"]}
-{"file":"core/src/core/rules/ssot-flow/types.tsx","ownedContractIds":["core.ssot-flow.types"],"helperCandidateContractIds":["core.ssot-flow.types"]}
 {"file":"packages/cli/src/skills.js","ownedContractIds":["cli.skills"],"helperCandidateContractIds":["cli.skills"]}

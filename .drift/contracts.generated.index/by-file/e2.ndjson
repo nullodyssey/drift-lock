@@ -1,3 +1,1 @@
-{"file":"contract-diff.ts","impactedContractIds":["core.contract-selection","core.proof-report"]}
-{"file":"eslint-plugin/src/rules/ssot-usage.tsx","ownedContractIds":["eslint.ssot-usage-rule"],"helperCandidateContractIds":["eslint.ssot-usage-rule"]}
 {"file":"packages/eslint-plugin/src/rules/ssot-usage.jsx","ownedContractIds":["eslint.ssot-usage-rule"],"helperCandidateContractIds":["eslint.ssot-usage-rule"]}

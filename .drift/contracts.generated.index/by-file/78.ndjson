@@ -1,3 +1,2 @@
-{"file":"core/src/core/checker.js","ownedContractIds":["core.checker"],"impactedContractIds":["core.explain","core.proof-report"],"helperCandidateContractIds":["core.checker"]}
 {"file":"packages/core/src/core/explain.js","ownedContractIds":["core.explain"],"helperCandidateContractIds":["core.explain"]}
 {"file":"packages/eslint-plugin/src/utils","ownedContractIds":["eslint.utils"],"impactedContractIds":["eslint.no-locked-contract-change-rule","eslint.ssot-flow-rule","eslint.ssot-usage-rule","eslint.valid-contract-rule"],"helperCandidateContractIds":["eslint.utils"]}

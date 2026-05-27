@@ -97,6 +97,7 @@ export async function prepareCheckRun(options: CheckOptions): Promise<CheckRunCo
     indexStore,
     toIndex(extracted.contracts).contracts,
     gitScope ? contractsToCheck.map((contract) => contract.file) : undefined,
+    options.sourceDir,
   );
   const sourceCache = new SourceCache(root);
 

@@ -1,2 +1,1 @@
-{"file":"index-file.tsx","impactedContractIds":["core.check-run","core.config","core.config.default-index-flow","core.contract-diff","core.contract-selection"]}
 {"file":"packages/core/src/core/rules/ssot-flow/index.jsx","ownedContractIds":["core.ssot-flow.rule"],"impactedContractIds":["core.invariant-checks","core.ssot-flow"],"helperCandidateContractIds":["core.ssot-flow.rule"]}

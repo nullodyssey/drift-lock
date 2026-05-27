@@ -1,2 +1,0 @@
-{"file":"../errors.jsx","impactedContractIds":["core.ssot-flow.diagnostics","core.ssot-usage.rule"]}
-{"file":"core/src/core/validator.tsx","ownedContractIds":["core.validator"],"impactedContractIds":["core.acceptance-file"],"helperCandidateContractIds":["core.validator"]}

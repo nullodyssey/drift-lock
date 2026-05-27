@@ -1,5 +1,2 @@
-{"file":"core/src/core/hash.tsx","ownedContractIds":["core.hash"],"helperCandidateContractIds":["core.hash"]}
-{"file":"core/src/core/required-contracts.tsx","ownedContractIds":["core.required-contracts"],"helperCandidateContractIds":["core.required-contracts"]}
-{"file":"eslint-plugin/src/utils.ts","ownedContractIds":["eslint.utils"],"impactedContractIds":["eslint.no-locked-contract-change-rule","eslint.ssot-flow-rule","eslint.ssot-usage-rule","eslint.valid-contract-rule"],"helperCandidateContractIds":["eslint.utils"]}
 {"file":"packages/core/src/core/git-scope.tsx","ownedContractIds":["core.git-scope"],"impactedContractIds":["core.contract-selection","core.proof-report"],"helperCandidateContractIds":["core.git-scope"]}
 {"file":"packages/core/src/core/required-contracts.jsx","ownedContractIds":["core.required-contracts"],"helperCandidateContractIds":["core.required-contracts"]}

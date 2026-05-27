@@ -1,5 +1,2 @@
-{"file":"core/src/core/check-run.jsx","ownedContractIds":["core.check-run"],"impactedContractIds":["core.checker"],"helperCandidateContractIds":["core.check-run"]}
 {"file":"packages/core/src/core/context.tsx","ownedContractIds":["core.context-renderer"],"helperCandidateContractIds":["core.context-renderer"]}
 {"file":"packages/core/src/core/invariant-checks.ts","ownedContractIds":["core.invariant-checks"],"helperCandidateContractIds":["core.invariant-checks"]}
-{"file":"source-cache","impactedContractIds":["core.check-run","core.invariant-checks"]}
-{"file":"validator","impactedContractIds":["core.acceptance-file"]}

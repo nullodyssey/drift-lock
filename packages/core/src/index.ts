@@ -36,6 +36,7 @@ export {
   type DriftIndexLocation,
   type DriftIndexStats,
   type DriftIndexStore,
+  type DriftIndexWriteOptions,
 } from './core/index-file.js';
 export { getProofReport, formatProofReportJson, formatProofReportMarkdown, type ProofReportOptions } from './core/proof.js';
 export type {

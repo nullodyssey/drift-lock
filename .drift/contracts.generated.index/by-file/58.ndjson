@@ -1,3 +1,1 @@
-{"file":"check-run.js","impactedContractIds":["core.checker"]}
 {"file":"packages/core/src/core/acceptance-file.js","ownedContractIds":["core.acceptance-file"],"helperCandidateContractIds":["core.acceptance-file"]}
-{"file":"ssot-usage/index.jsx","impactedContractIds":["core.invariant-checks"]}

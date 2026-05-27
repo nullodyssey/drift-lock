@@ -1,4 +1,1 @@
-{"file":"core/src/core/coverage","ownedContractIds":["core.coverage"],"impactedContractIds":["core.proof-report","core.required-contracts"],"helperCandidateContractIds":["core.coverage"]}
-{"file":"core/src/core/explain.js","ownedContractIds":["core.explain"],"helperCandidateContractIds":["core.explain"]}
-{"file":"core/src/core/invariant-checks","ownedContractIds":["core.invariant-checks"],"helperCandidateContractIds":["core.invariant-checks"]}
 {"file":"packages/core/src/core/rules/ssot-flow/control","ownedContractIds":["core.ssot-flow.control"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.control"]}

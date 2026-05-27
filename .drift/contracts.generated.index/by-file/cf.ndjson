@@ -1,4 +1,0 @@
-{"file":"core/src/core/acceptance-file.tsx","ownedContractIds":["core.acceptance-file"],"helperCandidateContractIds":["core.acceptance-file"]}
-{"file":"core/src/core/required-contracts.ts","ownedContractIds":["core.required-contracts"],"helperCandidateContractIds":["core.required-contracts"]}
-{"file":"core/src/index.ts","ownedContractIds":["core.public-api"],"helperCandidateContractIds":["core.public-api"]}
-{"file":"types.js","impactedContractIds":["core.errors"]}

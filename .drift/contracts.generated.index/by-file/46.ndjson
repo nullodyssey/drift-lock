@@ -1,8 +1,1 @@
-{"file":"../../module-specifier.js","impactedContractIds":["core.ssot-flow.imports","core.ssot-usage.rule"]}
-{"file":"core.tsx","impactedContractIds":["eslint.no-locked-contract-change-rule","eslint.ssot-flow-rule","eslint.ssot-usage-rule","eslint.utils","eslint.valid-contract-rule"]}
-{"file":"core/src/core/hash","ownedContractIds":["core.hash"],"helperCandidateContractIds":["core.hash"]}
-{"file":"core/src/core/hash.ts","ownedContractIds":["core.hash"],"helperCandidateContractIds":["core.hash"]}
-{"file":"core/src/core/rules/ssot-flow/sinks.jsx","ownedContractIds":["core.ssot-flow.sinks"],"helperCandidateContractIds":["core.ssot-flow.sinks"]}
-{"file":"core/src/types.jsx","ownedContractIds":["core.types"],"impactedContractIds":["core.errors"],"helperCandidateContractIds":["core.types"]}
-{"file":"module-specifier","impactedContractIds":["core.git-scope"]}
 {"file":"packages/core/src/core/disable-directives.jsx","ownedContractIds":["core.disable-directives"],"impactedContractIds":["core.coverage"],"helperCandidateContractIds":["core.disable-directives"]}

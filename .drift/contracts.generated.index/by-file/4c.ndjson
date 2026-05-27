@@ -1,3 +1,1 @@
-{"file":"cli/src/install.ts","ownedContractIds":["cli.install-project"],"helperCandidateContractIds":["cli.install-project"]}
-{"file":"core/src/core/disable-directives.ts","ownedContractIds":["core.disable-directives"],"impactedContractIds":["core.coverage"],"helperCandidateContractIds":["core.disable-directives"]}
 {"file":"packages/core/src/types.ts","ownedContractIds":["core.types"],"impactedContractIds":["core.errors"],"helperCandidateContractIds":["core.types"]}

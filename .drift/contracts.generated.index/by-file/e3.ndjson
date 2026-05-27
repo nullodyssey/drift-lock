@@ -1,2 +1,0 @@
-{"file":"core/src/core/module-specifier.tsx","ownedContractIds":["core.module-specifier"],"impactedContractIds":["core.git-scope","core.ssot-flow.imports","core.ssot-usage.rule"],"helperCandidateContractIds":["core.module-specifier"]}
-{"file":"source-cache.jsx","impactedContractIds":["core.check-run","core.invariant-checks"]}

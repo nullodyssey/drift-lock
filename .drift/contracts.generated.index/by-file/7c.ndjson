@@ -1,4 +1,3 @@
-{"file":"core/src/core/rules/ssot-flow/index.ts","ownedContractIds":["core.ssot-flow.rule"],"impactedContractIds":["core.invariant-checks","core.ssot-flow"],"helperCandidateContractIds":["core.ssot-flow.rule"]}
 {"file":"packages/core/src/core/config.ts","ownedContractIds":["core.config","core.config.default-index-flow"],"helperCandidateContractIds":["core.config","core.config.default-index-flow"]}
 {"file":"packages/core/src/core/config.tsx","ownedContractIds":["core.config","core.config.default-index-flow"],"helperCandidateContractIds":["core.config","core.config.default-index-flow"]}
 {"file":"packages/core/src/core/required-contracts","ownedContractIds":["core.required-contracts"],"helperCandidateContractIds":["core.required-contracts"]}

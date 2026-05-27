@@ -1,3 +1,2 @@
-{"file":"core/src/types.tsx","ownedContractIds":["core.types"],"impactedContractIds":["core.errors"],"helperCandidateContractIds":["core.types"]}
 {"file":"packages/core/src/core/errors.ts","ownedContractIds":["core.errors"],"impactedContractIds":["core.invariant-checks","core.required-contracts","core.ssot-flow.diagnostics","core.ssot-usage.rule","core.validator"],"helperCandidateContractIds":["core.errors"]}
 {"file":"packages/core/src/core/validator.jsx","ownedContractIds":["core.validator"],"impactedContractIds":["core.acceptance-file"],"helperCandidateContractIds":["core.validator"]}

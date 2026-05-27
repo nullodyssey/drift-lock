@@ -1,3 +1,1 @@
-{"file":"core/src/core/rules/ssot-flow/control","ownedContractIds":["core.ssot-flow.control"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.control"]}
-{"file":"index-file.jsx","impactedContractIds":["core.check-run","core.config","core.config.default-index-flow","core.contract-diff","core.contract-selection"]}
 {"file":"packages/core/src/core/rules/ssot-usage/index.ts","ownedContractIds":["core.ssot-usage.rule"],"impactedContractIds":["core.invariant-checks"],"helperCandidateContractIds":["core.ssot-usage.rule"]}

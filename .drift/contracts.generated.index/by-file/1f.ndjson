@@ -1,4 +1,0 @@
-{"file":"checker.ts","impactedContractIds":["core.explain","core.proof-report"]}
-{"file":"core/src/core/config","ownedContractIds":["core.config","core.config.default-index-flow"],"helperCandidateContractIds":["core.config","core.config.default-index-flow"]}
-{"file":"eslint-plugin/src/rules/ssot-flow.ts","ownedContractIds":["eslint.ssot-flow-rule"],"helperCandidateContractIds":["eslint.ssot-flow-rule"]}
-{"file":"files.jsx","impactedContractIds":["core.git-scope","core.required-contracts"]}

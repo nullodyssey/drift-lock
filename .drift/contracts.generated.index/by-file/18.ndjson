@@ -1,2 +1,0 @@
-{"file":"@drift-lock/core.js","impactedContractIds":["eslint.no-locked-contract-change-rule","eslint.ssot-flow-rule","eslint.ssot-usage-rule","eslint.utils","eslint.valid-contract-rule"]}
-{"file":"core/src/core/git-scope.jsx","ownedContractIds":["core.git-scope"],"impactedContractIds":["core.contract-selection","core.proof-report"],"helperCandidateContractIds":["core.git-scope"]}
