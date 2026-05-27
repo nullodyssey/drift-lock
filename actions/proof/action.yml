@@ -35,7 +35,7 @@ inputs:
   drift-command-args:
     description: Arguments placed before the proof subcommand.
     required: false
-    default: --yes @drift-lock/cli
+    default: --yes @drift-lock/cli@latest
   fail-on-unresolved:
     description: Fail when the proof report contains unresolved contract drift.
     required: false

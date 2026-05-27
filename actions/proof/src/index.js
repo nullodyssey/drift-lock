@@ -5,6 +5,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 export const COMMENT_MARKER = '<!-- drift-lock-proof-report -->';
+export const COMMENT_LIST_UNAVAILABLE = Symbol('comment-list-unavailable');
 
 const COMMENT_MAX_LENGTH = 60000;
 
@@ -37,10 +38,11 @@ export async function runAction(options = {}) {
   const outputDir = path.resolve(root, inputs.outputDir);
   const jsonPath = path.join(outputDir, 'proof-report.json');
   const markdownPath = path.join(outputDir, 'proof-report.md');
+  const proofEnv = sanitizeProofEnv(env, inputs.githubToken);
 
-  const jsonOutput = await runProofCommand(runCommand, command.tool, jsonArgs, root, env);
+  const jsonOutput = await runProofCommand(runCommand, command.tool, jsonArgs, root, proofEnv);
   const report = parseProofJson(jsonOutput);
-  const markdownOutput = await runProofCommand(runCommand, command.tool, markdownArgs, root, env);
+  const markdownOutput = await runProofCommand(runCommand, command.tool, markdownArgs, root, proofEnv);
 
   await fileSystem.mkdir(outputDir, { recursive: true });
   await fileSystem.writeFile(jsonPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
@@ -85,7 +87,7 @@ export function readInputs(env) {
     comment: booleanInput(getInput(env, 'comment', 'false'), 'comment'),
     githubToken: getInput(env, 'github-token'),
     driftCommand: getInput(env, 'drift-command', 'npx'),
-    driftCommandArgs: getInput(env, 'drift-command-args', '--yes @drift-lock/cli'),
+    driftCommandArgs: getInput(env, 'drift-command-args', '--yes @drift-lock/cli@latest'),
     failOnUnresolved: booleanInput(getInput(env, 'fail-on-unresolved', 'false'), 'fail-on-unresolved'),
     failOnViolations: booleanInput(getInput(env, 'fail-on-violations', 'false'), 'fail-on-violations'),
   };
@@ -198,6 +200,23 @@ export function buildProofArgs(inputs) {
   return args;
 }
 
+export function sanitizeProofEnv(env, githubToken) {
+  const token = String(githubToken ?? '').trim();
+  const sanitized = { ...env };
+
+  for (const [key, value] of Object.entries(sanitized)) {
+    if (isGitHubTokenEnvKey(key) || (token && String(value).trim() === token)) {
+      delete sanitized[key];
+    }
+  }
+
+  return sanitized;
+}
+
+export function isGitHubTokenEnvKey(key) {
+  return ['INPUT_GITHUB_TOKEN', 'INPUT_GITHUB-TOKEN', 'GITHUB_TOKEN', 'GH_TOKEN'].includes(key);
+}
+
 export async function runProofCommand(runCommand, tool, args, cwd, env) {
   try {
     return await runCommand(tool, args, { cwd, env });
@@ -307,18 +326,9 @@ export async function createOrUpdatePrComment({ env, context, token, markdown, f
     'x-github-api-version': '2022-11-28',
   };
   const body = buildCommentBody(markdown);
-  const listResponse = await fetchImpl(`${commentsUrl}?per_page=100`, { headers });
+  const existing = await findExistingProofComment({ commentsUrl, headers, fetchImpl, warn });
+  if (existing === COMMENT_LIST_UNAVAILABLE) return;
 
-  if (listResponse.status === 403 || listResponse.status === 404) {
-    warn(`Unable to list pull request comments (${listResponse.status}). The proof report is still available in the job summary.`);
-    return;
-  }
-  if (!listResponse.ok) {
-    throw new ActionError(`Unable to list pull request comments: HTTP ${listResponse.status}`);
-  }
-
-  const comments = await listResponse.json();
-  const existing = Array.isArray(comments) ? comments.find((comment) => comment.body?.includes(COMMENT_MARKER)) : undefined;
   const response = existing
     ? await fetchImpl(existing.url, { method: 'PATCH', headers, body: JSON.stringify({ body }) })
     : await fetchImpl(commentsUrl, { method: 'POST', headers, body: JSON.stringify({ body }) });
@@ -329,6 +339,32 @@ export async function createOrUpdatePrComment({ env, context, token, markdown, f
   }
   if (!response.ok) {
     throw new ActionError(`Unable to write pull request comment: HTTP ${response.status}`);
+  }
+}
+
+export async function findExistingProofComment({ commentsUrl, headers, fetchImpl, warn }) {
+  let page = 1;
+
+  while (true) {
+    const listResponse = await fetchImpl(`${commentsUrl}?per_page=100&page=${page}`, { headers });
+
+    if (listResponse.status === 403 || listResponse.status === 404) {
+      warn(`Unable to list pull request comments (${listResponse.status}). The proof report is still available in the job summary.`);
+      return COMMENT_LIST_UNAVAILABLE;
+    }
+    if (!listResponse.ok) {
+      throw new ActionError(`Unable to list pull request comments: HTTP ${listResponse.status}`);
+    }
+
+    const comments = await listResponse.json();
+    if (!Array.isArray(comments)) {
+      throw new ActionError('Unable to list pull request comments: expected an array response.');
+    }
+
+    const existing = comments.find((comment) => comment.body?.includes(COMMENT_MARKER));
+    if (existing) return existing;
+    if (comments.length < 100) return undefined;
+    page += 1;
   }
 }
 

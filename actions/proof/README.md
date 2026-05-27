@@ -63,7 +63,7 @@ the pull request base commit.
 | `comment` | `false` | Create or update a pull request comment. |
 | `github-token` | `${{ github.token }}` | Token used when `comment` is enabled. |
 | `drift-command` | `npx` | Command used to run DriftLock. |
-| `drift-command-args` | `--yes @drift-lock/cli` | Arguments placed before the `proof` subcommand. |
+| `drift-command-args` | `--yes @drift-lock/cli@latest` | Arguments placed before the `proof` subcommand. |
 | `fail-on-unresolved` | `false` | Fail when unresolved contract drift remains. |
 | `fail-on-violations` | `false` | Fail when current DriftLock violations remain. |
 
