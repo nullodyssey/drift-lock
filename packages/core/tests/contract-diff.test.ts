@@ -1,7 +1,7 @@
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { checkContracts, diffContracts, extractContracts, formatContractDiffSummary, toIndex, writeIndex } from '@drift-lock/core';
+import { checkContracts, diffContracts, extractContracts, formatContractDiffSummary, toIndex, writeIndexStore } from '@drift-lock/core';
 import { createProject } from './helpers/core-test-utils.js';
 import { reorderActionInvariantBlocks, validActionsSource } from './helpers/contract-fixtures.js';
 import { validFlowSource } from './helpers/flow-fixtures.js';
@@ -13,7 +13,7 @@ describe('drift contract diffs', () => {
       'src/removed.ts': validActionsSource('billing.removed'),
     });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
     await writeFile(
       path.join(root, 'src/changed.ts'),
       validActionsSource('billing.changed')
@@ -42,7 +42,7 @@ describe('drift contract diffs', () => {
       'src/actions.ts': validFlowSource('billing.changed'),
     });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
     await writeFile(
       path.join(root, 'src/actions.ts'),
       validFlowSource('billing.changed')
@@ -102,7 +102,7 @@ describe('drift contract diffs', () => {
       'src/actions.ts': validActionsSource('billing.changed'),
     });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
     await writeFile(
       path.join(root, 'src/actions.ts'),
       validActionsSource('billing.changed')
@@ -136,7 +136,7 @@ describe('drift contract diffs', () => {
       'src/actions.ts': validFlowSource('billing.changed'),
     });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
     await writeFile(
       path.join(root, 'src/actions.ts'),
       validFlowSource('billing.changed').replace(`      - return.priceId
@@ -165,7 +165,7 @@ describe('drift contract diffs', () => {
       'src/actions.ts': baselineSource,
     });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
     await writeFile(path.join(root, 'src/actions.ts'), reorderedSource, 'utf8');
 
     const result = await diffContracts({ root });
@@ -191,7 +191,7 @@ describe('drift contract diffs', () => {
   it('does not report semantic no-op diffs when ssot keys are reordered', async () => {
     const root = await createProject({ 'src/actions.ts': validActionsSource() });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
     await writeFile(
       path.join(root, 'src/actions.ts'),
       validActionsSource().replace(
@@ -217,7 +217,7 @@ describe('drift contract diffs', () => {
     const root = await createProject({ 'src/actions.ts': validFlowSource() });
     const extracted = await extractContracts({ root });
     const index = toIndex(extracted.contracts);
-    await writeIndex(root, undefined, {
+    await writeIndexStore(root, undefined, {
       ...index,
       contracts: index.contracts.map((contract) => {
         const legacy = { ...contract } as Record<string, unknown>;

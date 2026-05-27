@@ -1,0 +1,4 @@
+{"file":"cli/src/skills.jsx","ownedContractIds":["cli.skills"],"helperCandidateContractIds":["cli.skills"]}
+{"file":"packages/core/src/core/disable-directives","ownedContractIds":["core.disable-directives"],"impactedContractIds":["core.coverage"],"helperCandidateContractIds":["core.disable-directives"]}
+{"file":"rules/ssot-flow/index.ts","impactedContractIds":["core.invariant-checks","core.ssot-flow"]}
+{"file":"ssot-flow/index.ts","impactedContractIds":["core.invariant-checks","core.ssot-flow"]}

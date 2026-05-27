@@ -1,0 +1,4 @@
+{"file":"cli/src/cli.jsx","ownedContractIds":["cli.command-surface"],"helperCandidateContractIds":["cli.command-surface"]}
+{"file":"core/src/core/rules/ssot-flow/env","ownedContractIds":["core.ssot-flow.env"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.env"]}
+{"file":"env.jsx","impactedContractIds":["core.ssot-flow.rule"]}
+{"file":"helper-summaries.tsx","impactedContractIds":["core.check-run"]}

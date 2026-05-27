@@ -1,0 +1,3 @@
+{"file":"core/src/core/proof.tsx","ownedContractIds":["core.proof-report"],"helperCandidateContractIds":["core.proof-report"]}
+{"file":"core/src/core/required-contracts.js","ownedContractIds":["core.required-contracts"],"helperCandidateContractIds":["core.required-contracts"]}
+{"file":"core/src/core/rules/ssot-flow/control.tsx","ownedContractIds":["core.ssot-flow.control"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.control"]}

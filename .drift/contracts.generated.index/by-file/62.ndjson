@@ -1,0 +1,2 @@
+{"file":"packages/core/src/core/ssot-flow.ts","ownedContractIds":["core.ssot-flow"],"helperCandidateContractIds":["core.ssot-flow"]}
+{"file":"packages/eslint-plugin/src/rules/valid-contract.tsx","ownedContractIds":["eslint.valid-contract-rule"],"helperCandidateContractIds":["eslint.valid-contract-rule"]}

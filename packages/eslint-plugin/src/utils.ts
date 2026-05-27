@@ -24,7 +24,7 @@ llm:
   must_not_change:
     - Rules must normalize filenames relative to the configured root.
     - ESLint reporting must preserve Drift diagnostic messages and locations.
-    - Missing config must keep the default generated index path.
+    - Missing config must keep the default generated index store path.
 */
 export type RuleOptions = {
   root?: string;
@@ -64,5 +64,5 @@ function readConfigSync(root: string): { index: string } {
   } catch {
     // ESLint rules should keep the historical default when config is absent.
   }
-  return { index: '.drift/contracts.generated.json' };
+  return { index: '.drift/contracts.generated.index' };
 }

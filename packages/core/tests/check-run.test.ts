@@ -1,7 +1,7 @@
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { extractContracts, toIndex, writeIndex } from '@drift-lock/core';
+import { extractContracts, toIndex, writeIndexStore } from '@drift-lock/core';
 import { prepareCheckRun } from '../src/core/check-run.js';
 import { createGitBaseline, createProject } from './helpers/core-test-utils.js';
 import { schemaOnlySource, validActionsSource } from './helpers/contract-fixtures.js';
@@ -13,7 +13,7 @@ describe('drift check run preparation', () => {
       'src/b.ts': validActionsSource('billing.b'),
     });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
 
     const run = await prepareCheckRun({ root, files: ['src/a.ts'] });
 
@@ -28,7 +28,7 @@ describe('drift check run preparation', () => {
       'src/b.ts': validActionsSource('billing.b'),
     });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
     await writeFile(
       path.join(root, 'src/a.ts'),
       validActionsSource('billing.a').replace('the Pro subscription.', 'the Team subscription.'),
@@ -40,17 +40,20 @@ describe('drift check run preparation', () => {
     expect(run.contractsToCheck.map((contract) => contract.id)).toEqual(['billing.a']);
   });
 
-  it('keeps helper contracts from the full index during Git-scoped runs', async () => {
+  it('keeps imported helper contracts during Git-scoped runs', async () => {
+    const helperBackedActionsSource = validActionsSource('billing.actions')
+      .replace("import { billingSchema } from '@/features/billing/billing.schema';", "import { validateCheckoutInput } from './helper';")
+      .replace('const payload = billingSchema.parse(input);', 'const payload = validateCheckoutInput(input);');
     const root = await createProject({
-      'src/actions.ts': validActionsSource('billing.actions'),
+      'src/actions.ts': helperBackedActionsSource,
       'src/helper.ts': schemaOnlySource('billing.helper'),
     });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
     await createGitBaseline(root);
     await writeFile(
       path.join(root, 'src/actions.ts'),
-      validActionsSource('billing.actions').replace('the Pro subscription.', 'the Team subscription.'),
+      helperBackedActionsSource.replace('the Pro subscription.', 'the Team subscription.'),
       'utf8',
     );
 
@@ -58,6 +61,6 @@ describe('drift check run preparation', () => {
 
     expect(run.scopedIndex?.contracts.map((contract) => contract.id)).toEqual(['billing.actions']);
     expect(run.contractsToCheck.map((contract) => contract.id)).toEqual(['billing.actions']);
-    expect(run.helperContracts.map((contract) => contract.id)).toEqual(['billing.actions', 'billing.helper']);
+    expect(run.helperContracts.map((contract) => contract.id).sort()).toEqual(['billing.actions', 'billing.helper']);
   });
 });

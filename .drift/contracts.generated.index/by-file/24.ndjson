@@ -1,0 +1,3 @@
+{"file":"check-run.jsx","impactedContractIds":["core.checker"]}
+{"file":"core/src/core/coverage.jsx","ownedContractIds":["core.coverage"],"impactedContractIds":["core.proof-report","core.required-contracts"],"helperCandidateContractIds":["core.coverage"]}
+{"file":"core/src/core/rules/ssot-flow/imports.js","ownedContractIds":["core.ssot-flow.imports"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.imports"]}

@@ -55,7 +55,7 @@ yarn dlx -p @drift-lock/cli@latest drift-lock install
 ```
 
 The installer detects your package manager, creates `.drift/config.json`,
-generates `.drift/contracts.generated.json`, adds DriftLock scripts, installs
+generates the `.drift/contracts.generated.index` store, adds DriftLock scripts, installs
 `@drift-lock/cli` and `@drift-lock/eslint-plugin` as dev dependencies, and can
 configure ESLint, GitHub Actions, and agent skills.
 
@@ -177,7 +177,7 @@ Then extract the committed baseline:
 drift-lock extract
 ```
 
-Commit `.drift/contracts.generated.json` so locked contract changes can be
+Commit the `.drift/contracts.generated.index` directory so locked contract changes can be
 detected in CI.
 
 ## Commands
@@ -215,8 +215,8 @@ invariants.
 change. It is the best starting point before asking an agent to implement a
 feature.
 
-`extract` scans the source directory and writes `.drift/contracts.generated.json`.
-Commit this file so locked contract changes can be detected later.
+`extract` scans the source directory and writes the `.drift/contracts.generated.index` store.
+Commit this directory so locked contract changes can be detected later.
 
 `check` validates contract syntax, locked baselines, required-contract coverage,
 and supported invariants. Run it locally and in CI.
@@ -287,7 +287,7 @@ DriftLock reads `.drift/config.json`:
 {
   "version": 1,
   "source": "src",
-  "index": ".drift/contracts.generated.json",
+  "index": ".drift/contracts.generated.index",
   "requireContracts": [
     "src/features/**/actions.ts",
     "src/services/**/*.ts"

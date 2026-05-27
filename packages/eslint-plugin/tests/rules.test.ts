@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { RuleTester } from 'eslint';
 import * as parser from '@typescript-eslint/parser';
-import { extractContractsFromSource, toIndex } from '@drift-lock/core';
+import { extractContractsFromSource, toIndex, writeIndexStoreSync } from '@drift-lock/core';
 import plugin from '../src/index.js';
 import { describe, expect, it } from 'vitest';
 
@@ -264,7 +264,7 @@ function createIndexedProject(code: string): { root: string; filename: string } 
   writeFileSync(project.filename, code);
 
   const extracted = extractContractsFromSource('src/actions.ts', code);
-  writeFileSync(path.join(project.root, '.drift/contracts.generated.json'), `${JSON.stringify(toIndex(extracted.contracts), null, 2)}\n`);
+  writeIndexStoreSync(project.root, undefined, toIndex(extracted.contracts));
 
   return project;
 }
@@ -272,13 +272,14 @@ function createIndexedProject(code: string): { root: string; filename: string } 
 function createIndexedProjectFromSources(files: Record<string, string>): { root: string; filename: string } {
   const project = createProject();
   const contracts = Object.entries(files).flatMap(([file, code]) => extractContractsFromSource(file, code).contracts);
-  writeFileSync(path.join(project.root, '.drift/contracts.generated.json'), `${JSON.stringify(toIndex(contracts), null, 2)}\n`);
+  writeIndexStoreSync(project.root, undefined, toIndex(contracts));
   return project;
 }
 
 function createProjectWithIndex(index: string): { root: string; filename: string } {
   const project = createProject();
-  writeFileSync(path.join(project.root, '.drift/contracts.generated.json'), index);
+  mkdirSync(path.join(project.root, '.drift/contracts.generated.index'), { recursive: true });
+  writeFileSync(path.join(project.root, '.drift/contracts.generated.index/manifest.json'), index);
   return project;
 }
 

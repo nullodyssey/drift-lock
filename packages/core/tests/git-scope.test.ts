@@ -1,7 +1,7 @@
 import { unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { checkContracts, diffContracts, extractContracts, toIndex, writeIndex } from '@drift-lock/core';
+import { checkContracts, diffContracts, extractContracts, toIndex, writeIndexStore } from '@drift-lock/core';
 import { createGitBaseline, createProject, execFileAsync } from './helpers/core-test-utils.js';
 import { schemaOnlySource, validActionsSource } from './helpers/contract-fixtures.js';
 import { validFlowSource } from './helpers/flow-fixtures.js';
@@ -14,7 +14,7 @@ describe('drift git scope', () => {
       'src/removed.ts': validActionsSource('billing.removed'),
     });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
     await createGitBaseline(root);
 
     await writeFile(
@@ -43,7 +43,7 @@ describe('drift git scope', () => {
       'src/features/billing/pricing.ts': 'export const BILLING_PRICES = { pro: { priceId: "price", monthlyAmount: 10, currency: "usd" } };\n',
     });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
     await createGitBaseline(root);
     await writeFile(
       path.join(root, 'src/features/billing/pricing.ts'),
@@ -68,7 +68,7 @@ describe('drift git scope', () => {
 `,
     });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
     await createGitBaseline(root);
     await writeFile(
       path.join(root, 'src/actions.ts'),
@@ -89,7 +89,7 @@ describe('drift git scope', () => {
       'src/existing.ts': validActionsSource('billing.duplicate'),
     });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
     await createGitBaseline(root);
     await writeFile(path.join(root, 'src/new.ts'), validActionsSource('billing.duplicate'), 'utf8');
     await execFileAsync('git', ['add', 'src/new.ts'], { cwd: root });
@@ -110,7 +110,7 @@ describe('drift git scope', () => {
       'src/actions.ts': validActionsSource('billing.same-file'),
     });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
     await createGitBaseline(root);
     await writeFile(
       path.join(root, 'src/actions.ts'),

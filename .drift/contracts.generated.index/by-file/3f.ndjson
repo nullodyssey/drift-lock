@@ -1,0 +1,4 @@
+{"file":"../errors.ts","impactedContractIds":["core.ssot-flow.diagnostics","core.ssot-usage.rule"]}
+{"file":"core/src/core/contract-selection.tsx","ownedContractIds":["core.contract-selection"],"impactedContractIds":["core.check-run"],"helperCandidateContractIds":["core.contract-selection"]}
+{"file":"core/src/core/invariant-checks.js","ownedContractIds":["core.invariant-checks"],"helperCandidateContractIds":["core.invariant-checks"]}
+{"file":"core/src/core/module-specifier.jsx","ownedContractIds":["core.module-specifier"],"impactedContractIds":["core.git-scope","core.ssot-flow.imports","core.ssot-usage.rule"],"helperCandidateContractIds":["core.module-specifier"]}

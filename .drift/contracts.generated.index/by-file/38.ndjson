@@ -1,0 +1,3 @@
+{"file":"core/src/core/extractor.tsx","ownedContractIds":["core.extractor"],"impactedContractIds":["core.check-run","core.context-renderer","core.coverage"],"helperCandidateContractIds":["core.extractor"]}
+{"file":"packages/core/src/core/index-file.js","ownedContractIds":["core.index-file"],"impactedContractIds":["core.check-run","core.config","core.config.default-index-flow","core.contract-diff","core.contract-selection"],"helperCandidateContractIds":["core.index-file"]}
+{"file":"packages/core/src/core/rules/ssot-usage/index.tsx","ownedContractIds":["core.ssot-usage.rule"],"impactedContractIds":["core.invariant-checks"],"helperCandidateContractIds":["core.ssot-usage.rule"]}

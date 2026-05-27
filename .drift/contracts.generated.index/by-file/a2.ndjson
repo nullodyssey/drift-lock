@@ -1,0 +1,4 @@
+{"file":"../types.jsx","impactedContractIds":["core.errors"]}
+{"file":"core/src/core/extractor.js","ownedContractIds":["core.extractor"],"impactedContractIds":["core.check-run","core.context-renderer","core.coverage"],"helperCandidateContractIds":["core.extractor"]}
+{"file":"core/src/index.jsx","ownedContractIds":["core.public-api"],"helperCandidateContractIds":["core.public-api"]}
+{"file":"git-scope.ts","impactedContractIds":["core.contract-selection","core.proof-report"]}

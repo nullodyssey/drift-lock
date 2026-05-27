@@ -1,0 +1,2 @@
+{"file":"../utils.tsx","impactedContractIds":["eslint.no-locked-contract-change-rule","eslint.ssot-flow-rule","eslint.ssot-usage-rule","eslint.valid-contract-rule"]}
+{"file":"packages/core/src/core/invariant-checks.jsx","ownedContractIds":["core.invariant-checks"],"helperCandidateContractIds":["core.invariant-checks"]}

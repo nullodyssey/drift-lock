@@ -26,7 +26,7 @@ Vitest is the test framework. Name test files `*.test.ts` and place them in the 
 
 ## Commit & Pull Request Guidelines
 
-Recent history uses Conventional Commit style: `feat(cli): ...`, `fix: ...`, and `chore: ...`. Keep commits scoped and imperative. Pull requests should include a concise summary, test results, linked issues when applicable, and screenshots only for visible `apps/next-v1` UI changes. If contracts change, include the updated `.drift/contracts.generated.json` and explain why the contract update is intentional.
+Recent history uses Conventional Commit style: `feat(cli): ...`, `fix: ...`, and `chore: ...`. Keep commits scoped and imperative. Pull requests should include a concise summary, test results, linked issues when applicable, and screenshots only for visible `apps/next-v1` UI changes. If contracts change, include the updated `.drift/contracts.generated.index` directory and explain why the contract update is intentional.
 
 ## Security & Configuration Tips
 

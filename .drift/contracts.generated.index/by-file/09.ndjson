@@ -1,0 +1,3 @@
+{"file":"core/src/core/rules/ssot-flow/diagnostics.js","ownedContractIds":["core.ssot-flow.diagnostics"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.diagnostics"]}
+{"file":"eslint-plugin/src/rules/no-locked-contract-change.jsx","ownedContractIds":["eslint.no-locked-contract-change-rule"],"helperCandidateContractIds":["eslint.no-locked-contract-change-rule"]}
+{"file":"packages/core/src/core/rules/ssot-flow/env.jsx","ownedContractIds":["core.ssot-flow.env"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.env"]}

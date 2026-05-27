@@ -1,0 +1,2 @@
+{"file":"../utils","impactedContractIds":["eslint.no-locked-contract-change-rule","eslint.ssot-flow-rule","eslint.ssot-usage-rule","eslint.valid-contract-rule"]}
+{"file":"core/src/core/checker","ownedContractIds":["core.checker"],"impactedContractIds":["core.explain","core.proof-report"],"helperCandidateContractIds":["core.checker"]}

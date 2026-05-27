@@ -1,0 +1,4 @@
+{"file":"cli/src/skills.tsx","ownedContractIds":["cli.skills"],"helperCandidateContractIds":["cli.skills"]}
+{"file":"core/src/core/errors","ownedContractIds":["core.errors"],"impactedContractIds":["core.invariant-checks","core.required-contracts","core.ssot-flow.diagnostics","core.ssot-usage.rule","core.validator"],"helperCandidateContractIds":["core.errors"]}
+{"file":"helper-summaries","impactedContractIds":["core.check-run"]}
+{"file":"packages/core/src/core/extractor.ts","ownedContractIds":["core.extractor"],"impactedContractIds":["core.check-run","core.context-renderer","core.coverage"],"helperCandidateContractIds":["core.extractor"]}

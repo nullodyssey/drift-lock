@@ -1,0 +1,4 @@
+{"file":"core/src/core/rules/ssot-flow/index","ownedContractIds":["core.ssot-flow.rule"],"impactedContractIds":["core.invariant-checks","core.ssot-flow"],"helperCandidateContractIds":["core.ssot-flow.rule"]}
+{"file":"core/src/types.ts","ownedContractIds":["core.types"],"impactedContractIds":["core.errors"],"helperCandidateContractIds":["core.types"]}
+{"file":"eslint-plugin/src/rules/ssot-flow.js","ownedContractIds":["eslint.ssot-flow-rule"],"helperCandidateContractIds":["eslint.ssot-flow-rule"]}
+{"file":"helper-summaries.js","impactedContractIds":["core.check-run"]}

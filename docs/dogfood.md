@@ -26,7 +26,7 @@ feel that pain first.
 This repository already uses DriftLock to protect its own core surfaces:
 
 - `.drift/config.json` defines the source roots and required contract files.
-- `.drift/contracts.generated.json` is committed as the locked baseline.
+- `.drift/contracts.generated.index` is committed as the locked baseline store.
 - CI runs DriftLock extraction and fails when the generated index is stale.
 - Core, CLI, and ESLint rule files carry `@drift` contracts that describe local
   intent and `llm.must_not_change` constraints.

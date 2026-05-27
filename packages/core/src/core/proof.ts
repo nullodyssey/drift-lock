@@ -1,12 +1,9 @@
-import { execFile } from 'node:child_process';
 import path from 'node:path';
-import { promisify } from 'node:util';
 import type {
   DriftAdoptionMode,
   DriftContractChange,
   DriftDiagnostic,
   DriftError,
-  DriftContractsIndex,
   DriftIndexedContract,
   DriftProofAcceptanceStatus,
   DriftProofContractOutcome,
@@ -17,8 +14,8 @@ import type {
 import { checkContracts } from './checker.js';
 import { diffContracts, diffContractSets } from './contract-diff.js';
 import { getCoverage } from './coverage.js';
-import { filterIndexByFiles, resolveGitFileScope } from './git-scope.js';
-import { defaultIndexPath, readIndex, toIndex, validateIndexObject } from './index-file.js';
+import { resolveGitFileScopeFromStore } from './git-scope.js';
+import { openIndexStore, toIndex } from './index-file.js';
 import { getAcceptanceStatus } from './locked-contracts.js';
 
 /* @drift
@@ -70,25 +67,24 @@ export type ProofReportOptions = {
   adoptionMode?: DriftAdoptionMode;
 };
 
-const execFileAsync = promisify(execFile);
-const gitIndexMaxBufferBytes = 64 * 1024 * 1024;
-
 export async function getProofReport(options: ProofReportOptions): Promise<{
   report: DriftProofReport;
   errors: DriftError[];
 }> {
   const root = path.resolve(options.root);
-  const index = await readIndex(root, options.indexPath);
-  const gitScope = await resolveGitFileScope(root, options.gitBase, options.sourceDir, index);
-  const baseIndex = await readIndexAtGitBase(root, options.gitBase, options.indexPath);
+  const currentStore = await openIndexStore({ kind: 'working-tree', root, indexPath: options.indexPath });
+  const gitScope = await resolveGitFileScopeFromStore(root, options.gitBase, options.sourceDir, currentStore);
+  const baseStore = await openIndexStore({ kind: 'git-ref', root, ref: options.gitBase, indexPath: options.indexPath });
   const diff = await diffContracts({
     root,
     sourceDir: options.sourceDir,
     indexPath: options.indexPath,
     gitBase: options.gitBase,
   });
-  const scopedBaseIndex = baseIndex ? filterIndexByFiles(baseIndex, gitScope.contractFiles) : undefined;
-  const proofDiff = diffContractSets(toIndex(diff.contracts).contracts, scopedBaseIndex?.contracts ?? []);
+  const baseLookup = await baseStore?.getContractIdsForFiles(gitScope.changedFiles, { includeOwned: true, includeImpacted: true });
+  const baseIds = [...new Set([...(baseLookup?.ownedContractIds ?? []), ...(baseLookup?.impactedContractIds ?? [])])].sort();
+  const baseContracts = baseStore ? await baseStore.getContractsByIds(baseIds) : [];
+  const proofDiff = diffContractSets(toIndex(diff.contracts).contracts, baseContracts);
   const check = await checkContracts({
     root,
     sourceDir: options.sourceDir,
@@ -254,58 +250,4 @@ function resolutionFor(
 
 function plural(count: number, singular: string): string {
   return count === 1 ? singular : `${singular}s`;
-}
-
-async function readIndexAtGitBase(root: string, gitBase: string, indexPath = defaultIndexPath): Promise<DriftContractsIndex | undefined> {
-  const relativeIndexPath = normalizeGitIndexPath(root, indexPath);
-  const objectRef = `${gitBase}:${relativeIndexPath}`;
-
-  await verifyGitBase(root, gitBase);
-  if (!(await gitObjectExists(root, objectRef))) return undefined;
-
-  try {
-    const { stdout } = await execFileAsync('git', ['cat-file', 'blob', objectRef], {
-      cwd: root,
-      maxBuffer: gitIndexMaxBufferBytes,
-    });
-    return validateIndexObject(parseIndexJson(stdout, objectRef), objectRef);
-  } catch (error) {
-    if (error instanceof Error && error.message.startsWith('Invalid Drift contracts index')) throw error;
-    throw new Error(`Unable to read Drift index at "${objectRef}": ${errorMessage(error)}`);
-  }
-}
-
-async function verifyGitBase(root: string, gitBase: string): Promise<void> {
-  try {
-    await execFileAsync('git', ['rev-parse', '--verify', `${gitBase}^{commit}`], { cwd: root });
-  } catch (error) {
-    throw new Error(`Unable to verify Git base "${gitBase}": ${errorMessage(error)}`);
-  }
-}
-
-async function gitObjectExists(root: string, objectRef: string): Promise<boolean> {
-  try {
-    await execFileAsync('git', ['cat-file', '-e', objectRef], { cwd: root });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function parseIndexJson(value: string, file: string): unknown {
-  try {
-    return JSON.parse(value) as unknown;
-  } catch {
-    throw new Error(`Invalid Drift contracts index at "${file}".`);
-  }
-}
-
-function errorMessage(error: unknown): string {
-  if (error instanceof Error && error.message.trim().length > 0) return error.message;
-  return String(error);
-}
-
-function normalizeGitIndexPath(root: string, indexPath: string): string {
-  const relative = path.isAbsolute(indexPath) ? path.relative(root, indexPath) : indexPath;
-  return relative.split(path.sep).join('/');
 }

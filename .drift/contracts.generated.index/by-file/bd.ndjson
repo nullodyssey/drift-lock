@@ -1,0 +1,2 @@
+{"file":"core/src/core/locked-contracts.js","ownedContractIds":["core.locked-contracts"],"impactedContractIds":["core.proof-report"],"helperCandidateContractIds":["core.locked-contracts"]}
+{"file":"packages/core/src/core/disable-directives.tsx","ownedContractIds":["core.disable-directives"],"impactedContractIds":["core.coverage"],"helperCandidateContractIds":["core.disable-directives"]}

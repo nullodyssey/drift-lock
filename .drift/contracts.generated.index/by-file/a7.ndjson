@@ -1,0 +1,2 @@
+{"file":"core/src/core/explain.ts","ownedContractIds":["core.explain"],"helperCandidateContractIds":["core.explain"]}
+{"file":"packages/core/src/core/context","ownedContractIds":["core.context-renderer"],"helperCandidateContractIds":["core.context-renderer"]}

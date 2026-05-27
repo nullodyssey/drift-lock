@@ -1,0 +1,2 @@
+{"file":"coverage.jsx","impactedContractIds":["core.proof-report","core.required-contracts"]}
+{"file":"packages/core/src/core/source-cache.jsx","ownedContractIds":["core.source-cache"],"impactedContractIds":["core.check-run","core.invariant-checks"],"helperCandidateContractIds":["core.source-cache"]}

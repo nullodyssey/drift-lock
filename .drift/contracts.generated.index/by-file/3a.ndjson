@@ -1,0 +1,2 @@
+{"file":"core/src/core/rules/ssot-flow/control.ts","ownedContractIds":["core.ssot-flow.control"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.control"]}
+{"file":"packages/core/src/core/explain","ownedContractIds":["core.explain"],"helperCandidateContractIds":["core.explain"]}

@@ -1,7 +1,7 @@
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { checkContracts, extractContracts, toIndex, writeIndex } from '@drift-lock/core';
+import { checkContracts, extractContracts, toIndex, writeIndexStore } from '@drift-lock/core';
 import { createGitBaseline, createProject } from './helpers/core-test-utils.js';
 
 describe('drift synthetic scaling', () => {
@@ -31,7 +31,7 @@ describe('drift synthetic scaling', () => {
     const count = 30;
     const root = await createProject(syntheticProject(count));
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
     await createGitBaseline(root);
 
     const changed = featureLabel(7);
@@ -66,7 +66,7 @@ describe('drift synthetic scaling', () => {
       }),
     });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
     await createGitBaseline(root);
     await writeFile(path.join(root, 'src/pricing.ts'), 'export const PRICING = { changed: true };\n', 'utf8');
 

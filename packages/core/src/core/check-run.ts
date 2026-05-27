@@ -5,11 +5,12 @@ import type {
   DriftExtractedContract,
   DriftIndexedContract,
 } from '../types.js';
-import { changedContracts, resolveCheckScope } from './contract-selection.js';
+import { changedContracts } from './contract-selection.js';
 import { extractContracts, type ExtractOptions } from './extractor.js';
 import type { GitFileScope } from './git-scope.js';
-import { buildHelperContracts } from './helper-summaries.js';
-import { readIndex, toIndex } from './index-file.js';
+import { resolveGitFileScopeFromStore } from './git-scope.js';
+import { buildHelperContractsFromStore } from './helper-summaries.js';
+import { openIndexStore, toIndex, type DriftIndexStore } from './index-file.js';
 import { SourceCache } from './source-cache.js';
 
 /* @drift
@@ -48,7 +49,8 @@ invariants:
 
 llm:
   must_not_change:
-    - scopedIndex selects scoped checks only; helperContracts must use the full index.
+    - scopedIndex selects scoped checks only.
+    - helperContracts must use import-candidate lookups, not full store materialization.
     - changedOnly must include changed contracts and SSOT-impacted contracts.
     - Extraction must use Git-scoped files when a Git base is provided.
     - SourceCache must be instantiated per check run, not globally.
@@ -66,6 +68,7 @@ type ExtractContractsResult = Awaited<ReturnType<typeof extractContracts>>;
 export type CheckRunContext = {
   root: string;
   options: CheckOptions;
+  indexStore?: DriftIndexStore;
   index?: DriftContractsIndex;
   scopedIndex?: DriftContractsIndex;
   gitScope?: GitFileScope;
@@ -78,27 +81,29 @@ export type CheckRunContext = {
 
 export async function prepareCheckRun(options: CheckOptions): Promise<CheckRunContext> {
   const root = path.resolve(options.root);
-  const index = await readIndex(root, options.indexPath);
-  const { gitScope, scopedIndex, extractFiles } = await resolveCheckScope(
-    {
-      root,
-      sourceDir: options.sourceDir,
-      files: options.files,
-      gitBase: options.gitBase,
-    },
-    index,
-  );
+  const indexStore = await openIndexStore({ kind: 'working-tree', root, indexPath: options.indexPath });
+  const gitScope = options.gitBase ? await resolveGitFileScopeFromStore(root, options.gitBase, options.sourceDir, indexStore) : undefined;
+  const index = !options.gitBase ? await indexStore?.materializeIndex() : undefined;
+  const scopedIndex = gitScope?.indexedContractIds.length
+    ? { version: 1 as const, contracts: (await indexStore?.getContractsByIds(gitScope.indexedContractIds)) ?? [] }
+    : index;
+  const extractFiles = gitScope?.extractFiles ?? options.files;
   const extracted = await extractContracts({ ...options, files: extractFiles });
   const contractsToCheck = options.changedOnly
     ? changedContracts(extracted.contracts, scopedIndex, gitScope?.impactedContractIds)
     : extracted.contracts;
-  // Helper summaries need the full index; scopedIndex only decides which contracts run.
-  const helperContracts = buildHelperContracts(index, toIndex(extracted.contracts).contracts);
+  const helperContracts = await buildHelperContractsFromStore(
+    root,
+    indexStore,
+    toIndex(extracted.contracts).contracts,
+    gitScope ? contractsToCheck.map((contract) => contract.file) : undefined,
+  );
   const sourceCache = new SourceCache(root);
 
   return {
     root,
     options,
+    indexStore,
     index,
     scopedIndex,
     gitScope,

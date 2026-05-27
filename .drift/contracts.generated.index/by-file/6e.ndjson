@@ -1,0 +1,4 @@
+{"file":"core/src/core/module-specifier.ts","ownedContractIds":["core.module-specifier"],"impactedContractIds":["core.git-scope","core.ssot-flow.imports","core.ssot-usage.rule"],"helperCandidateContractIds":["core.module-specifier"]}
+{"file":"core/src/core/source-cache.js","ownedContractIds":["core.source-cache"],"impactedContractIds":["core.check-run","core.invariant-checks"],"helperCandidateContractIds":["core.source-cache"]}
+{"file":"eslint-plugin/src/index.ts","ownedContractIds":["eslint.surface"],"helperCandidateContractIds":["eslint.surface"]}
+{"file":"packages/core/src/core/rules/ssot-flow/helpers.tsx","ownedContractIds":["core.ssot-flow.helpers"],"helperCandidateContractIds":["core.ssot-flow.helpers"]}

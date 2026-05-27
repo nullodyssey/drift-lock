@@ -24,6 +24,7 @@ llm:
   must_not_change:
     - Preserve default config compatibility for projects without .drift/config.json.
     - Keep config validation strict so ignored fields cannot look enforceable.
+    - The default index path must point at the canonical sharded index store.
 */
 export const defaultConfigPath = '.drift/config.json';
 
@@ -56,8 +57,8 @@ scope: declaration
 stability: locked
 
 intent: >
-  Build the default DriftLock config from the shared default index path so CLI
-  defaults cannot drift away from index-file behavior.
+  Build the default DriftLock config from the shared default sharded index path
+  so CLI defaults cannot drift away from index store behavior.
 
 ssot:
   index-file: "./index-file.ts"

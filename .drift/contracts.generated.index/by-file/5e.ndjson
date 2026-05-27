@@ -1,0 +1,2 @@
+{"file":"core/src/index.js","ownedContractIds":["core.public-api"],"helperCandidateContractIds":["core.public-api"]}
+{"file":"files.js","impactedContractIds":["core.git-scope","core.required-contracts"]}

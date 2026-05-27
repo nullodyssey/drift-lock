@@ -1,0 +1,3 @@
+{"file":"contract-diff.jsx","impactedContractIds":["core.contract-selection","core.proof-report"]}
+{"file":"core/src/core/disable-directives.tsx","ownedContractIds":["core.disable-directives"],"impactedContractIds":["core.coverage"],"helperCandidateContractIds":["core.disable-directives"]}
+{"file":"packages/core/src/core/index-file.jsx","ownedContractIds":["core.index-file"],"impactedContractIds":["core.check-run","core.config","core.config.default-index-flow","core.contract-diff","core.contract-selection"],"helperCandidateContractIds":["core.index-file"]}

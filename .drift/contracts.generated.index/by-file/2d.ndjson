@@ -1,0 +1,2 @@
+{"file":"eslint-plugin/src/rules/ssot-usage","ownedContractIds":["eslint.ssot-usage-rule"],"helperCandidateContractIds":["eslint.ssot-usage-rule"]}
+{"file":"packages/cli/src/install","ownedContractIds":["cli.install-project"],"helperCandidateContractIds":["cli.install-project"]}

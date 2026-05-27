@@ -1,0 +1,4 @@
+{"file":"core/src/core/rules/ssot-flow/imports.ts","ownedContractIds":["core.ssot-flow.imports"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.imports"]}
+{"file":"disable-directives.ts","impactedContractIds":["core.coverage"]}
+{"file":"packages/core/src/core/errors","ownedContractIds":["core.errors"],"impactedContractIds":["core.invariant-checks","core.required-contracts","core.ssot-flow.diagnostics","core.ssot-usage.rule","core.validator"],"helperCandidateContractIds":["core.errors"]}
+{"file":"packages/core/src/core/files.tsx","ownedContractIds":["core.files"],"impactedContractIds":["core.git-scope","core.required-contracts"],"helperCandidateContractIds":["core.files"]}

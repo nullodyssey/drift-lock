@@ -1,0 +1,2 @@
+{"file":"contract-selection.tsx","impactedContractIds":["core.check-run"]}
+{"file":"core/src/core/source-cache","ownedContractIds":["core.source-cache"],"impactedContractIds":["core.check-run","core.invariant-checks"],"helperCandidateContractIds":["core.source-cache"]}

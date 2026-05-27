@@ -1,0 +1,2 @@
+{"file":"packages/core/src/core/checker","ownedContractIds":["core.checker"],"impactedContractIds":["core.explain","core.proof-report"],"helperCandidateContractIds":["core.checker"]}
+{"file":"packages/core/src/core/proof.js","ownedContractIds":["core.proof-report"],"helperCandidateContractIds":["core.proof-report"]}

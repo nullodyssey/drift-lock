@@ -13,7 +13,7 @@ import {
 const checks = [
   ['Contract parsed', 'YAML strict, typed schema, anchored to the action'],
   ['SSOT protected', 'Pricing and input shape must come from declared files'],
-  ['Locked baseline', 'Contract changes compare against .drift/contracts.generated.json'],
+  ['Locked baseline', 'Contract changes compare against .drift/contracts.generated.index'],
 ];
 
 export default function Home() {

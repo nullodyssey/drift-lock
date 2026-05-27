@@ -1,0 +1,3 @@
+{"file":"../../errors.jsx","impactedContractIds":["core.ssot-flow.diagnostics","core.ssot-usage.rule"]}
+{"file":"packages/cli/src/install.js","ownedContractIds":["cli.install-project"],"helperCandidateContractIds":["cli.install-project"]}
+{"file":"packages/core/src/core/helper-summaries.tsx","ownedContractIds":["core.helper-summaries"],"impactedContractIds":["core.check-run"],"helperCandidateContractIds":["core.helper-summaries"]}

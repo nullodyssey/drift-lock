@@ -1,0 +1,6 @@
+{"file":"@drift-lock/core","impactedContractIds":["eslint.no-locked-contract-change-rule","eslint.ssot-flow-rule","eslint.ssot-usage-rule","eslint.utils","eslint.valid-contract-rule"]}
+{"file":"cli/src/install.jsx","ownedContractIds":["cli.install-project"],"helperCandidateContractIds":["cli.install-project"]}
+{"file":"contract-diff","impactedContractIds":["core.contract-selection","core.proof-report"]}
+{"file":"core/src/core/checker.ts","ownedContractIds":["core.checker"],"impactedContractIds":["core.explain","core.proof-report"],"helperCandidateContractIds":["core.checker"]}
+{"file":"packages/core/src/core/rules/ssot-flow/helpers.ts","ownedContractIds":["core.ssot-flow.helpers"],"helperCandidateContractIds":["core.ssot-flow.helpers"]}
+{"file":"packages/core/src/types","ownedContractIds":["core.types"],"impactedContractIds":["core.errors"],"helperCandidateContractIds":["core.types"]}

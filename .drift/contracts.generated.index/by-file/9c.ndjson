@@ -1,0 +1,2 @@
+{"file":"packages/core/src/core/locked-contracts.jsx","ownedContractIds":["core.locked-contracts"],"impactedContractIds":["core.proof-report"],"helperCandidateContractIds":["core.locked-contracts"]}
+{"file":"packages/core/src/types.tsx","ownedContractIds":["core.types"],"impactedContractIds":["core.errors"],"helperCandidateContractIds":["core.types"]}

@@ -1,0 +1,3 @@
+{"file":"helper-summaries.ts","impactedContractIds":["core.check-run"]}
+{"file":"packages/core/src/core/rules/ssot-flow/sinks.ts","ownedContractIds":["core.ssot-flow.sinks"],"helperCandidateContractIds":["core.ssot-flow.sinks"]}
+{"file":"packages/core/src/index.tsx","ownedContractIds":["core.public-api"],"helperCandidateContractIds":["core.public-api"]}

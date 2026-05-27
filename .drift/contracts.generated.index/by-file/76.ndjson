@@ -1,0 +1,2 @@
+{"file":"core/src/core/acceptance-file","ownedContractIds":["core.acceptance-file"],"helperCandidateContractIds":["core.acceptance-file"]}
+{"file":"packages/cli/src/cli.jsx","ownedContractIds":["cli.command-surface"],"helperCandidateContractIds":["cli.command-surface"]}

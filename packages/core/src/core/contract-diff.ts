@@ -14,9 +14,9 @@ import type {
 } from '../types.js';
 import { serializeAcceptanceFile } from './acceptance-file.js';
 import { extractContracts, type ExtractOptions } from './extractor.js';
-import { filterContractsByFiles, filterIndexByFiles, resolveGitFileScope } from './git-scope.js';
+import { filterContractsByFiles, resolveGitFileScopeFromStore } from './git-scope.js';
 import { canonicalize } from './hash.js';
-import { readIndex, toIndex } from './index-file.js';
+import { openIndexStore, toIndex } from './index-file.js';
 
 /* @drift
 version: 1
@@ -60,11 +60,13 @@ export async function diffContracts(options: DiffContractsOptions): Promise<{
   diff: DriftContractDiff;
 }> {
   const root = path.resolve(options.root);
-  const index = await readIndex(root, options.indexPath);
-  const gitScope = options.gitBase ? await resolveGitFileScope(root, options.gitBase, options.sourceDir, index) : undefined;
+  const store = await openIndexStore({ kind: 'working-tree', root, indexPath: options.indexPath });
+  const gitScope = options.gitBase ? await resolveGitFileScopeFromStore(root, options.gitBase, options.sourceDir, store) : undefined;
   const extracted = await extractContracts({ ...options, files: gitScope?.extractFiles ?? options.files });
   const currentContracts = gitScope ? filterContractsByFiles(extracted.contracts, gitScope.contractFiles) : extracted.contracts;
-  const previousContracts = gitScope && index ? filterIndexByFiles(index, gitScope.contractFiles).contracts : index?.contracts ?? [];
+  const previousContracts = gitScope
+    ? store ? await store.getContractsByIds(gitScope.indexedContractIds) : []
+    : (await store?.materializeIndex())?.contracts ?? [];
   return {
     contracts: currentContracts,
     errors: extracted.errors,

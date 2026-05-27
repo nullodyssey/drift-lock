@@ -1,0 +1,1 @@
+{"file":"packages/core/src/core/contract-diff.tsx","ownedContractIds":["core.contract-diff"],"impactedContractIds":["core.contract-selection","core.proof-report"],"helperCandidateContractIds":["core.contract-diff"]}

@@ -1,0 +1,5 @@
+{"file":"core/src/core/locked-contracts","ownedContractIds":["core.locked-contracts"],"impactedContractIds":["core.proof-report"],"helperCandidateContractIds":["core.locked-contracts"]}
+{"file":"core/src/core/rules/ssot-flow/types.jsx","ownedContractIds":["core.ssot-flow.types"],"helperCandidateContractIds":["core.ssot-flow.types"]}
+{"file":"disable-directives.jsx","impactedContractIds":["core.coverage"]}
+{"file":"packages/core/src/core/invariant-checks","ownedContractIds":["core.invariant-checks"],"helperCandidateContractIds":["core.invariant-checks"]}
+{"file":"packages/core/src/core/invariant-checks.js","ownedContractIds":["core.invariant-checks"],"helperCandidateContractIds":["core.invariant-checks"]}

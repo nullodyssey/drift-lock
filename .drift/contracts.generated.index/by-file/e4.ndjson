@@ -1,0 +1,2 @@
+{"file":"eslint-plugin/src/utils","ownedContractIds":["eslint.utils"],"impactedContractIds":["eslint.no-locked-contract-change-rule","eslint.ssot-flow-rule","eslint.ssot-usage-rule","eslint.valid-contract-rule"],"helperCandidateContractIds":["eslint.utils"]}
+{"file":"locked-contracts.jsx","impactedContractIds":["core.proof-report"]}

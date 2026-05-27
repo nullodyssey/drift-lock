@@ -1,0 +1,3 @@
+{"file":"../../errors","impactedContractIds":["core.ssot-flow.diagnostics","core.ssot-usage.rule"]}
+{"file":"core/src/core/context.ts","ownedContractIds":["core.context-renderer"],"helperCandidateContractIds":["core.context-renderer"]}
+{"file":"diagnostics.jsx","impactedContractIds":["core.ssot-flow.rule"]}

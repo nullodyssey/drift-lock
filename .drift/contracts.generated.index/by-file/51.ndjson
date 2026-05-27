@@ -1,0 +1,5 @@
+{"file":"../module-specifier.tsx","impactedContractIds":["core.ssot-flow.imports","core.ssot-usage.rule"]}
+{"file":"core/src/core/proof.ts","ownedContractIds":["core.proof-report"],"helperCandidateContractIds":["core.proof-report"]}
+{"file":"extractor.ts","impactedContractIds":["core.check-run","core.context-renderer","core.coverage"]}
+{"file":"git-scope.js","impactedContractIds":["core.contract-selection","core.proof-report"]}
+{"file":"packages/core/src/core/validator","ownedContractIds":["core.validator"],"impactedContractIds":["core.acceptance-file"],"helperCandidateContractIds":["core.validator"]}

@@ -1,0 +1,5 @@
+{"file":"core","impactedContractIds":["eslint.no-locked-contract-change-rule","eslint.ssot-flow-rule","eslint.ssot-usage-rule","eslint.utils","eslint.valid-contract-rule"]}
+{"file":"core/src/core/hash.js","ownedContractIds":["core.hash"],"helperCandidateContractIds":["core.hash"]}
+{"file":"core/src/core/rules/ssot-flow/index.jsx","ownedContractIds":["core.ssot-flow.rule"],"impactedContractIds":["core.invariant-checks","core.ssot-flow"],"helperCandidateContractIds":["core.ssot-flow.rule"]}
+{"file":"eslint-plugin/src/rules/ssot-flow","ownedContractIds":["eslint.ssot-flow-rule"],"helperCandidateContractIds":["eslint.ssot-flow-rule"]}
+{"file":"packages/core/src/core/required-contracts.js","ownedContractIds":["core.required-contracts"],"helperCandidateContractIds":["core.required-contracts"]}

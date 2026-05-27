@@ -1,0 +1,2 @@
+{"file":"core/src/core/context.js","ownedContractIds":["core.context-renderer"],"helperCandidateContractIds":["core.context-renderer"]}
+{"file":"packages/core/src/core/hash.tsx","ownedContractIds":["core.hash"],"helperCandidateContractIds":["core.hash"]}

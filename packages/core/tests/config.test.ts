@@ -12,7 +12,7 @@ describe('drift config', () => {
     await expect(readDriftConfig(root)).resolves.toEqual({
       version: 1,
       source: 'src',
-      index: '.drift/contracts.generated.json',
+      index: '.drift/contracts.generated.index',
       requireContracts: [],
       adoption: { mode: 'enforce' },
     });
@@ -20,14 +20,14 @@ describe('drift config', () => {
     await writeDriftConfig(root, {
       version: 1,
       source: 'src',
-      index: '.drift/contracts.generated.json',
+      index: '.drift/contracts.generated.index',
       requireContracts: [],
     });
 
     await expect(readDriftConfig(root)).resolves.toEqual({
       version: 1,
       source: 'src',
-      index: '.drift/contracts.generated.json',
+      index: '.drift/contracts.generated.index',
       requireContracts: [],
       adoption: { mode: 'enforce' },
     });
@@ -35,7 +35,7 @@ describe('drift config', () => {
     await writeDriftConfig(root, {
       version: 1,
       source: 'app',
-      index: '.drift/custom.generated.json',
+      index: '.drift/custom.generated.index',
       requireContracts: ['app/**/*.ts'],
       adoption: { mode: 'warn' },
     });
@@ -43,7 +43,7 @@ describe('drift config', () => {
     await expect(readDriftConfig(root)).resolves.toEqual({
       version: 1,
       source: 'app',
-      index: '.drift/custom.generated.json',
+      index: '.drift/custom.generated.index',
       requireContracts: ['app/**/*.ts'],
       adoption: { mode: 'warn' },
     });
@@ -51,7 +51,7 @@ describe('drift config', () => {
     await writeDriftConfig(root, {
       version: 1,
       source: ['packages/core/src', 'packages/cli/src'],
-      index: '.drift/contracts.generated.json',
+      index: '.drift/contracts.generated.index',
       requireContracts: ['packages/core/src/**/*.ts'],
       adoption: { mode: 'audit' },
     });
@@ -59,7 +59,7 @@ describe('drift config', () => {
     await expect(readDriftConfig(root)).resolves.toEqual({
       version: 1,
       source: ['packages/core/src', 'packages/cli/src'],
-      index: '.drift/contracts.generated.json',
+      index: '.drift/contracts.generated.index',
       requireContracts: ['packages/core/src/**/*.ts'],
       adoption: { mode: 'audit' },
     });
@@ -70,7 +70,7 @@ describe('drift config', () => {
     await mkdir(path.join(root, '.drift'), { recursive: true });
     await writeFile(
       path.join(root, '.drift/config.json'),
-      JSON.stringify({ version: 1, source: 'src', index: '.drift/contracts.generated.json', requireContracts: ['src/**/*.ts', ''] }),
+      JSON.stringify({ version: 1, source: 'src', index: '.drift/contracts.generated.index', requireContracts: ['src/**/*.ts', ''] }),
       'utf8',
     );
 
@@ -78,7 +78,7 @@ describe('drift config', () => {
 
     await writeFile(
       path.join(root, '.drift/config.json'),
-      JSON.stringify({ version: 1, source: 'src', index: '.drift/contracts.generated.json', requireContract: ['src/**/*.ts'] }),
+      JSON.stringify({ version: 1, source: 'src', index: '.drift/contracts.generated.index', requireContract: ['src/**/*.ts'] }),
       'utf8',
     );
 
@@ -86,7 +86,7 @@ describe('drift config', () => {
 
     await writeFile(
       path.join(root, '.drift/config.json'),
-      JSON.stringify({ version: 1, source: [], index: '.drift/contracts.generated.json', requireContracts: [] }),
+      JSON.stringify({ version: 1, source: [], index: '.drift/contracts.generated.index', requireContracts: [] }),
       'utf8',
     );
 
@@ -94,7 +94,7 @@ describe('drift config', () => {
 
     await writeFile(
       path.join(root, '.drift/config.json'),
-      JSON.stringify({ version: 1, source: 'src', index: '.drift/contracts.generated.json', requireContracts: [], adoption: { mode: 'relaxed' } }),
+      JSON.stringify({ version: 1, source: 'src', index: '.drift/contracts.generated.index', requireContracts: [], adoption: { mode: 'relaxed' } }),
       'utf8',
     );
 

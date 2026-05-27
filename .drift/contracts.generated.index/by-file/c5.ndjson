@@ -1,0 +1,4 @@
+{"file":"core/src/core/explain.tsx","ownedContractIds":["core.explain"],"helperCandidateContractIds":["core.explain"]}
+{"file":"core/src/core/extractor","ownedContractIds":["core.extractor"],"impactedContractIds":["core.check-run","core.context-renderer","core.coverage"],"helperCandidateContractIds":["core.extractor"]}
+{"file":"coverage.tsx","impactedContractIds":["core.proof-report","core.required-contracts"]}
+{"file":"packages/core/src/core/locked-contracts.tsx","ownedContractIds":["core.locked-contracts"],"impactedContractIds":["core.proof-report"],"helperCandidateContractIds":["core.locked-contracts"]}

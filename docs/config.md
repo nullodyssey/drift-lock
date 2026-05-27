@@ -6,7 +6,7 @@ DriftLock reads `.drift/config.json` from the project root.
 {
   "version": 1,
   "source": "src",
-  "index": ".drift/contracts.generated.json",
+  "index": ".drift/contracts.generated.index",
   "requireContracts": [],
   "adoption": {
     "mode": "enforce"
@@ -19,7 +19,7 @@ DriftLock reads `.drift/config.json` from the project root.
 - `version`: config schema version. Currently `1`.
 - `source`: source directory, or list of source directories, scanned by commands when `--source` is not passed.
   Source discovery applies the project ignore file described below.
-- `index`: committed contract index used by `extract`, `check`, `diff`, and `accept`.
+- `index`: committed contract index store used by `extract`, `check`, `diff`, and `accept`.
 - `requireContracts`: optional list of project-relative glob patterns for files that must contain at least one valid `@drift` contract.
 - `adoption.mode`: optional mode for required-contract gaps: `audit`, `warn`, or `enforce`. Defaults to `enforce`.
 
@@ -34,7 +34,7 @@ Use `requireContracts` to mark critical zones that should not stay undocumented.
 {
   "version": 1,
   "source": "src",
-  "index": ".drift/contracts.generated.json",
+  "index": ".drift/contracts.generated.index",
   "requireContracts": [
     "src/features/**/actions.ts",
     "src/services/**/*.ts"
@@ -56,7 +56,7 @@ including tests or fixtures:
     "packages/cli/src",
     "packages/eslint-plugin/src"
   ],
-  "index": ".drift/contracts.generated.json",
+  "index": ".drift/contracts.generated.index",
   "requireContracts": []
 }
 ```

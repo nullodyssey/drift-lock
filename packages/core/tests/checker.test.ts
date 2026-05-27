@@ -1,7 +1,7 @@
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { checkContracts, diffContracts, extractContracts, extractContractsFromSource, toIndex, writeIndex } from '@drift-lock/core';
+import { checkContracts, diffContracts, extractContracts, extractContractsFromSource, toIndex, writeIndexStore } from '@drift-lock/core';
 import { createProject } from './helpers/core-test-utils.js';
 import { fileScopedUsageSource, validActionsSource } from './helpers/contract-fixtures.js';
 import { validFlowSource } from './helpers/flow-fixtures.js';
@@ -110,7 +110,7 @@ describe('drift contract checking', () => {
       'src/changed.ts': validFlowSource('billing.changed'),
     });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
     await writeFile(
       path.join(root, 'src/changed.ts'),
       validFlowSource('billing.changed').replace('priceId: price.priceId,', "priceId: 'price_hardcoded',"),

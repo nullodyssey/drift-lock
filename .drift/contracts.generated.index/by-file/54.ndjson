@@ -1,0 +1,3 @@
+{"file":"contract-selection.ts","impactedContractIds":["core.check-run"]}
+{"file":"core/src/core/ssot-flow.ts","ownedContractIds":["core.ssot-flow"],"helperCandidateContractIds":["core.ssot-flow"]}
+{"file":"packages/core/src/core/rules/ssot-flow/env.tsx","ownedContractIds":["core.ssot-flow.env"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.env"]}

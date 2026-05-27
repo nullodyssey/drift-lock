@@ -1,0 +1,4 @@
+{"file":"cli/src/cli","ownedContractIds":["cli.command-surface"],"helperCandidateContractIds":["cli.command-surface"]}
+{"file":"core.js","impactedContractIds":["eslint.no-locked-contract-change-rule","eslint.ssot-flow-rule","eslint.ssot-usage-rule","eslint.utils","eslint.valid-contract-rule"]}
+{"file":"packages/core/src/core/contract-selection.js","ownedContractIds":["core.contract-selection"],"impactedContractIds":["core.check-run"],"helperCandidateContractIds":["core.contract-selection"]}
+{"file":"packages/core/src/core/rules/ssot-flow/types","ownedContractIds":["core.ssot-flow.types"],"helperCandidateContractIds":["core.ssot-flow.types"]}

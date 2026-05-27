@@ -1,0 +1,2 @@
+{"file":"core/src/core/checker.tsx","ownedContractIds":["core.checker"],"impactedContractIds":["core.explain","core.proof-report"],"helperCandidateContractIds":["core.checker"]}
+{"file":"module-specifier.js","impactedContractIds":["core.git-scope"]}

@@ -29,7 +29,7 @@ export async function writeDriftConfigFile(root: string, requireContracts: strin
   await mkdir(path.join(root, '.drift'), { recursive: true });
   await writeFile(
     path.join(root, '.drift/config.json'),
-    `${JSON.stringify({ version: 1, source, index: '.drift/contracts.generated.json', requireContracts, ...(adoptionMode ? { adoption: { mode: adoptionMode } } : {}) }, null, 2)}\n`,
+    `${JSON.stringify({ version: 1, source, index: '.drift/contracts.generated.index', requireContracts, ...(adoptionMode ? { adoption: { mode: adoptionMode } } : {}) }, null, 2)}\n`,
     'utf8',
   );
 }

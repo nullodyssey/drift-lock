@@ -1,0 +1,2 @@
+{"file":"packages/core/src/core/rules/ssot-flow/helpers","ownedContractIds":["core.ssot-flow.helpers"],"helperCandidateContractIds":["core.ssot-flow.helpers"]}
+{"file":"packages/eslint-plugin/src/index.ts","ownedContractIds":["eslint.surface"],"helperCandidateContractIds":["eslint.surface"]}

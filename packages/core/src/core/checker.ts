@@ -39,8 +39,16 @@ export async function checkContracts(options: CheckOptions): Promise<{
   const run = await prepareCheckRun(options);
   const diagnostics = run.extracted.errors.map((error) => toDiagnostic(error));
   diagnostics.push(...(await checkRequiredContracts(run)));
-  if (run.gitScope && run.index) {
-    diagnostics.push(...checkScopedDuplicateIds(run.extracted.contracts, run.index, run.gitScope.contractFiles).map((error) => toDiagnostic(error)));
+  if (run.gitScope) {
+    const duplicateIndex = run.indexStore
+      ? {
+          version: 1 as const,
+          contracts: await run.indexStore.getContractsByIds(run.extracted.contracts.map((contract) => contract.id)),
+        }
+      : run.scopedIndex;
+    if (duplicateIndex) {
+      diagnostics.push(...checkScopedDuplicateIds(run.extracted.contracts, duplicateIndex, run.gitScope.contractFiles).map((error) => toDiagnostic(error)));
+    }
   }
   diagnostics.push(...(await runInvariantChecks(run)));
   diagnostics.push(...checkLockedContracts(run));

@@ -1,6 +1,4 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
-import { checkSsotFlow, extractContractsFromSource, type DriftIndexedContract } from '@drift-lock/core';
+import { checkSsotFlow, extractContractsFromSource, readIndexHelperContractsForFileSync } from '@drift-lock/core';
 import { getRuleOptions, relativeFilename, reportDriftError } from '../utils.js';
 
 /* @drift
@@ -54,7 +52,7 @@ export const ssotFlowRule = {
         const text = context.sourceCode.getText();
         const result = extractContractsFromSource(file, text);
 
-        const helperContracts = readHelperContracts(options.root, options.indexPath);
+        const helperContracts = readIndexHelperContractsForFileSync(options.root, options.indexPath, file, text);
 
         for (const contract of result.contracts) {
           for (const error of checkSsotFlow(contract, text, { helperContracts })) {
@@ -65,12 +63,3 @@ export const ssotFlowRule = {
     };
   },
 };
-
-function readHelperContracts(root: string, indexPath: string): DriftIndexedContract[] {
-  try {
-    const parsed = JSON.parse(readFileSync(path.resolve(root, indexPath), 'utf8')) as { contracts?: unknown };
-    return Array.isArray(parsed.contracts) ? (parsed.contracts as DriftIndexedContract[]) : [];
-  } catch {
-    return [];
-  }
-}

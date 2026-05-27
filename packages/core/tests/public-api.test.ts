@@ -22,13 +22,16 @@ describe('core public engine facade', () => {
       'formatProofReportMarkdown',
       'getCoverage',
       'getProofReport',
+      'openIndexStore',
       'readDriftConfig',
+      'readIndexContractsForFileSync',
+      'readIndexHelperContractsForFileSync',
       'renderContext',
       'renderTaskContext',
       'toIndex',
-      'validateIndexObject',
       'writeAcceptanceFile',
-      'writeIndex',
+      'writeIndexStore',
+      'writeIndexStoreSync',
     ]);
   });
 });

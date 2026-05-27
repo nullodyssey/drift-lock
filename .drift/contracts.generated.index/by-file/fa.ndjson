@@ -1,0 +1,3 @@
+{"file":"disable-directives.tsx","impactedContractIds":["core.coverage"]}
+{"file":"packages/cli/src/install.jsx","ownedContractIds":["cli.install-project"],"helperCandidateContractIds":["cli.install-project"]}
+{"file":"packages/core/src/core/required-contracts.ts","ownedContractIds":["core.required-contracts"],"helperCandidateContractIds":["core.required-contracts"]}

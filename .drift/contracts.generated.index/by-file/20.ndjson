@@ -1,0 +1,2 @@
+{"file":"coverage.ts","impactedContractIds":["core.proof-report","core.required-contracts"]}
+{"file":"packages/eslint-plugin/src/rules/valid-contract.ts","ownedContractIds":["eslint.valid-contract-rule"],"helperCandidateContractIds":["eslint.valid-contract-rule"]}

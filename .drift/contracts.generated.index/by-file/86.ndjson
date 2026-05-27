@@ -1,0 +1,3 @@
+{"file":"files.tsx","impactedContractIds":["core.git-scope","core.required-contracts"]}
+{"file":"packages/core/src/core/hash.ts","ownedContractIds":["core.hash"],"helperCandidateContractIds":["core.hash"]}
+{"file":"packages/core/src/core/proof.ts","ownedContractIds":["core.proof-report"],"helperCandidateContractIds":["core.proof-report"]}

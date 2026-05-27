@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { checkContracts, extractContracts, toIndex, writeIndex } from '@drift-lock/core';
+import { checkContracts, extractContracts, toIndex, writeIndexStore } from '@drift-lock/core';
 import { createProject } from './helpers/core-test-utils.js';
 import { validActionsSource } from './helpers/contract-fixtures.js';
 
@@ -9,7 +9,7 @@ describe('drift locked contracts', () => {
   it('detects locked contract changes against the committed index', async () => {
     const root = await createProject({ 'src/actions.ts': validActionsSource() });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
 
     await writeFile(
       path.join(root, 'src/actions.ts'),
@@ -24,7 +24,7 @@ describe('drift locked contracts', () => {
   it('detects locked contract downgrades against the committed index', async () => {
     const root = await createProject({ 'src/actions.ts': validActionsSource() });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
 
     await writeFile(path.join(root, 'src/actions.ts'), validActionsSource().replace('stability: locked', 'stability: draft'), 'utf8');
 
@@ -35,7 +35,7 @@ describe('drift locked contracts', () => {
   it('detects locked contract removals against the committed index', async () => {
     const root = await createProject({ 'src/actions.ts': validActionsSource() });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
 
     await writeFile(
       path.join(root, 'src/actions.ts'),
@@ -53,7 +53,7 @@ describe('drift locked contracts', () => {
   it('accepts locked contract changes with a valid acceptance file', async () => {
     const root = await createProject({ 'src/actions.ts': validActionsSource() });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
 
     await writeFile(
       path.join(root, 'src/actions.ts'),
@@ -74,7 +74,7 @@ describe('drift locked contracts', () => {
   it('reports invalid acceptance files for locked contract changes', async () => {
     const root = await createProject({ 'src/actions.ts': validActionsSource() });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
 
     await writeFile(
       path.join(root, 'src/actions.ts'),
@@ -95,7 +95,7 @@ describe('drift locked contracts', () => {
   it('keeps locked removals blocking when changedOnly is enabled', async () => {
     const root = await createProject({ 'src/actions.ts': validActionsSource() });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
     await writeFile(path.join(root, 'src/actions.ts'), 'export const removed = true;\n', 'utf8');
 
     const result = await checkContracts({ root, changedOnly: true });

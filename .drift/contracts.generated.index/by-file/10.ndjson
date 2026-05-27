@@ -1,0 +1,3 @@
+{"file":"packages/cli/src/skills","ownedContractIds":["cli.skills"],"helperCandidateContractIds":["cli.skills"]}
+{"file":"packages/core/src/core/index-file","ownedContractIds":["core.index-file"],"impactedContractIds":["core.check-run","core.config","core.config.default-index-flow","core.contract-diff","core.contract-selection"],"helperCandidateContractIds":["core.index-file"]}
+{"file":"validator.js","impactedContractIds":["core.acceptance-file"]}

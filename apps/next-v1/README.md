@@ -13,7 +13,7 @@ Small Next.js project that demonstrates the V1 promise:
 - Two declared sources of truth:
   - `src/features/billing/pricing.ts`
   - `src/features/billing/billing.schema.ts`
-- A committed index: `.drift/contracts.generated.json`
+- A committed index store: `.drift/contracts.generated.index`
 - An ESLint config that enables `@drift-lock/eslint-plugin`
 
 ## Useful commands

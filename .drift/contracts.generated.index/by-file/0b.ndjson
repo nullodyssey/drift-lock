@@ -1,0 +1,3 @@
+{"file":"core/src/core/ssot-flow.jsx","ownedContractIds":["core.ssot-flow"],"helperCandidateContractIds":["core.ssot-flow"]}
+{"file":"core/src/index","ownedContractIds":["core.public-api"],"helperCandidateContractIds":["core.public-api"]}
+{"file":"packages/core/src/core/helper-summaries","ownedContractIds":["core.helper-summaries"],"impactedContractIds":["core.check-run"],"helperCandidateContractIds":["core.helper-summaries"]}

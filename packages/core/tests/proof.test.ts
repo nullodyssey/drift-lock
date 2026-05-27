@@ -7,7 +7,7 @@ import {
   formatProofReportMarkdown,
   getProofReport,
   toIndex,
-  writeIndex,
+  writeIndexStore,
 } from '@drift-lock/core';
 import { createGitBaseline, createProject } from './helpers/core-test-utils.js';
 import { validActionsSource } from './helpers/contract-fixtures.js';
@@ -161,8 +161,8 @@ describe('drift pull request proof reports', () => {
     const root = await createProject({
       'src/actions.ts': validActionsSource('billing.changed'),
     });
-    await mkdir(path.join(root, '.drift'), { recursive: true });
-    await writeFile(path.join(root, '.drift/contracts.generated.json'), '{ invalid json', 'utf8');
+    await mkdir(path.join(root, '.drift/contracts.generated.index'), { recursive: true });
+    await writeFile(path.join(root, '.drift/contracts.generated.index/manifest.json'), '{ invalid json', 'utf8');
     await createGitBaseline(root);
     await writeCurrentIndex(root);
     await writeFile(
@@ -172,7 +172,7 @@ describe('drift pull request proof reports', () => {
     );
 
     await expect(getProofReport({ root, sourceDir: 'src', gitBase: 'HEAD' })).rejects.toThrow(
-      'Invalid Drift contracts index at "HEAD:.drift/contracts.generated.json".',
+      'Invalid Drift contracts index at "HEAD:.drift/contracts.generated.index/manifest.json".',
     );
   });
 
@@ -251,7 +251,7 @@ async function createProofProject(files: Record<string, string>): Promise<string
 
 async function writeCurrentIndex(root: string): Promise<void> {
   const extracted = await extractContracts({ root, sourceDir: 'src' });
-  await writeIndex(root, undefined, toIndex(extracted.contracts));
+  await writeIndexStore(root, undefined, toIndex(extracted.contracts));
 }
 
 async function writeLargeIndex(root: string): Promise<void> {
@@ -272,7 +272,7 @@ async function writeLargeIndex(root: string): Promise<void> {
     });
   }
 
-  await writeIndex(root, undefined, index);
+  await writeIndexStore(root, undefined, index);
 }
 
 async function writeAcceptance(root: string, contractId: string): Promise<void> {

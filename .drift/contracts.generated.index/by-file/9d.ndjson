@@ -1,0 +1,2 @@
+{"file":"eslint-plugin/src/rules/valid-contract.jsx","ownedContractIds":["eslint.valid-contract-rule"],"helperCandidateContractIds":["eslint.valid-contract-rule"]}
+{"file":"ssot-usage/index.js","impactedContractIds":["core.invariant-checks"]}

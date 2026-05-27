@@ -6,7 +6,7 @@ import {
   defaultDriftConfig,
   extractContracts,
   toIndex,
-  writeIndex,
+  writeIndexStore,
   type DriftConfig,
 } from '@drift-lock/core';
 import { installSkills, type SkillProvider } from './skills.js';
@@ -83,7 +83,7 @@ export async function installProject(options: InstallProjectOptions): Promise<In
       if (extracted.errors.length > 0) {
         throw new Error(extracted.errors.map((error) => error.message).join('\n'));
       }
-      await writeIndex(root, config.index, toIndex(extracted.contracts));
+      await writeIndexStore(root, config.index, toIndex(extracted.contracts));
       summary.created.push(config.index);
     }
   } else {

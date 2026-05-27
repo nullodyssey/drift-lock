@@ -1,0 +1,3 @@
+{"file":"core/src/core/validator.js","ownedContractIds":["core.validator"],"impactedContractIds":["core.acceptance-file"],"helperCandidateContractIds":["core.validator"]}
+{"file":"eslint-plugin/src/rules/ssot-flow.jsx","ownedContractIds":["eslint.ssot-flow-rule"],"helperCandidateContractIds":["eslint.ssot-flow-rule"]}
+{"file":"packages/core/src/core/git-scope.ts","ownedContractIds":["core.git-scope"],"impactedContractIds":["core.contract-selection","core.proof-report"],"helperCandidateContractIds":["core.git-scope"]}

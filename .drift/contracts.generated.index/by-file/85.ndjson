@@ -1,0 +1,2 @@
+{"file":"packages/core/src/core/index-file.tsx","ownedContractIds":["core.index-file"],"impactedContractIds":["core.check-run","core.config","core.config.default-index-flow","core.contract-diff","core.contract-selection"],"helperCandidateContractIds":["core.index-file"]}
+{"file":"packages/core/src/core/rules/ssot-flow/diagnostics.ts","ownedContractIds":["core.ssot-flow.diagnostics"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.diagnostics"]}

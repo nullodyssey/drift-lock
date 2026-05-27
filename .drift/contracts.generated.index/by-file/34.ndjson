@@ -1,0 +1,2 @@
+{"file":"core/src/core/errors.js","ownedContractIds":["core.errors"],"impactedContractIds":["core.invariant-checks","core.required-contracts","core.ssot-flow.diagnostics","core.ssot-usage.rule","core.validator"],"helperCandidateContractIds":["core.errors"]}
+{"file":"imports.ts","impactedContractIds":["core.ssot-flow.rule"]}

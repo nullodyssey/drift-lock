@@ -1,0 +1,3 @@
+{"file":"core/src/core/index-file.js","ownedContractIds":["core.index-file"],"impactedContractIds":["core.check-run","core.config","core.config.default-index-flow","core.contract-diff","core.contract-selection"],"helperCandidateContractIds":["core.index-file"]}
+{"file":"packages/core/src/core/locked-contracts.js","ownedContractIds":["core.locked-contracts"],"impactedContractIds":["core.proof-report"],"helperCandidateContractIds":["core.locked-contracts"]}
+{"file":"utils.tsx","impactedContractIds":["eslint.no-locked-contract-change-rule","eslint.ssot-flow-rule","eslint.ssot-usage-rule","eslint.valid-contract-rule"]}

@@ -1,0 +1,7 @@
+{"file":"eslint-plugin/src/rules/valid-contract.ts","ownedContractIds":["eslint.valid-contract-rule"],"helperCandidateContractIds":["eslint.valid-contract-rule"]}
+{"file":"packages/core/src/core/contract-diff.jsx","ownedContractIds":["core.contract-diff"],"impactedContractIds":["core.contract-selection","core.proof-report"],"helperCandidateContractIds":["core.contract-diff"]}
+{"file":"packages/core/src/core/contract-selection.jsx","ownedContractIds":["core.contract-selection"],"impactedContractIds":["core.check-run"],"helperCandidateContractIds":["core.contract-selection"]}
+{"file":"packages/core/src/core/coverage.tsx","ownedContractIds":["core.coverage"],"impactedContractIds":["core.proof-report","core.required-contracts"],"helperCandidateContractIds":["core.coverage"]}
+{"file":"packages/core/src/core/hash.js","ownedContractIds":["core.hash"],"helperCandidateContractIds":["core.hash"]}
+{"file":"packages/core/src/core/validator.ts","ownedContractIds":["core.validator"],"impactedContractIds":["core.acceptance-file"],"helperCandidateContractIds":["core.validator"]}
+{"file":"rules/ssot-usage/index.ts","impactedContractIds":["core.invariant-checks"]}

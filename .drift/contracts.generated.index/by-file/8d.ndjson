@@ -1,0 +1,2 @@
+{"file":"packages/cli/src/skills.jsx","ownedContractIds":["cli.skills"],"helperCandidateContractIds":["cli.skills"]}
+{"file":"types","impactedContractIds":["core.errors"]}

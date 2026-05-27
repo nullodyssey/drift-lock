@@ -1,0 +1,4 @@
+{"file":"core/src/core/context.tsx","ownedContractIds":["core.context-renderer"],"helperCandidateContractIds":["core.context-renderer"]}
+{"file":"core/src/core/ssot-flow.tsx","ownedContractIds":["core.ssot-flow"],"helperCandidateContractIds":["core.ssot-flow"]}
+{"file":"packages/core/src/core/git-scope","ownedContractIds":["core.git-scope"],"impactedContractIds":["core.contract-selection","core.proof-report"],"helperCandidateContractIds":["core.git-scope"]}
+{"file":"utils.ts","impactedContractIds":["eslint.no-locked-contract-change-rule","eslint.ssot-flow-rule","eslint.ssot-usage-rule","eslint.valid-contract-rule"]}

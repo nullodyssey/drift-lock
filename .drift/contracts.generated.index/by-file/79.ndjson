@@ -1,0 +1,2 @@
+{"file":"module-specifier.jsx","impactedContractIds":["core.git-scope"]}
+{"file":"packages/core/src/core/files.js","ownedContractIds":["core.files"],"impactedContractIds":["core.git-scope","core.required-contracts"],"helperCandidateContractIds":["core.files"]}

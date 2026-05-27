@@ -24,7 +24,19 @@ export { getCoverage, formatCoverageSummary, type DriftCoverage } from './core/c
 export { formatErrors, formatDiagnostics } from './core/errors.js';
 export { explainContracts, formatExplanations } from './core/explain.js';
 export { extractContracts, extractContractsFromSource } from './core/extractor.js';
-export { toIndex, validateIndexObject, writeIndex } from './core/index-file.js';
+export {
+  openIndexStore,
+  readIndexContractsForFileSync,
+  readIndexHelperContractsForFileSync,
+  toIndex,
+  writeIndexStore,
+  writeIndexStoreSync,
+  type DriftFileContractLookup,
+  type DriftFileLookupOptions,
+  type DriftIndexLocation,
+  type DriftIndexStats,
+  type DriftIndexStore,
+} from './core/index-file.js';
 export { getProofReport, formatProofReportJson, formatProofReportMarkdown, type ProofReportOptions } from './core/proof.js';
 export type {
   DriftAdoptionMode,

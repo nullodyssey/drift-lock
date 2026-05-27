@@ -24,5 +24,5 @@ drift-lock/ssot-usage
 drift-lock/ssot-flow
 ```
 
-Commit `.drift/contracts.generated.json` when using locked-contract checks so
+Commit the `.drift/contracts.generated.index` directory when using locked-contract checks so
 ESLint can compare contract text against the extracted baseline.

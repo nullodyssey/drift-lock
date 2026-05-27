@@ -67,7 +67,10 @@ jobs:
       - name: Verify generated DriftLock index is current
         run: |
           pnpm --filter next-v1 drift-lock:extract
-          git diff --exit-code -- apps/next-v1/.drift/contracts.generated.json
+          if [ -n "$(git status --porcelain -- apps/next-v1/.drift/contracts.generated.index)" ]; then
+            git status --short -- apps/next-v1/.drift/contracts.generated.index
+            exit 1
+          fi
 
       - name: Check root DriftLock contracts
         run: pnpm drift-lock:check
@@ -78,4 +81,7 @@ jobs:
       - name: Verify root DriftLock index is current
         run: |
           pnpm drift-lock:extract
-          git diff --exit-code -- .drift/contracts.generated.json
+          if [ -n "$(git status --porcelain -- .drift/contracts.generated.index)" ]; then
+            git status --short -- .drift/contracts.generated.index
+            exit 1
+          fi

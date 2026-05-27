@@ -1,0 +1,5 @@
+{"file":"errors.js","impactedContractIds":["core.invariant-checks","core.required-contracts","core.validator"]}
+{"file":"errors.ts","impactedContractIds":["core.invariant-checks","core.required-contracts","core.validator"]}
+{"file":"packages/cli/src/skills.ts","ownedContractIds":["cli.skills"],"helperCandidateContractIds":["cli.skills"]}
+{"file":"packages/core/src/core/locked-contracts","ownedContractIds":["core.locked-contracts"],"impactedContractIds":["core.proof-report"],"helperCandidateContractIds":["core.locked-contracts"]}
+{"file":"packages/eslint-plugin/src/rules/ssot-usage.js","ownedContractIds":["eslint.ssot-usage-rule"],"helperCandidateContractIds":["eslint.ssot-usage-rule"]}

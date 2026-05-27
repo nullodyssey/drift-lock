@@ -1,0 +1,2 @@
+{"file":"packages/core/src/core/config.jsx","ownedContractIds":["core.config","core.config.default-index-flow"],"helperCandidateContractIds":["core.config","core.config.default-index-flow"]}
+{"file":"packages/core/src/core/rules/ssot-flow/control.js","ownedContractIds":["core.ssot-flow.control"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.control"]}

@@ -21,7 +21,7 @@ import {
   renderTaskContext,
   toIndex,
   writeAcceptanceFile,
-  writeIndex,
+  writeIndexStore,
   type DriftAdoptionMode,
 } from '@drift-lock/core';
 import {
@@ -85,14 +85,14 @@ program
     printInstallSummary(summary);
   });
 
-// Extract is intentionally the only command that writes repo state: the index is
-// the committed baseline used later to detect locked contract changes in CI.
+// Extract is intentionally the only command that writes repo state: the sharded
+// index store is the committed baseline used later to detect locked changes.
 program
   .command('extract')
-  .description('Extract @drift contracts into .drift/contracts.generated.json')
+  .description('Extract @drift contracts into .drift/contracts.generated.index')
   .option('--root <dir>', 'project root', process.cwd())
   .option('--source <dir>', 'source directory to scan')
-  .option('--out <file>', 'output index path')
+  .option('--out <dir>', 'output index store path')
   .action(async (options: { root: string; source?: string; out?: string }) => {
     const root = path.resolve(options.root);
     const config = await readDriftConfig(root);
@@ -100,7 +100,7 @@ program
     const out = options.out ?? config.index;
     const result = await extractContracts({ root, sourceDir: source });
     if (result.errors.length > 0) fail(result.errors);
-    await writeIndex(root, out, toIndex(result.contracts));
+    await writeIndexStore(root, out, toIndex(result.contracts));
     console.log(`Extracted ${result.contracts.length} @drift contract(s) to ${out}.`);
   });
 
@@ -140,7 +140,7 @@ program
   .description('Validate @drift contracts and V1 invariants')
   .option('--root <dir>', 'project root', process.cwd())
   .option('--source <dir>', 'source directory to scan')
-  .option('--index <file>', 'index path')
+  .option('--index <dir>', 'index store path')
   .option('--changed', 'only validate contracts changed since the Drift index', false)
   .option('--git-base <ref>', 'limit changed checks to files changed since a Git ref')
   .option('--adoption-mode <mode>', 'required-contract adoption mode: audit, warn, or enforce')
@@ -196,7 +196,7 @@ program
   .argument('[contractId]', 'contract id to explain')
   .option('--root <dir>', 'project root', process.cwd())
   .option('--source <dir>', 'source directory to scan')
-  .option('--index <file>', 'index path')
+  .option('--index <dir>', 'index store path')
   .option('--json', 'print machine-readable JSON', false)
   .action(async (contractId: string | undefined, options: { root: string; source?: string; index?: string; json: boolean }) => {
     const root = path.resolve(options.root);
@@ -224,7 +224,7 @@ program
   .description('Summarize Drift contract changes against the Drift index')
   .option('--root <dir>', 'project root', process.cwd())
   .option('--source <dir>', 'source directory to scan')
-  .option('--index <file>', 'index path')
+  .option('--index <dir>', 'index store path')
   .option('--summary', 'print a reviewer-oriented summary', true)
   .option('--json', 'print machine-readable JSON', false)
   .option('--git-base <ref>', 'limit the diff to files changed since a Git ref')
@@ -251,7 +251,7 @@ program
   .description('Generate a pull request proof report from current Drift signals')
   .option('--root <dir>', 'project root', process.cwd())
   .option('--source <dir>', 'source directory to scan')
-  .option('--index <file>', 'index path')
+  .option('--index <dir>', 'index store path')
   .requiredOption('--git-base <ref>', 'Git ref used as the pull request base')
   .option('--format <format>', 'output format: md or json', 'md')
   .action(async (options: { root: string; source?: string; index?: string; gitBase: string; format: string }) => {

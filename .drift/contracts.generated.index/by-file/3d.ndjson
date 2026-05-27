@@ -1,0 +1,7 @@
+{"file":"core/src/core/config.ts","ownedContractIds":["core.config","core.config.default-index-flow"],"helperCandidateContractIds":["core.config","core.config.default-index-flow"]}
+{"file":"core/src/core/rules/ssot-flow/types","ownedContractIds":["core.ssot-flow.types"],"helperCandidateContractIds":["core.ssot-flow.types"]}
+{"file":"core/src/core/source-cache.tsx","ownedContractIds":["core.source-cache"],"impactedContractIds":["core.check-run","core.invariant-checks"],"helperCandidateContractIds":["core.source-cache"]}
+{"file":"files","impactedContractIds":["core.git-scope","core.required-contracts"]}
+{"file":"git-scope.tsx","impactedContractIds":["core.contract-selection","core.proof-report"]}
+{"file":"packages/core/src/core/check-run","ownedContractIds":["core.check-run"],"impactedContractIds":["core.checker"],"helperCandidateContractIds":["core.check-run"]}
+{"file":"packages/core/src/core/rules/ssot-flow/index.js","ownedContractIds":["core.ssot-flow.rule"],"impactedContractIds":["core.invariant-checks","core.ssot-flow"],"helperCandidateContractIds":["core.ssot-flow.rule"]}

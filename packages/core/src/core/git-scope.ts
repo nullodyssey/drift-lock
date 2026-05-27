@@ -5,6 +5,7 @@ import { promisify } from 'node:util';
 import type { DriftContractsIndex, DriftSource } from '../types.js';
 import { normalizePath, normalizeSourceDirs } from './files.js';
 import { moduleSpecifierCandidates } from './module-specifier.js';
+import type { DriftIndexStore } from './index-file.js';
 
 /* @drift
 version: 1
@@ -41,6 +42,7 @@ export type GitFileScope = {
   contractFiles: string[];
   extractFiles: string[];
   impactedContractIds: string[];
+  indexedContractIds: string[];
 };
 
 export async function resolveGitFileScope(
@@ -69,6 +71,41 @@ export async function resolveGitFileScope(
     contractFiles: [...contractFiles].sort(),
     extractFiles,
     impactedContractIds: [...impactedContractIds].sort(),
+    indexedContractIds: index ? filterIndexByFiles(index, [...contractFiles]).contracts.map((contract) => contract.id).sort() : [],
+  };
+}
+
+export async function resolveGitFileScopeFromStore(
+  root: string,
+  gitBase: string,
+  _sourceDir: DriftSource = 'src',
+  store?: DriftIndexStore,
+): Promise<GitFileScope> {
+  const changedFiles = await gitChangedFiles(root, gitBase);
+  const contractFiles = new Set(changedFiles.filter(isTypeScriptFile));
+  const impactedContractIds = new Set<string>();
+  const indexedContractIds = new Set<string>();
+
+  if (store) {
+    const lookup = await store.getContractIdsForFiles(changedFiles, { includeOwned: true, includeImpacted: true });
+    for (const id of lookup.ownedContractIds) indexedContractIds.add(id);
+    for (const id of lookup.impactedContractIds) {
+      indexedContractIds.add(id);
+      impactedContractIds.add(id);
+    }
+
+    const indexedContracts = await store.getContractsByIds([...indexedContractIds]);
+    for (const contract of indexedContracts) contractFiles.add(contract.file);
+  }
+
+  const extractFiles = await existingFiles(root, [...contractFiles].filter(isTypeScriptFile));
+
+  return {
+    changedFiles,
+    contractFiles: [...contractFiles].sort(),
+    extractFiles,
+    impactedContractIds: [...impactedContractIds].sort(),
+    indexedContractIds: [...indexedContractIds].sort(),
   };
 }
 

@@ -18,7 +18,7 @@ describe('drift-lock project installer', () => {
     });
 
     expect(summary.created).toContain('.drift/config.json');
-    expect(summary.created).toContain('.drift/contracts.generated.json');
+    expect(summary.created).toContain('.drift/contracts.generated.index');
     expect(summary.updated).toContain('package.json');
     expect(summary.created).toContain('eslint.config.js');
     expect(summary.created).toContain('.github/workflows/drift-lock.yml');
@@ -119,7 +119,7 @@ describe('drift-lock project installer', () => {
     });
 
     await expectExists(path.join(root, '.drift/config.json'));
-    await expectExists(path.join(root, '.drift/contracts.generated.json'));
+    await expectExists(path.join(root, '.drift/contracts.generated.index'));
     await expectExists(path.join(root, 'eslint.config.js'));
     await expectExists(path.join(root, '.github/workflows/drift-lock.yml'));
     const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8')) as { scripts: Record<string, string> };

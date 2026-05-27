@@ -1,91 +1,81 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { extractContracts, toIndex, writeIndex } from '@drift-lock/core';
-import { readIndex } from '../src/core/index-file.js';
-import { createProject } from './helpers/core-test-utils.js';
+import { extractContracts, openIndexStore, toIndex, writeIndexStore } from '@drift-lock/core';
+import { createGitBaseline, createProject } from './helpers/core-test-utils.js';
 import { validActionsSource } from './helpers/contract-fixtures.js';
 import { validFlowSource } from './helpers/flow-fixtures.js';
 
-describe('drift index files', () => {
-
-  it('returns undefined when the index file is absent', async () => {
+describe('drift sharded index store', () => {
+  it('returns undefined when the index store is absent', async () => {
     const root = await createProject({});
 
-    await expect(readIndex(root)).resolves.toBeUndefined();
+    await expect(openIndexStore({ kind: 'working-tree', root })).resolves.toBeUndefined();
   });
 
-  it('reads an index written by writeIndex', async () => {
+  it('reads contracts from an index store written by writeIndexStore', async () => {
     const root = await createProject({ 'src/actions.ts': validActionsSource() });
     const extracted = await extractContracts({ root });
     const expected = toIndex(extracted.contracts);
-    await writeIndex(root, undefined, expected);
+    await writeIndexStore(root, undefined, expected);
 
-    await expect(readIndex(root)).resolves.toEqual(expected);
+    const store = await openIndexStore({ kind: 'working-tree', root });
+
+    await expect(store?.materializeIndex()).resolves.toEqual(expected);
+    await expect(store?.getContractsByIds([expected.contracts[0]!.id])).resolves.toEqual(expected.contracts);
   });
 
-  it.each([
-    ['invalid JSON', '{'],
-    ['root array', JSON.stringify([])],
-    ['invalid version', JSON.stringify({ version: 2, contracts: [] })],
-    ['missing contracts', JSON.stringify({ version: 1 })],
-    ['contracts not array', JSON.stringify({ version: 1, contracts: {} })],
-    ['incomplete contract', JSON.stringify({ version: 1, contracts: [{ id: 'billing.create-checkout-session' }] })],
-    [
-      'invalid hash',
-      JSON.stringify({
-        version: 1,
-        contracts: [
-          {
-            version: 1,
-            id: 'billing.create-checkout-session',
-            scope: 'declaration',
-            stability: 'locked',
-            intent: 'Create a checkout session.',
-            file: 'src/actions.ts',
-            anchor: { type: 'function', name: 'createCheckoutSession' },
-            contentHash: 'not-a-hash',
-            bodyHash: 'sha256:15b52de4c8fa607a5bad35d18b829d176e50314769e96216fa4b7cc426d6b370',
-          },
-        ],
-      }),
-    ],
-    [
-      'invalid anchor',
-      JSON.stringify({
-        version: 1,
-        contracts: [
-          {
-            version: 1,
-            id: 'billing.create-checkout-session',
-            scope: 'declaration',
-            stability: 'locked',
-            intent: 'Create a checkout session.',
-            file: 'src/actions.ts',
-            anchor: { type: 'file', name: 'createCheckoutSession' },
-            contentHash: 'sha256:f0410a0087dc61a2931ac521819ee856caade7aca31feeb4f25a1073fa3e9afc',
-            bodyHash: 'sha256:15b52de4c8fa607a5bad35d18b829d176e50314769e96216fa4b7cc426d6b370',
-          },
-        ],
-      }),
-    ],
-  ])('rejects %s indexes', async (_name, index) => {
+  it('reads contract ids by file and impacted ssot file', async () => {
+    const root = await createProject({ 'src/actions.ts': validFlowSource('billing.changed') });
+    const extracted = await extractContracts({ root });
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
+
+    const store = await openIndexStore({ kind: 'working-tree', root });
+
+    await expect(store?.getContractIdsForFiles(['src/actions.ts'], { includeOwned: true })).resolves.toMatchObject({
+      ownedContractIds: ['billing.changed'],
+    });
+    await expect(store?.getContractIdsForFiles(['src/features/billing/pricing.ts'], { includeImpacted: true })).resolves.toMatchObject({
+      impactedContractIds: ['billing.changed'],
+    });
+  });
+
+  it('reads index stores from Git refs', async () => {
+    const root = await createProject({ 'src/actions.ts': validActionsSource('billing.changed') });
+    const extracted = await extractContracts({ root });
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
+    await createGitBaseline(root);
+
+    const store = await openIndexStore({ kind: 'git-ref', root, ref: 'HEAD' });
+
+    await expect(store?.getContractsByIds(['billing.changed'])).resolves.toEqual([
+      expect.objectContaining({ id: 'billing.changed' }),
+    ]);
+  });
+
+  it('rejects invalid manifests', async () => {
     const root = await createProject({});
-    await writeRawIndex(root, index);
+    await mkdir(path.join(root, '.drift/contracts.generated.index'), { recursive: true });
+    await writeFile(path.join(root, '.drift/contracts.generated.index/manifest.json'), '{', 'utf8');
 
-    await expect(readIndex(root)).rejects.toThrow(/Invalid Drift contracts index/);
+    await expect(openIndexStore({ kind: 'working-tree', root })).rejects.toThrow(/Invalid Drift contracts index/);
   });
 
-  it('writes a stable index without generatedAt', async () => {
+  it('writes deterministic sharded artifacts without runtime extraction fields', async () => {
     const root = await createProject({ 'src/actions.ts': validActionsSource() });
     const extracted = await extractContracts({ root });
-    await writeIndex(root, undefined, toIndex(extracted.contracts));
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts));
 
-    const index = await readFile(path.join(root, '.drift/contracts.generated.json'), 'utf8');
-    expect(index).not.toContain('generatedAt');
-    expect(index.endsWith('\n')).toBe(true);
-    expect(JSON.parse(index).contracts[0]).not.toHaveProperty('raw');
-    expect(JSON.parse(index).contracts[0].bodyHash).toMatch(/^sha256:[a-f0-9]{64}$/);
+    const manifest = await readFile(path.join(root, '.drift/contracts.generated.index/manifest.json'), 'utf8');
+    expect(manifest).not.toContain('generatedAt');
+    expect(manifest.endsWith('\n')).toBe(true);
+
+    const byContractDir = path.join(root, '.drift/contracts.generated.index/by-contract');
+    await expect(readdir(byContractDir)).resolves.toEqual(expect.arrayContaining([expect.stringMatching(/^[a-f0-9]{2}\.ndjson$/)]));
+    const store = await openIndexStore({ kind: 'working-tree', root });
+    const materialized = await store?.materializeIndex();
+    expect(materialized?.contracts[0]).not.toHaveProperty('raw');
+    expect(materialized?.contracts[0]?.bodyHash).toMatch(/^sha256:[a-f0-9]{64}$/);
   });
 
   it('writes derived ssot-flow summaries for indexed helper contracts', async () => {
@@ -103,8 +93,3 @@ describe('drift index files', () => {
     });
   });
 });
-
-async function writeRawIndex(root: string, index: string): Promise<void> {
-  await mkdir(path.join(root, '.drift'), { recursive: true });
-  await writeFile(path.join(root, '.drift/contracts.generated.json'), index, 'utf8');
-}

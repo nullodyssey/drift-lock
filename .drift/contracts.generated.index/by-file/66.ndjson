@@ -1,0 +1,6 @@
+{"file":"core/src/core/check-run.ts","ownedContractIds":["core.check-run"],"impactedContractIds":["core.checker"],"helperCandidateContractIds":["core.check-run"]}
+{"file":"core/src/core/coverage.tsx","ownedContractIds":["core.coverage"],"impactedContractIds":["core.proof-report","core.required-contracts"],"helperCandidateContractIds":["core.coverage"]}
+{"file":"core/src/core/git-scope","ownedContractIds":["core.git-scope"],"impactedContractIds":["core.contract-selection","core.proof-report"],"helperCandidateContractIds":["core.git-scope"]}
+{"file":"eslint-plugin/src/index.jsx","ownedContractIds":["eslint.surface"],"helperCandidateContractIds":["eslint.surface"]}
+{"file":"packages/core/src/core/extractor","ownedContractIds":["core.extractor"],"impactedContractIds":["core.check-run","core.context-renderer","core.coverage"],"helperCandidateContractIds":["core.extractor"]}
+{"file":"packages/core/src/core/rules/ssot-flow/helpers.jsx","ownedContractIds":["core.ssot-flow.helpers"],"helperCandidateContractIds":["core.ssot-flow.helpers"]}

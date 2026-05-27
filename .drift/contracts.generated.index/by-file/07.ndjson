@@ -1,0 +1,1 @@
+{"file":"packages/core/src/core/extractor.tsx","ownedContractIds":["core.extractor"],"impactedContractIds":["core.check-run","core.context-renderer","core.coverage"],"helperCandidateContractIds":["core.extractor"]}

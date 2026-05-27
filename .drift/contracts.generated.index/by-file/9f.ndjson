@@ -1,0 +1,3 @@
+{"file":"core/src/core/files.js","ownedContractIds":["core.files"],"impactedContractIds":["core.git-scope","core.required-contracts"],"helperCandidateContractIds":["core.files"]}
+{"file":"packages/core/src/core/module-specifier.tsx","ownedContractIds":["core.module-specifier"],"impactedContractIds":["core.git-scope","core.ssot-flow.imports","core.ssot-usage.rule"],"helperCandidateContractIds":["core.module-specifier"]}
+{"file":"ssot-usage/index.ts","impactedContractIds":["core.invariant-checks"]}

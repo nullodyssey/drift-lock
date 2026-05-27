@@ -1,0 +1,3 @@
+{"file":"../../module-specifier","impactedContractIds":["core.ssot-flow.imports","core.ssot-usage.rule"]}
+{"file":"core/src/core/context.jsx","ownedContractIds":["core.context-renderer"],"helperCandidateContractIds":["core.context-renderer"]}
+{"file":"core/src/core/source-cache.ts","ownedContractIds":["core.source-cache"],"impactedContractIds":["core.check-run","core.invariant-checks"],"helperCandidateContractIds":["core.source-cache"]}
