@@ -1,2 +1,1 @@
-{"file":"features/billing/actions.jsx","ownedContractIds":["billing.create-checkout-session"],"helperCandidateContractIds":["billing.create-checkout-session"]}
-{"file":"features/billing/billing.schema.ts","impactedContractIds":["billing.create-checkout-session"]}
+{"file":"src/features/billing/billing.schema.js","impactedContractIds":["billing.create-checkout-session"]}
