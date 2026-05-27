@@ -1,0 +1,66 @@
+name: DriftLock Proof
+description: Generate a DriftLock pull request proof report.
+author: DriftLock
+
+inputs:
+  root:
+    description: Project root passed to drift-lock proof.
+    required: false
+    default: .
+  source:
+    description: Source directory passed to drift-lock proof.
+    required: false
+  index:
+    description: DriftLock index store path passed to drift-lock proof.
+    required: false
+  git-base:
+    description: Git ref used as the pull request base. Defaults to pull_request.base.sha.
+    required: false
+  output-dir:
+    description: Directory where proof-report.json and proof-report.md are written.
+    required: false
+    default: .drift/proof-report
+  comment:
+    description: Create or update a pull request comment with the proof report.
+    required: false
+    default: "false"
+  github-token:
+    description: GitHub token used when comment is enabled.
+    required: false
+    default: ${{ github.token }}
+  drift-command:
+    description: Command used to run DriftLock.
+    required: false
+    default: npx
+  drift-command-args:
+    description: Arguments placed before the proof subcommand.
+    required: false
+    default: --yes @drift-lock/cli
+  fail-on-unresolved:
+    description: Fail when the proof report contains unresolved contract drift.
+    required: false
+    default: "false"
+  fail-on-violations:
+    description: Fail when the proof report contains current DriftLock violations.
+    required: false
+    default: "false"
+
+outputs:
+  protected-contracts-touched:
+    description: Number of protected contracts touched by the pull request.
+  unresolved:
+    description: Number of unresolved contract changes.
+  accepted:
+    description: Number of accepted contract changes.
+  current-violations:
+    description: Number of current DriftLock violations.
+  intent-preservation-rate:
+    description: Intent preservation rate as a number between 0 and 1.
+  report-json-path:
+    description: Absolute path to the generated JSON proof report.
+  report-markdown-path:
+    description: Absolute path to the generated Markdown proof report.
+
+runs:
+  using: node24
+  main: src/index.js

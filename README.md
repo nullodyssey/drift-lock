@@ -367,6 +367,18 @@ drift-lock check
 eslint .
 ```
 
+For pull request proof reports, use the bundled GitHub Action:
+
+```yaml
+- uses: nullodyssey/drift-lock/actions/proof@v0.1.4-alpha
+  with:
+    git-base: ${{ github.event.pull_request.base.sha }}
+    comment: true
+```
+
+See [actions/proof/README.md](./actions/proof/README.md) for the full workflow,
+inputs, outputs, and required permissions.
+
 ## What DriftLock Catches
 
 DriftLock V1 catches supported forms of:

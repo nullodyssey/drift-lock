@@ -1,0 +1,49 @@
+name: DriftLock Proof
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: drift-proof-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  proof:
+    name: Proof Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build DriftLock CLI
+        run: pnpm drift-lock:build
+
+      - name: Generate DriftLock proof report
+        uses: ./actions/proof
+        with:
+          git-base: ${{ github.event.pull_request.base.sha }}
+          drift-command: pnpm
+          drift-command-args: exec drift-lock
+          comment: true
