@@ -86,4 +86,27 @@ describe('drift check run preparation', () => {
     expect(run.contractsToCheck.map((contract) => contract.id)).toEqual(['billing.actions']);
     expect(run.helperContracts.map((contract) => contract.id).sort()).toEqual(['billing.actions', 'billing.helper']);
   });
+
+  it('keeps alias-imported helper contracts with a repo-root source directory', async () => {
+    const helperBackedActionsSource = validActionsSource('billing.actions')
+      .replace("import { billingSchema } from '@/features/billing/billing.schema';", "import { validateCheckoutInput } from '@/helper';")
+      .replace('const payload = billingSchema.parse(input);', 'const payload = validateCheckoutInput(input);');
+    const root = await createProject({
+      'actions.ts': helperBackedActionsSource,
+      'helper.ts': schemaOnlySource('billing.helper'),
+    });
+    const extracted = await extractContracts({ root, sourceDir: '.' });
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts), { sourceDir: '.' });
+    await createGitBaseline(root);
+    await writeFile(
+      path.join(root, 'actions.ts'),
+      helperBackedActionsSource.replace('the Pro subscription.', 'the Team subscription.'),
+      'utf8',
+    );
+
+    const run = await prepareCheckRun({ root, changedOnly: true, gitBase: 'HEAD', sourceDir: '.' });
+
+    expect(run.contractsToCheck.map((contract) => contract.id)).toEqual(['billing.actions']);
+    expect(run.helperContracts.map((contract) => contract.id).sort()).toEqual(['billing.actions', 'billing.helper']);
+  });
 });

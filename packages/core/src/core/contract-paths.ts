@@ -107,7 +107,12 @@ function isUnderConfiguredSourceRoot(file: string, sourceDir: DriftSource = 'src
 }
 
 function isPathInsideSourceRoot(file: string, sourceRoot: string): boolean {
+  if (sourceRoot === '.') return isRepoRelativePath(file);
   return file === sourceRoot || file.startsWith(`${sourceRoot}/`);
+}
+
+function isRepoRelativePath(file: string): boolean {
+  return file.length > 0 && file !== '.' && file !== '..' && !file.startsWith('../') && !path.posix.isAbsolute(file);
 }
 
 function addFileCandidates(candidates: Set<string>, value: string): void {

@@ -132,6 +132,21 @@ describe('drift sharded index store', () => {
     });
   });
 
+  it('resolves repo-root source roots for alias and root-relative ssot impacts', async () => {
+    const root = await createProject({
+      'actions.ts': rootLevelUsageSource('billing.alias-root', '@/pricing.ts', '@/pricing'),
+      'direct-actions.ts': rootLevelUsageSource('billing.direct-root', 'pricing.ts', './pricing'),
+    });
+    const extracted = await extractContracts({ root, sourceDir: '.' });
+    await writeIndexStore(root, undefined, toIndex(extracted.contracts), { sourceDir: '.' });
+
+    const store = await openIndexStore({ kind: 'working-tree', root });
+
+    await expect(store?.getContractIdsForFiles(['pricing.ts'], { includeImpacted: true })).resolves.toMatchObject({
+      impactedContractIds: ['billing.alias-root', 'billing.direct-root'],
+    });
+  });
+
   it('rejects invalid manifests', async () => {
     const root = await createProject({});
     await mkdir(path.join(root, '.drift/contracts.generated.index'), { recursive: true });
@@ -172,3 +187,29 @@ describe('drift sharded index store', () => {
     });
   });
 });
+
+function rootLevelUsageSource(id: string, ssotPath: string, importPath: string): string {
+  return `import { PRICING } from '${importPath}';
+
+/* @drift
+version: 1
+id: ${id}
+scope: declaration
+stability: locked
+
+intent: >
+  Keep a root-level checkout action wired to pricing.
+
+ssot:
+  pricing: "${ssotPath}"
+
+invariants:
+  - id: uses-pricing-ssot
+    enforce: drift/ssot-usage
+    ssot: pricing
+*/
+export function checkout() {
+  return PRICING.pro;
+}
+`;
+}
