@@ -1,0 +1,28 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="_card.css">
+<style>
+  .row { display:flex; gap:12px; flex-wrap:wrap; }
+  .badge { display:inline-flex; align-items:center; gap:6px; padding:3px 8px; border-radius:4px; font-size:11px; font-family:var(--font-mono); letter-spacing:0.04em; font-weight:500; border:1px solid transparent; }
+  .dot { width:6px; height:6px; border-radius:999px; }
+  .b-sealed { background:#D8F0DF; color:#14532D; border-color: rgba(20,83,45,0.15); }
+  .b-drift  { background:#FCDCDC; color:#7F1D1D; border-color: rgba(127,29,29,0.15); }
+  .b-pending{ background:#FBEBC2; color:#713F12; border-color: rgba(113,63,18,0.15); }
+  .b-neutral{ background:#EFEBE0; color:#3D414A; border-color:#E2DDCE; }
+  .b-seal   { background:#F5DBC0; color:#7C2D08; border-color: rgba(124,45,8,0.15); }
+</style></head>
+<body><div class="card">
+  <div class="eyebrow">Status badges · inline metadata pills</div>
+  <div class="row">
+    <span class="badge b-sealed"><span class="dot" style="background:#15803D;"></span>LOCKED</span>
+    <span class="badge b-drift"><span class="dot" style="background:#B91C1C;"></span>DRIFT</span>
+    <span class="badge b-pending"><span class="dot" style="background:#A16207;"></span>DRAFT</span>
+    <span class="badge b-neutral">@drift-lock/cli</span>
+    <span class="badge b-seal">contract · billing.create-checkout-session</span>
+  </div>
+  <div class="row">
+    <span class="badge b-sealed">3 locked</span>
+    <span class="badge b-drift">DRIFT013</span>
+    <span class="badge b-pending">DRIFT015</span>
+    <span class="badge b-neutral">drift/ssot-flow</span>
+  </div>
+</div></body></html>

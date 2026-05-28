@@ -1,0 +1,38 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="_card.css">
+<style>
+  .grp { display:flex; flex-direction:column; gap:6px; }
+  .lbl { font-size:11px; color:var(--fg-muted); font-family:var(--font-mono); }
+  .ramp { display:flex; gap:4px; }
+  .ch { width:60px; height:36px; border-radius:4px; }
+  .row { display:flex; gap: 28px; }
+</style></head>
+<body><div class="card">
+  <div class="eyebrow">Status · semantic colors</div>
+  <div class="row">
+    <div class="grp">
+      <div class="lbl">drift · violation</div>
+      <div class="ramp">
+        <div class="ch" style="background:#FCDCDC;"></div>
+        <div class="ch" style="background:#B91C1C;"></div>
+        <div class="ch" style="background:#7F1D1D;"></div>
+      </div>
+    </div>
+    <div class="grp">
+      <div class="lbl">sealed · compliant</div>
+      <div class="ramp">
+        <div class="ch" style="background:#D8F0DF;"></div>
+        <div class="ch" style="background:#15803D;"></div>
+        <div class="ch" style="background:#14532D;"></div>
+      </div>
+    </div>
+    <div class="grp">
+      <div class="lbl">pending · warning</div>
+      <div class="ramp">
+        <div class="ch" style="background:#FBEBC2;"></div>
+        <div class="ch" style="background:#A16207;"></div>
+        <div class="ch" style="background:#713F12;"></div>
+      </div>
+    </div>
+  </div>
+</div></body></html>
