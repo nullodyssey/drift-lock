@@ -1,4 +1,0 @@
-interface:
-  display_name: "Drift Safe Edit"
-  short_description: "Edit code without breaking contracts"
-  default_prompt: "Use $drift-safe-edit to modify Drift-protected code while preserving contracts and required checks."

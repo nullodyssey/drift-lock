@@ -1,0 +1,4 @@
+interface:
+  display_name: "Drift Analyst"
+  short_description: "Assess drift impact and proof"
+  default_prompt: "Use $drift-analyst to assess LLM-drift risk, impacted contracts, required proof, and PR readiness for this change."

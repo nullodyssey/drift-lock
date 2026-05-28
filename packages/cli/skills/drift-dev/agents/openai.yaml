@@ -1,0 +1,4 @@
+interface:
+  display_name: "Drift Dev"
+  short_description: "Implement without LLM-drift"
+  default_prompt: "Use $drift-dev to implement this change while preserving Drift contracts, SSOT provenance, and required proof."

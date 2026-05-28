@@ -60,9 +60,9 @@ describe('drift-lock project installer', () => {
       installDependencies: false,
     });
 
-    const skill = await readFile(path.join(root, '.agents/skills/drift-safe-edit/SKILL.md'), 'utf8');
+    const skill = await readFile(path.join(root, '.agents/skills/drift-dev/SKILL.md'), 'utf8');
     expect(skill).toContain('npm exec drift-lock -- context --task "<user prompt>"');
-    expect(skill).toContain('npm exec drift-lock -- check');
+    expect(skill).toContain('npm exec drift-lock -- check --changed');
   });
 
   it('runs install dry-run without prompting in non-TTY execution', async () => {
