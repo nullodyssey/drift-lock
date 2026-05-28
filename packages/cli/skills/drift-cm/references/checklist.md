@@ -1,6 +1,6 @@
 # Drift Context Checklist
 
-Use this checklist before routing work to another agent or starting implementation.
+Use this checklist before routing work to another role or starting implementation. The goal is to prevent cadrage drift before the agent plans or edits.
 
 ```txt
 - [ ] If starting from a product/user prompt, run or request: {{DRIFT_COMMAND}} context --task "<user prompt>"
@@ -9,14 +9,16 @@ Use this checklist before routing work to another agent or starting implementati
 - [ ] Run or request: {{DRIFT_COMMAND}} context <file>
 - [ ] List contract ids and stability
 - [ ] List SSOT paths
-- [ ] List invariants, especially drift/ssot-flow and drift/ssot-usage
+- [ ] List enforced invariants, especially drift/ssot-flow and drift/ssot-usage
 - [ ] List llm.must_not_change items
 - [ ] Detect conflicts with the user request
+- [ ] Mark missing contracts or missing proof as risk, not as safety
 - [ ] If auditing adoption or required contracts, run or request: {{DRIFT_COMMAND}} coverage
 - [ ] If contracts or protected files may change, recommend: {{DRIFT_COMMAND}} diff --summary
 - [ ] If Drift is already failing, run or request: {{DRIFT_COMMAND}} explain <contract-id>
-- [ ] Recommend next role: @analyst or @dev
-- [ ] List post-edit checks
+- [ ] If preparing PR handoff, recommend: {{DRIFT_COMMAND}} proof --git-base <ref>
+- [ ] Recommend next role: $drift-analyst or $drift-dev
+- [ ] List required proof and post-edit checks
 ```
 
 Default Drift commands:
@@ -25,8 +27,10 @@ Default Drift commands:
 {{DRIFT_COMMAND}} context --task "<user prompt>"
 {{DRIFT_COMMAND}} coverage
 {{DRIFT_COMMAND}} check
+{{DRIFT_COMMAND}} check --changed
 {{DRIFT_COMMAND}} diff --summary
 {{DRIFT_COMMAND}} explain <contract-id>
+{{DRIFT_COMMAND}} proof --git-base <ref>
 ```
 
 For lint, typecheck, build, and tests, inspect the target project's package scripts and use only commands that are valid for that project.

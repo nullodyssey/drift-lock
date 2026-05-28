@@ -64,7 +64,8 @@ contracts. `diff --summary` reviews contract changes in PRs. `explain` prints
 actionable diagnostics after a failed check. `accept` records intentional locked
 contract changes. `proof --git-base <ref>` emits a non-blocking PR proof report
 in Markdown or JSON. `skills list` and `skills install` manage bundled agent
-skills.
+skills. The bundled role skills are `drift-cm`, `drift-dev`, and
+`drift-analyst`.
 
 Useful install options:
 

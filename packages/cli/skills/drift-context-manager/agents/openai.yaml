@@ -1,4 +1,0 @@
-interface:
-  display_name: "Drift Context Manager"
-  short_description: "Compile Drift context before edits"
-  default_prompt: "Use $drift-context-manager to prepare contract-aware context before editing a Drift-protected file."

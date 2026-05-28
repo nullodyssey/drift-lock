@@ -1,0 +1,4 @@
+interface:
+  display_name: "Drift CM"
+  short_description: "Route work with anti-drift context"
+  default_prompt: "Use $drift-cm to prepare anti-drift task context, detect contract conflicts, choose the next role, and list required proof."
