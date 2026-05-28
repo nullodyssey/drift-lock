@@ -1,0 +1,80 @@
+---
+title: drift-lock extract
+description: Extract @drift contracts and write the committed DriftLock contract index.
+nav_title: extract
+---
+
+# drift-lock extract
+
+`drift-lock extract` scans configured TypeScript source files for `/* @drift */`
+contracts and writes the sharded contract index. This is the command that
+updates the committed baseline used later by `check`, `diff`, `explain`, and
+`proof`.
+
+`extract` is intentionally the only DriftLock command that writes the committed
+contract index.
+
+## Usage
+
+```bash
+drift-lock extract [options]
+```
+
+## Options
+
+| Option | Description | Default |
+| --- | --- | --- |
+| `--root <dir>` | Project root. | Current working directory |
+| `--source <dir>` | Source directory to scan. | `.drift/config.json` `source`, or `src` when config is missing |
+| `--out <dir>` | Output index store path. | `.drift/config.json` `index`, or `.drift/contracts.generated.index` when config is missing |
+
+## Examples
+
+Extract contracts using project config:
+
+```bash
+drift-lock extract
+```
+
+Extract from an explicit source directory:
+
+```bash
+drift-lock extract --source packages/core/src
+```
+
+Write the index to a custom location:
+
+```bash
+drift-lock extract --out .drift/contracts.generated.index
+```
+
+Run against a different project root:
+
+```bash
+drift-lock extract --root ../my-app
+```
+
+## Output
+
+On success, the command prints the number of extracted contracts and the index
+path:
+
+```txt
+Extracted 12 @drift contract(s) to .drift/contracts.generated.index.
+```
+
+The index directory should be committed when it is part of the project's
+DriftLock baseline.
+
+## Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Contracts were extracted and the index was written. |
+| `1` | Extraction failed, config was invalid, or the index could not be written. |
+
+## Related commands
+
+- [`check`](./check.mdx) validates source against the extracted index.
+- [`diff`](./diff.mdx) summarizes source changes against the extracted index.
+- [`accept`](./accept.mdx) records an intentional locked-contract change after the index detects it.

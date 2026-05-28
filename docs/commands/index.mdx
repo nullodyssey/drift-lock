@@ -1,0 +1,96 @@
+---
+title: DriftLock CLI Docs
+description: Learn how to install DriftLock, write @drift contracts, generate the contract index, and use the CLI command reference.
+related:
+  title: Start with the CLI workflow
+  description: Install DriftLock and create your first protected contract.
+  links:
+    - commands/getting-started
+    - commands/install
+    - commands/extract
+---
+
+Welcome to the DriftLock CLI documentation.
+
+## What is DriftLock?
+
+DriftLock is a local-first tool for preserving engineering intent during
+AI-assisted TypeScript changes. You declare protected intent in `/* @drift */`
+contracts next to source code, then use the CLI to render agent context,
+generate a committed contract index, check invariants, review diffs, and record
+intentional locked-contract changes.
+
+The CLI is designed for projects where a small amount of local intent should
+stay visible to humans, agents, editors, and CI.
+
+## How to use these docs
+
+The CLI docs are organized into workflow pages and command reference pages:
+
+- [Getting Started](./getting-started.mdx): Install DriftLock, add a first
+  contract, and generate the initial contract index.
+- [Install](./install.mdx): Configure a project with DriftLock files, package
+  scripts, ESLint, CI, skills, and examples.
+- [Command reference](#command-reference): Use one page per top-level
+  `drift-lock` command.
+
+Use the command pages when you need exact options, output behavior, and exit
+codes. Use the getting started guide when you want the shortest path from a
+fresh project to a committed DriftLock baseline.
+
+## Core workflow
+
+Most teams start with this loop:
+
+```bash
+drift-lock install
+drift-lock context --task "<user prompt>"
+drift-lock extract
+drift-lock check
+drift-lock diff --summary
+```
+
+Run `extract` after adding or changing contracts to update
+`.drift/contracts.generated.index`. Commit that directory so later checks can
+detect locked contract changes and contract diffs.
+
+For pull requests, add:
+
+```bash
+drift-lock check --changed --git-base origin/main
+drift-lock proof --git-base origin/main
+```
+
+## Prerequisite knowledge
+
+These docs assume you are comfortable with:
+
+- TypeScript projects on Node.js 22 or newer.
+- Package managers such as npm, pnpm, yarn, or bun.
+- Git workflows where generated baseline files can be committed.
+- Writing small YAML blocks inside `/* @drift */` comments.
+
+You do not need a hosted DriftLock account to use the open-source CLI.
+
+## Command reference
+
+| Command | Use it when |
+| --- | --- |
+| [`drift-lock install`](./install.mdx) | Add DriftLock config, scripts, dependencies, ESLint, CI, skills, or examples to a project. |
+| [`drift-lock context`](./context.mdx) | Render contract-aware context before a human or agent plans a change. |
+| [`drift-lock extract`](./extract.mdx) | Scan `/* @drift */` contracts and write `.drift/contracts.generated.index`. |
+| [`drift-lock check`](./check.mdx) | Validate contracts, locked baselines, required coverage, and supported invariants. |
+| [`drift-lock coverage`](./coverage.mdx) | Report contract coverage, required-contract gaps, and disable directives. |
+| [`drift-lock diff`](./diff.mdx) | Summarize current contract changes against the committed index. |
+| [`drift-lock explain`](./explain.mdx) | Explain current violations with actionable text or stable JSON. |
+| [`drift-lock proof`](./proof.mdx) | Generate a pull request proof report from current DriftLock signals. |
+| [`drift-lock accept`](./accept.mdx) | Record an intentional locked-contract change with a product reason. |
+| [`drift-lock skills`](./skills.mdx) | List or install bundled DriftLock agent skills. |
+
+## Configuration
+
+DriftLock reads `.drift/config.json` from the project root. The installer writes
+a simple config with `source`, `index`, `requireContracts`, and adoption mode.
+See the repository config documentation for the complete field reference:
+
+- [DriftLock Config](../config.md)

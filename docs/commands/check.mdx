@@ -1,0 +1,100 @@
+---
+title: drift-lock check
+description: Validate @drift contracts, locked baselines, required-contract coverage, and supported invariants.
+nav_title: check
+---
+
+# drift-lock check
+
+`drift-lock check` validates the current source tree against the DriftLock
+contract rules. It is the main blocking command for local verification and CI.
+
+The command reads `.drift/config.json` before falling back to defaults. When no
+config file exists, it uses `src` as the source directory,
+`.drift/contracts.generated.index` as the index, and `enforce` adoption mode.
+
+## Usage
+
+```bash
+drift-lock check [options]
+```
+
+## Options
+
+| Option | Description | Default |
+| --- | --- | --- |
+| `--root <dir>` | Project root. | Current working directory |
+| `--source <dir>` | Source directory to scan. | `.drift/config.json` `source`, or `src` when config is missing |
+| `--index <dir>` | Index store path. | `.drift/config.json` `index`, or `.drift/contracts.generated.index` when config is missing |
+| `--changed` | Only validate contracts changed since the Drift index. | `false` |
+| `--git-base <ref>` | Limit changed checks to files changed since a Git ref. | None |
+| `--adoption-mode <mode>` | Override required-contract adoption mode: `audit`, `warn`, or `enforce`. | `.drift/config.json` `adoption.mode`, or `enforce` |
+
+`--git-base` is valid only together with `--changed`.
+
+## Examples
+
+Run the full check:
+
+```bash
+drift-lock check
+```
+
+Validate only contracts changed since the committed Drift index:
+
+```bash
+drift-lock check --changed
+```
+
+Limit changed checks to files changed since the pull request base:
+
+```bash
+drift-lock check --changed --git-base origin/main
+```
+
+Temporarily report required-contract gaps as warnings:
+
+```bash
+drift-lock check --adoption-mode warn
+```
+
+Use explicit source and index paths:
+
+```bash
+drift-lock check --source packages/core/src --index .drift/contracts.generated.index
+```
+
+## Output
+
+When the check passes, the command prints the number of contracts checked:
+
+```txt
+Checked 8 @drift contract(s).
+```
+
+When filters are active, they are included in the success message:
+
+```txt
+Checked 2 @drift contract(s) with changed-only filtering and Git base origin/main.
+```
+
+Non-blocking diagnostics from `audit` or `warn` adoption mode are printed to
+standard error, but the command can still exit successfully.
+
+Blocking Drift violations are formatted with stable diagnostic codes such as
+`DRIFT011_LOCKED_CONTRACT_CHANGED`,
+`DRIFT013_SSOT_FLOW_NOT_PROVEN`, or
+`DRIFT015_REQUIRED_CONTRACT_MISSING`.
+
+## Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | No blocking Drift errors were found. Non-blocking `audit` or `warn` diagnostics may still have been printed. |
+| `1` | Blocking contract, invariant, config, index, Git-base, or option validation failed. |
+
+## Related commands
+
+- [`extract`](./extract.mdx) refreshes the committed baseline checked by this command.
+- [`explain`](./explain.mdx) explains violations after a failed check.
+- [`proof`](./proof.mdx) composes check results into a pull request proof report.

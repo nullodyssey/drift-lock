@@ -1,0 +1,84 @@
+---
+title: drift-lock accept
+description: Create an acceptance file for an intentional locked-contract change.
+nav_title: accept
+---
+
+# drift-lock accept
+
+`drift-lock accept` records that a locked contract changed intentionally. It
+creates a file under `.drift/accepted-contract-changes/` with the contract ID
+and a human-readable reason.
+
+Use this command only when changing the locked contract is the intended product
+or engineering decision.
+
+## Usage
+
+```bash
+drift-lock accept <contractId> --reason "<reason>" [options]
+```
+
+## Options
+
+| Option | Description | Default |
+| --- | --- | --- |
+| `<contractId>` | Contract ID to accept. | Required |
+| `--reason <reason>` | Reason for accepting the contract change. Must be at least 20 characters after trimming. | Required |
+| `--root <dir>` | Project root. | Current working directory |
+| `--force` | Overwrite an existing acceptance file. | `false` |
+
+## Examples
+
+Accept an intentional billing contract change:
+
+```bash
+drift-lock accept billing.create-checkout-session --reason "Product change accepted by billing owner."
+```
+
+Overwrite a previous acceptance file:
+
+```bash
+drift-lock accept billing.create-checkout-session \
+  --reason "Updated product change accepted by owner." \
+  --force
+```
+
+Run against another root:
+
+```bash
+drift-lock accept billing.create-checkout-session \
+  --reason "Product change accepted by billing owner." \
+  --root ../my-app
+```
+
+## Output
+
+On success, the command prints the contract ID and the acceptance file path:
+
+```txt
+Accepted billing.create-checkout-session -> /repo/.drift/accepted-contract-changes/billing.create-checkout-session.md
+```
+
+The generated acceptance file uses this line-based format:
+
+```txt
+contract: billing.create-checkout-session
+reason: Product change accepted by billing owner.
+```
+
+The contract ID must be safe for the acceptance-file path. Unsafe IDs such as
+`../../../tmp/foo` are rejected.
+
+## Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | The acceptance file was created or overwritten with `--force`. |
+| `1` | The contract ID is invalid, the reason is too short, the file already exists without `--force`, or the file could not be written. |
+
+## Related commands
+
+- [`check`](./check.mdx) detects locked-contract changes that may require acceptance.
+- [`diff`](./diff.mdx) shows the contract fields that changed.
+- [`proof`](./proof.mdx) includes accepted changes in the PR proof report.

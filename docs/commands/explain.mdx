@@ -1,0 +1,106 @@
+---
+title: drift-lock explain
+description: Explain DriftLock violations with actionable text or stable JSON diagnostics.
+nav_title: explain
+---
+
+# drift-lock explain
+
+`drift-lock explain` turns DriftLock violations into actionable explanations.
+Use it after a failed `check`, or run it directly to inspect the current source
+tree.
+
+By default, it explains all current violations. Pass a contract ID to focus on
+one contract.
+
+## Usage
+
+```bash
+drift-lock explain [contractId] [options]
+```
+
+## Options
+
+| Option | Description | Default |
+| --- | --- | --- |
+| `[contractId]` | Contract ID to explain. | All contracts |
+| `--root <dir>` | Project root. | Current working directory |
+| `--source <dir>` | Source directory to scan. | `.drift/config.json` `source`, or `src` when config is missing |
+| `--index <dir>` | Index store path. | `.drift/config.json` `index`, or `.drift/contracts.generated.index` when config is missing |
+| `--json` | Print machine-readable JSON. | `false` |
+
+## Examples
+
+Explain all current violations:
+
+```bash
+drift-lock explain
+```
+
+Explain one contract:
+
+```bash
+drift-lock explain billing.create-checkout-session
+```
+
+Print stable JSON:
+
+```bash
+drift-lock explain --json
+```
+
+Use explicit paths:
+
+```bash
+drift-lock explain --source src --index .drift/contracts.generated.index
+```
+
+## Output
+
+Text output includes the diagnostic code, contract or file, relevant sink or
+reason when available, the found source expression when available, and a
+suggested fix.
+
+Example text fields for an SSOT flow failure:
+
+```txt
+Drift violation:
+DRIFT013_SSOT_FLOW_NOT_PROVEN billing.create-checkout-session
+Sink: return.amount
+Reason: missing-sink
+Suggested fix:
+```
+
+JSON output is wrapped in an `explanations` array:
+
+```json
+{
+  "explanations": [
+    {
+      "code": "DRIFT013_SSOT_FLOW_NOT_PROVEN",
+      "contractId": "billing.create-checkout-session",
+      "sink": "return.amount",
+      "reason": "missing-sink"
+    }
+  ]
+}
+```
+
+When no matching violations exist, text output is:
+
+```txt
+No Drift violations found.
+```
+
+## Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | No explanations were produced for the selected scope. |
+| `1` | One or more explanations were produced, or command/config validation failed. |
+
+## Related commands
+
+- [`check`](./check.mdx) detects the violations explained here.
+- [`diff`](./diff.mdx) shows which contract fields changed.
+- [`accept`](./accept.mdx) records intentional locked-contract changes that explain may suggest.
