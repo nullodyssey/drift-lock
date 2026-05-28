@@ -1,0 +1,99 @@
+---
+title: drift-lock proof
+description: Generate a pull request proof report from current DriftLock signals.
+nav_title: proof
+---
+
+# drift-lock proof
+
+`drift-lock proof` generates a pull request proof report from current DriftLock
+signals. It composes contract checks, diffs, Git scope, required-contract
+coverage, and accepted locked-contract changes into a single report.
+
+The command is report-oriented. Unresolved drift can appear in the report while
+the command still exits successfully.
+
+## Usage
+
+```bash
+drift-lock proof --git-base <ref> [options]
+```
+
+## Options
+
+| Option | Description | Default |
+| --- | --- | --- |
+| `--root <dir>` | Project root. | Current working directory |
+| `--source <dir>` | Source directory to scan. | `.drift/config.json` `source`, or `src` when config is missing |
+| `--index <dir>` | Index store path. | `.drift/config.json` `index`, or `.drift/contracts.generated.index` when config is missing |
+| `--git-base <ref>` | Git ref used as the pull request base. Required. | None |
+| `--format <format>` | Output format: `md` or `json`. | `md` |
+
+## Examples
+
+Generate the default Markdown report:
+
+```bash
+drift-lock proof --git-base origin/main
+```
+
+Generate JSON:
+
+```bash
+drift-lock proof --git-base origin/main --format json
+```
+
+Use an explicit source directory and index:
+
+```bash
+drift-lock proof --git-base origin/main --source src --index .drift/contracts.generated.index
+```
+
+## Output
+
+Markdown output starts with:
+
+```md
+## DriftLock Proof Report
+```
+
+The report includes summary counts such as protected contracts touched, current
+violations, accepted changes, and per-contract outcomes.
+
+JSON output uses the proof report JSON shape and includes summary and outcome
+data. For example:
+
+```json
+{
+  "summary": {
+    "protectedContractsTouched": 1
+  },
+  "outcomes": [
+    {
+      "contractId": "billing.changed",
+      "resolution": "preserved"
+    }
+  ]
+}
+```
+
+If unresolved drift remains, the Markdown report can include:
+
+```txt
+Unresolved drift remains in final PR state.
+```
+
+That finding is part of the report and does not by itself make the command fail.
+
+## Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | The proof report was generated, even if the report contains unresolved drift. |
+| `1` | Required `--git-base` is missing, `--format` is unsupported, config/index/extraction failed, or Git-base resolution failed. |
+
+## Related commands
+
+- [`check`](./check.mdx) provides the validation signal used by proof.
+- [`diff`](./diff.mdx) provides the contract-change signal used by proof.
+- [`accept`](./accept.mdx) creates accepted-change records that proof reports.

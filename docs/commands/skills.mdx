@@ -1,0 +1,127 @@
+---
+title: drift-lock skills
+description: List and install bundled DriftLock agent skills for OpenAI, Claude, and Cursor.
+nav_title: skills
+---
+
+# drift-lock skills
+
+`drift-lock skills` manages bundled DriftLock anti-drift agent skills. Use it
+to list the roles shipped with the CLI or install them into an agent-specific
+project layout.
+
+The `skills` namespace has two executable subcommands:
+
+- `drift-lock skills list`
+- `drift-lock skills install`
+
+## Usage
+
+```bash
+drift-lock skills list
+drift-lock skills install [skills...] [options]
+```
+
+## Subcommands
+
+| Command | Description |
+| --- | --- |
+| `drift-lock skills list` | List bundled DriftLock role skill names. |
+| `drift-lock skills install [skills...]` | Install selected bundled skills, or all bundled skills when none are specified. |
+
+## Options
+
+`skills list` does not accept command-specific options.
+
+`skills install` accepts:
+
+| Option | Description | Default |
+| --- | --- | --- |
+| `[skills...]` | Skill names to install. When omitted, installs all bundled skills. | All bundled skills |
+| `--provider <provider>` | Target provider: `openai`, `claude`, or `cursor`. | `openai` |
+| `--root <dir>` | Project root. | Current working directory |
+| `--drift-command <command>` | DriftLock command prefix embedded in installed skills. | `npx --yes @drift-lock/cli` |
+| `--force` | Overwrite existing installed skills. | `false` |
+
+## Examples
+
+List bundled skills:
+
+```bash
+drift-lock skills list
+```
+
+Install all OpenAI-compatible skills:
+
+```bash
+drift-lock skills install --provider openai
+```
+
+Install one Claude skill:
+
+```bash
+drift-lock skills install drift-cm --provider claude
+```
+
+Install a Cursor rule with a custom DriftLock command prefix:
+
+```bash
+drift-lock skills install drift-analyst \
+  --provider cursor \
+  --drift-command "pnpm exec drift-lock"
+```
+
+Overwrite existing installed skills:
+
+```bash
+drift-lock skills install --provider openai --force
+```
+
+## Output
+
+`skills list` prints one bundled skill name per line. The current bundled skill
+set is:
+
+```txt
+drift-analyst
+drift-cm
+drift-dev
+```
+
+These skills map to the first three DriftLock anti-drift roles:
+
+```txt
+drift-cm       Prepare task context, detect conflicts, and route work.
+drift-dev      Implement code while preserving contracts and SSOT provenance.
+drift-analyst  Assess contract impact, risk, proof, and PR readiness.
+```
+
+`skills install` prints one installed destination per skill:
+
+```txt
+Installed drift-dev -> /repo/.agents/skills/drift-dev
+```
+
+Provider output layouts:
+
+| Provider | Destination |
+| --- | --- |
+| `openai` | `.agents/skills/<skill>/` |
+| `claude` | `.claude/skills/<skill>/` |
+| `cursor` | `.cursor/rules/<skill>.mdc` |
+
+The installer replaces `{{DRIFT_COMMAND}}` placeholders in bundled text files
+with the `--drift-command` value.
+
+## Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Skills were listed or installed. |
+| `1` | The provider is unsupported, a requested skill is unknown, the Drift command is empty, a destination exists without `--force`, or files could not be written. |
+
+## Related commands
+
+- [`install`](./install.mdx) can install agent skills during project setup.
+- [`context`](./context.mdx) is the main command embedded into planning-oriented skills.
+- [`check`](./check.mdx), [`coverage`](./coverage.mdx), [`diff`](./diff.mdx), [`explain`](./explain.mdx), [`proof`](./proof.mdx), and [`accept`](./accept.mdx) are also referenced by the bundled skills.

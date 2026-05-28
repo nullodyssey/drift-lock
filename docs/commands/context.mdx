@@ -1,0 +1,101 @@
+---
+title: drift-lock context
+description: Render contract-aware context for a target file or a planned task.
+nav_title: context
+---
+
+# drift-lock context
+
+`drift-lock context` prints the DriftLock context an engineer or coding agent
+should read before planning or editing. It can render context for a known file
+or for a task prompt.
+
+Use file mode when the target file is known. Use task mode when the user request
+is known but the affected files still need to be inferred.
+
+## Usage
+
+```bash
+drift-lock context [file] [options]
+drift-lock context --task "<prompt>" [options]
+```
+
+## Options
+
+| Option | Description | Default |
+| --- | --- | --- |
+| `[file]` | Target file to render context for. | None |
+| `--root <dir>` | Project root. | Current working directory |
+| `--source <dir>` | Source directory to scan in task mode. | `.drift/config.json` `source`, or `src` when config is missing |
+| `--task <prompt>` | User task prompt to prepare context for. | None |
+
+## Examples
+
+Render context for a known file:
+
+```bash
+drift-lock context src/features/billing/actions.ts
+```
+
+Render pre-plan context for a task:
+
+```bash
+drift-lock context --task "add yearly billing pricing plan"
+```
+
+Use a custom source directory in task mode:
+
+```bash
+drift-lock context --task "update checkout" --source apps/web/src
+```
+
+## Output
+
+File mode prints relevant contracts for the target file.
+
+Task mode prints a task-oriented context report that includes:
+
+- the task prompt,
+- relevant contract IDs,
+- declared sources of truth,
+- supported invariants,
+- planning notes for the change.
+
+## Error cases
+
+You must provide exactly one context target:
+
+```bash
+drift-lock context
+```
+
+prints:
+
+```txt
+Provide a target file or --task "<prompt>".
+```
+
+Passing both a file and `--task` is invalid:
+
+```bash
+drift-lock context src/actions.ts --task "change billing"
+```
+
+prints:
+
+```txt
+Use either a target file or --task, not both.
+```
+
+## Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Context was rendered. |
+| `1` | The command was called without exactly one target, config was invalid, or context extraction failed. |
+
+## Related commands
+
+- [`check`](./check.mdx) validates the same contracts after editing.
+- [`coverage`](./coverage.mdx) shows which required files still lack contracts.
+- [`diff`](./diff.mdx) summarizes contract changes after editing.

@@ -1,0 +1,125 @@
+---
+title: drift-lock install
+description: Install DriftLock into a project by creating config, scripts, ESLint, CI, skills, and example files.
+nav_title: install
+---
+
+# drift-lock install
+
+`drift-lock install` wires DriftLock into the current project. It creates the
+managed `.drift` files, adds package scripts, plans or installs DriftLock
+dependencies, and can configure ESLint, GitHub Actions, bundled agent skills,
+and a sample billing contract.
+
+The command is interactive only when it is running in a TTY and one of the
+installer choices was not passed on the command line. In non-TTY or CI
+execution, it uses detected or default values and does not prompt.
+
+## Usage
+
+```bash
+drift-lock install [options]
+```
+
+Run the latest published installer without adding the package first:
+
+```bash
+npx --yes @drift-lock/cli@latest install
+pnpm dlx @drift-lock/cli@latest install
+bunx @drift-lock/cli@latest install
+yarn dlx -p @drift-lock/cli@latest drift-lock install
+```
+
+## Options
+
+| Option | Description | Default |
+| --- | --- | --- |
+| `--root <dir>` | Project root. | Current working directory |
+| `--source <dir>` | Source directory to scan. | Detected from `src`, `app`, or `pages`; otherwise `src` |
+| `--package-manager <pm>` | Package manager: `npm`, `pnpm`, `yarn`, or `bun`. | Detected from lockfiles; otherwise `npm` |
+| `--eslint` | Configure ESLint if possible. | Enabled |
+| `--no-eslint` | Do not configure ESLint. | - |
+| `--ci <provider>` | Add a CI provider. The supported provider is `github`. | Disabled unless selected interactively |
+| `--no-ci` | Do not add CI. | - |
+| `--agent <provider>` | Install agent skills for `openai`, `claude`, or `cursor`. | Disabled unless selected interactively |
+| `--no-agent` | Do not install agent skills. | - |
+| `--example <name>` | Add an example project. The supported example is `next-billing`. | None |
+| `--dry-run` | Print planned changes without writing files or installing packages. | `false` |
+| `--force` | Overwrite DriftLock managed files and package scripts. | `false` |
+
+## Examples
+
+Install with explicit non-interactive choices:
+
+```bash
+drift-lock install --source src --package-manager pnpm --no-ci --no-agent
+```
+
+Preview the installer plan without writing files:
+
+```bash
+drift-lock install --dry-run
+```
+
+Install OpenAI-compatible agent skills during setup:
+
+```bash
+drift-lock install --agent openai
+```
+
+Add the GitHub Actions workflow:
+
+```bash
+drift-lock install --ci github
+```
+
+Install the sample billing contract:
+
+```bash
+drift-lock install --example next-billing
+```
+
+## Output
+
+The installer prints a summary with the files it created, updated, or skipped.
+When dependencies are planned or installed, it also prints the package-manager
+command.
+
+For example, a dry run can include:
+
+```txt
+DriftLock install dry run.
+
+Would create:
+- .drift/config.json
+- .drift/contracts.generated.index
+
+Would update:
+- package.json
+
+Would run:
+- pnpm add -D @drift-lock/cli @drift-lock/eslint-plugin
+```
+
+The installer adds these package scripts when they are missing or when
+`--force` allows replacement:
+
+| Script | Command |
+| --- | --- |
+| `drift-lock:extract` | `drift-lock extract` |
+| `drift-lock:check` | `drift-lock check` |
+| `drift-lock:coverage` | `drift-lock coverage` |
+| `drift-lock:context` | `drift-lock context` |
+
+## Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Installation or dry run completed. |
+| `1` | The installer could not complete, for example because `package.json` is missing, an unsupported option value was passed, an agent skill destination exists without `--force`, extraction failed, or dependency installation failed. |
+
+## Related commands
+
+- [`extract`](./extract.mdx) writes the committed contract index after install.
+- [`check`](./check.mdx) validates contracts locally or in CI.
+- [`skills`](./skills.mdx) installs bundled agent skills after the project is already configured.

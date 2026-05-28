@@ -1,0 +1,97 @@
+---
+title: drift-lock coverage
+description: Report DriftLock contract coverage, required-contract gaps, and disable directives.
+nav_title: coverage
+---
+
+# drift-lock coverage
+
+`drift-lock coverage` reports how much of the configured source surface is
+covered by valid `@drift` contracts. It also lists required files that do not
+have contracts and reports local `drift-lock-disable` directives.
+
+Coverage is informational. Missing required contracts in coverage output do not
+make this command fail by themselves.
+
+## Usage
+
+```bash
+drift-lock coverage [options]
+```
+
+## Options
+
+| Option | Description | Default |
+| --- | --- | --- |
+| `--root <dir>` | Project root. | Current working directory |
+| `--source <dir>` | Source directory to scan. | `.drift/config.json` `source`, or `src` when config is missing |
+| `--json` | Print machine-readable JSON. | `false` |
+
+## Examples
+
+Print the human-readable coverage summary:
+
+```bash
+drift-lock coverage
+```
+
+Print JSON for automation:
+
+```bash
+drift-lock coverage --json
+```
+
+Scan an explicit source directory:
+
+```bash
+drift-lock coverage --source packages/core/src
+```
+
+## Output
+
+Text output includes a Drift coverage summary with contract totals, source file
+totals, required-file coverage, and uncovered required files.
+
+For projects with `requireContracts` configured, uncovered required files are
+listed:
+
+```txt
+Required files without contracts:
+- src/services/payment.ts
+```
+
+When source files contain DriftLock disable directives, coverage reports their
+total count, malformed entries, expired entries, and item details.
+
+Supported disable directive shapes are:
+
+```ts
+// drift-lock-disable-next-line <rule> -- reason: <text>
+// drift-lock-disable-file <rule> -- reason: <text>
+// drift-lock-disable-next-line <rule> -- reason: <text>, expires: YYYY-MM-DD
+```
+
+JSON output is wrapped in a `coverage` object:
+
+```json
+{
+  "coverage": {
+    "contracts": {},
+    "files": {},
+    "disableDirectives": {}
+  }
+}
+```
+
+## Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Coverage was calculated. Required-contract gaps and disable-directive findings are report-only here. |
+| `1` | Config was invalid or contract extraction failed. |
+
+## Related commands
+
+- [`check`](./check.mdx) can make required-contract gaps blocking depending on adoption mode.
+- [`context`](./context.mdx) helps agents use existing contract coverage before editing.
+- [`install`](./install.mdx) adds the `drift-lock:coverage` package script.

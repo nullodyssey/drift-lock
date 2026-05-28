@@ -1,0 +1,86 @@
+---
+title: drift-lock diff
+description: Summarize current @drift contract changes against the committed DriftLock index.
+nav_title: diff
+---
+
+# drift-lock diff
+
+`drift-lock diff` compares current extracted contracts with the committed Drift
+index and summarizes added, changed, removed, and reordered contract data. Use it
+before review to see what changed in protected intent.
+
+## Usage
+
+```bash
+drift-lock diff [options]
+```
+
+## Options
+
+| Option | Description | Default |
+| --- | --- | --- |
+| `--root <dir>` | Project root. | Current working directory |
+| `--source <dir>` | Source directory to scan. | `.drift/config.json` `source`, or `src` when config is missing |
+| `--index <dir>` | Index store path. | `.drift/config.json` `index`, or `.drift/contracts.generated.index` when config is missing |
+| `--summary` | Print a reviewer-oriented summary. | `true` |
+| `--json` | Print machine-readable JSON. | `false` |
+| `--git-base <ref>` | Limit the diff to files changed since a Git ref. | None |
+
+The command currently prints the summary format unless `--json` is passed.
+
+## Examples
+
+Print the default summary:
+
+```bash
+drift-lock diff
+```
+
+Use the explicit summary flag:
+
+```bash
+drift-lock diff --summary
+```
+
+Print JSON:
+
+```bash
+drift-lock diff --json
+```
+
+Limit the diff to files changed since a pull request base:
+
+```bash
+drift-lock diff --summary --git-base origin/main
+```
+
+## Output
+
+Summary output is reviewer-oriented and includes contract IDs, change kinds, and
+changed fields. Invariant changes include added or removed sinks and invariant
+order changes when they are detected.
+
+Example summary lines:
+
+```txt
+billing.changed (changed)
+fields: body
+billing.added (added)
+```
+
+JSON output returns the raw diff object. Changes include fields such as
+`id`, `kind`, `fields`, and, when relevant, `invariantChanges`.
+
+## Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | The diff was calculated. Contract changes can exist with exit code `0`. |
+| `1` | Config, extraction, index reading, or Git-base resolution failed. |
+
+## Related commands
+
+- [`extract`](./extract.mdx) writes the baseline used by this diff.
+- [`check`](./check.mdx) validates whether changed contracts are allowed.
+- [`proof`](./proof.mdx) includes diff signals in a PR-level report.

@@ -1,0 +1,207 @@
+---
+title: Getting Started with the DriftLock CLI
+description: Install DriftLock, write your first @drift contract, and generate the initial contract index.
+related:
+  title: Continue with command reference
+  description: Learn the exact options behind each command in this workflow.
+  links:
+    - commands/install
+    - commands/extract
+    - commands/check
+---
+
+This guide takes a TypeScript project from no DriftLock setup to its first
+committed contract index.
+
+## Prerequisites
+
+Before you start, make sure the project has:
+
+- Node.js 22 or newer.
+- A `package.json` at the project root.
+- TypeScript source under `src`, `app`, or `pages`, or a source directory you can
+  pass to `drift-lock install --source`.
+- Git available if you plan to commit the generated baseline.
+
+## 1. Install DriftLock
+
+Run the installer with your package manager:
+
+```bash
+npx --yes @drift-lock/cli@latest install
+pnpm dlx @drift-lock/cli@latest install
+bunx @drift-lock/cli@latest install
+yarn dlx -p @drift-lock/cli@latest drift-lock install
+```
+
+For a non-interactive install, pass the main choices explicitly:
+
+```bash
+npx --yes @drift-lock/cli@latest install --source src --package-manager pnpm --no-ci --no-agent
+```
+
+The installer creates `.drift/config.json`, creates the initial index store,
+adds package scripts, and can configure ESLint, GitHub Actions, bundled agent
+skills, and examples.
+
+## 2. Inspect the generated config
+
+The default config points the CLI at your source directory and the committed
+index path:
+
+```json filename=".drift/config.json"
+{
+  "version": 1,
+  "source": "src",
+  "index": ".drift/contracts.generated.index",
+  "requireContracts": [],
+  "adoption": {
+    "mode": "enforce"
+  }
+}
+```
+
+When `source` does not match your project, update `.drift/config.json` or pass
+`--source <dir>` to individual commands.
+
+## 3. Choose the first protected flow
+
+Start with a file where accidental drift would be expensive. Good first targets
+are billing, auth, permissions, pricing, routing rules, or schema-driven
+actions.
+
+For this guide, assume a billing action reads a local pricing source:
+
+```ts filename="src/features/billing/pricing.ts"
+export const BILLING_PRICES = {
+  pro: {
+    priceId: 'price_pro',
+    monthlyAmount: 2900,
+    currency: 'USD',
+  },
+} as const;
+```
+
+```ts filename="src/features/billing/actions.ts"
+import { BILLING_PRICES } from './pricing';
+
+export async function createCheckoutSession() {
+  const price = BILLING_PRICES.pro;
+
+  return {
+    priceId: price.priceId,
+    amount: price.monthlyAmount,
+    currency: price.currency,
+  };
+}
+```
+
+## 4. Add the first @drift contract
+
+Add a `/* @drift */` block directly above the function or file you want to
+protect. The contract is YAML inside a block comment.
+
+```ts filename="src/features/billing/actions.ts"
+import { BILLING_PRICES } from './pricing';
+
+/* @drift
+version: 1
+id: billing.create-checkout-session
+scope: declaration
+stability: draft
+
+intent: >
+  Create a checkout session using the declared billing price source.
+
+ssot:
+  pricing: "./pricing.ts"
+
+invariants:
+  - id: checkout-uses-pricing
+    enforce: drift/ssot-usage
+    ssot: pricing
+*/
+export async function createCheckoutSession() {
+  const price = BILLING_PRICES.pro;
+
+  return {
+    priceId: price.priceId,
+    amount: price.monthlyAmount,
+    currency: price.currency,
+  };
+}
+```
+
+The minimum useful fields are:
+
+| Field | Purpose |
+| --- | --- |
+| `id` | A unique dotted contract identifier. |
+| `scope` | `declaration` for a function-level contract or `file` for a file-level contract. |
+| `stability` | Start with `draft`; use `locked` when changes require explicit acceptance. |
+| `intent` | The protected engineering intent in plain English. |
+| `ssot` | Named sources of truth the protected behavior should keep using. |
+| `invariants` | Supported executable checks, such as `drift/ssot-usage` or `drift/ssot-flow`. |
+
+## 5. Generate the contract index
+
+Run extraction after adding or changing contracts:
+
+```bash
+drift-lock extract
+```
+
+On success, the CLI prints the number of extracted contracts and the output
+path:
+
+```txt
+Extracted 1 @drift contract(s) to .drift/contracts.generated.index.
+```
+
+The index is the committed baseline used by later commands.
+
+## 6. Run the first check
+
+Validate the current source tree:
+
+```bash
+drift-lock check
+```
+
+If the check passes, DriftLock prints the number of contracts checked:
+
+```txt
+Checked 1 @drift contract(s).
+```
+
+If it fails, run:
+
+```bash
+drift-lock explain
+```
+
+`explain` prints the violation, relevant contract or file, and a suggested fix.
+
+## 7. Commit the baseline
+
+Commit the generated index with your source change:
+
+```bash
+git add src/features/billing/actions.ts .drift/config.json .drift/contracts.generated.index
+git commit -m "Add first DriftLock contract"
+```
+
+After this commit, `drift-lock check`, `drift-lock diff --summary`, and
+`drift-lock proof --git-base <ref>` can compare future source changes against
+the baseline.
+
+## Next steps
+
+- Use [`drift-lock context`](./context.mdx) before asking an agent to edit a
+  protected flow.
+- Use [`drift-lock diff --summary`](./diff.mdx) before review to see contract
+  changes.
+- Use [`drift-lock check --changed --git-base origin/main`](./check.mdx) in CI
+  for pull requests.
+- Move important contracts from `draft` to `locked` once changing their intent
+  should require [`drift-lock accept`](./accept.mdx).
