@@ -1,0 +1,4 @@
+interface:
+  display_name: "Drift Design"
+  short_description: "Design DriftLock interfaces"
+  default_prompt: "Use $drift-design to create DriftLock-branded interfaces, mocks, or visual assets from the repo design system."

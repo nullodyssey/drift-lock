@@ -1,0 +1,23 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="_card.css">
+<style>
+  .terminal { background:#0B0C0E; color:#F7F4ED; padding:18px 20px; border-radius:6px; font-family:var(--font-mono); font-size:13px; line-height:1.7; }
+  .pr { color:#6B6F78; }
+  .ok { color:#4ADE80; }
+  .err { color:#FCA5A5; }
+  .wn { color:#FBBF24; }
+  .dim { color:#8E929A; }
+</style></head>
+<body><div class="card">
+  <div class="eyebrow">CLI · drift-lock check · unicode glyphs only here</div>
+  <div class="terminal">
+<span class="pr">$</span> drift-lock check<br/>
+<span class="dim">·  scanning 42 files in src</span><br/>
+<span class="ok">✓</span>  billing.create-checkout-quote     <span class="dim">— locked, 3 sinks proven</span><br/>
+<span class="err">✗</span>  billing.create-checkout-session   <span class="err">DRIFT013_SSOT_FLOW_NOT_PROVEN</span><br/>
+<span class="dim">    actions.ts:24:9 · sink return.priceId</span><br/>
+<span class="wn">⚠</span>  src/services/auth.ts              <span class="wn">DRIFT015_REQUIRED_CONTRACT_MISSING</span><br/>
+<br/>
+<span class="dim">1 locked · 1 drift · 1 required-missing · run `drift-lock explain` for fixes</span>
+  </div>
+</div></body></html>

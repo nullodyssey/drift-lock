@@ -1,0 +1,23 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="_card.css">
+<style>
+  .grid { display:grid; grid-template-columns: 1fr 1fr; gap:14px 24px; font-family:var(--font-mono); font-size:12px; }
+  .row { display:flex; align-items:center; gap:12px; }
+  .demo { width:120px; height:8px; background:#E2DDCE; border-radius:4px; overflow:hidden; position:relative; }
+  .demo::before { content:''; position:absolute; left:0; top:0; bottom:0; background:#C2410C; width:0%; animation:fill 1.6s var(--ease, cubic-bezier(0.2,0.7,0.2,1)) infinite; }
+  .e1::before { --ease: cubic-bezier(0.2,0.7,0.2,1); }
+  .e2::before { --ease: cubic-bezier(0.4,0,0.6,1); }
+  .lbl { color: var(--fg-muted); font-size: 11px; }
+  @keyframes fill { 0% { width:0; opacity:0;} 60%, 100% { width:100%; opacity:1;} }
+</style></head>
+<body><div class="card">
+  <div class="eyebrow">Motion · eased, small, never bouncy</div>
+  <div class="grid">
+    <div class="row"><div class="demo e1"></div><span>ease-out <span class="lbl">UI default</span></span></div>
+    <div class="row"><div class="demo e2"></div><span>ease-in-out <span class="lbl">state change</span></span></div>
+    <div class="row"><span>120ms <span class="lbl">hover</span></span></div>
+    <div class="row"><span>180ms <span class="lbl">state</span></span></div>
+    <div class="row"><span>240ms <span class="lbl">panel/modal</span></span></div>
+    <div class="row"><span>400ms <span class="lbl">sequence (max)</span></span></div>
+  </div>
+</div></body></html>
