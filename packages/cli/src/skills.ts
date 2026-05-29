@@ -33,10 +33,35 @@ export type InstalledSkill = {
   path: string;
 };
 
+export type BundledSkillCatalogEntry = {
+  code: string;
+  name: string;
+  useCase: string;
+};
+
+export const bundledSkillCatalog: BundledSkillCatalogEntry[] = [
+  { code: 'CTX', name: 'drift-cm', useCase: 'Prepare task context and route work' },
+  { code: 'DEV', name: 'drift-dev', useCase: 'Implement under Drift constraints' },
+  { code: 'IMP', name: 'drift-analyst', useCase: 'Assess impact, risk, and proof' },
+  { code: 'DOC', name: 'drift-tech-writer', useCase: 'Align docs with real behavior' },
+  { code: 'UX', name: 'drift-ux-designer', useCase: 'Formalize critical UX constraints' },
+  { code: 'ARC', name: 'drift-architect', useCase: 'Protect system boundaries' },
+];
+
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const bundledSkillsDir = path.resolve(currentDir, '../skills');
 const defaultDriftCommand = 'npx --yes @drift-lock/cli';
 const templateTextExtensions = new Set(['.md', '.mdc', '.txt', '.yaml', '.yml']);
+
+export function formatSkillCatalog(entries: BundledSkillCatalogEntry[] = bundledSkillCatalog): string {
+  const codeWidth = Math.max('CODE'.length, ...entries.map((entry) => entry.code.length));
+  const skillWidth = Math.max('SKILL'.length, ...entries.map((entry) => entry.name.length));
+  const rows = [
+    `${'CODE'.padEnd(codeWidth)}  ${'SKILL'.padEnd(skillWidth)}  USE CASE`,
+    ...entries.map((entry) => `${entry.code.padEnd(codeWidth)}  ${entry.name.padEnd(skillWidth)}  ${entry.useCase}`),
+  ];
+  return rows.join('\n');
+}
 
 export async function listBundledSkills(skillsDir = bundledSkillsDir): Promise<string[]> {
   const entries = await readdir(skillsDir, { withFileTypes: true });

@@ -32,7 +32,7 @@ import {
   type InstallProjectSummary,
   type PackageManager,
 } from './install.js';
-import { installSkills, listBundledSkills, type SkillProvider } from './skills.js';
+import { formatSkillCatalog, installSkills, listBundledSkills, type SkillProvider } from './skills.js';
 
 /* @drift
 version: 1
@@ -298,7 +298,13 @@ const skills = program.command('skills').description('Manage DriftLock agent ski
 skills
   .command('list')
   .description('List bundled DriftLock skills')
-  .action(async () => {
+  .option('--details', 'show role codes and use cases', false)
+  .action(async (options: { details: boolean }) => {
+    if (options.details) {
+      console.log(formatSkillCatalog());
+      return;
+    }
+
     const bundled = await listBundledSkills();
     for (const skill of bundled) console.log(skill);
   });
