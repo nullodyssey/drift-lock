@@ -17,7 +17,7 @@ Use this checklist before routing work to another role or starting implementatio
 - [ ] If contracts or protected files may change, recommend: {{DRIFT_COMMAND}} diff --summary
 - [ ] If Drift is already failing, run or request: {{DRIFT_COMMAND}} explain <contract-id>
 - [ ] If preparing PR handoff, recommend: {{DRIFT_COMMAND}} proof --git-base <ref>
-- [ ] Recommend next role: $drift-analyst or $drift-dev
+- [ ] Recommend next role: $drift-analyst, $drift-dev, $drift-architect, $drift-tech-writer, or $drift-ux-designer
 - [ ] List required proof and post-edit checks
 ```
 

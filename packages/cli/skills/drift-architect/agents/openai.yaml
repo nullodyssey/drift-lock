@@ -1,0 +1,4 @@
+interface:
+  display_name: "Drift Architect"
+  short_description: "Protect system boundaries"
+  default_prompt: "Use $drift-architect to assess this structural change, identify boundaries, and propose minimal Drift constraints before implementation."

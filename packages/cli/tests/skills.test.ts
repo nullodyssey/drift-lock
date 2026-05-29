@@ -8,8 +8,11 @@ describe('drift skills installer', () => {
   it('lists bundled Drift skills', async () => {
     await expect(listBundledSkills()).resolves.toEqual([
       'drift-analyst',
+      'drift-architect',
       'drift-cm',
       'drift-dev',
+      'drift-tech-writer',
+      'drift-ux-designer',
     ]);
   });
 
@@ -34,6 +37,28 @@ describe('drift skills installer', () => {
     expect(skill).not.toContain('{{DRIFT_COMMAND}}');
   });
 
+  it('installs all OpenAI role skills', async () => {
+    const root = await tempProject();
+
+    const installed = await installSkills({ provider: 'openai', root });
+
+    expect(installed.map((skill) => skill.name)).toEqual([
+      'drift-analyst',
+      'drift-architect',
+      'drift-cm',
+      'drift-dev',
+      'drift-tech-writer',
+      'drift-ux-designer',
+    ]);
+    await expectExists(path.join(root, '.agents/skills/drift-architect/SKILL.md'));
+    await expectExists(path.join(root, '.agents/skills/drift-tech-writer/agents/openai.yaml'));
+    await expectExists(path.join(root, '.agents/skills/drift-ux-designer/references/output-format.md'));
+
+    const skill = await readFile(path.join(root, '.agents/skills/drift-architect/SKILL.md'), 'utf8');
+    expect(skill).toContain('npx --yes @drift-lock/cli context --task "<user prompt>"');
+    expect(skill).not.toContain('{{DRIFT_COMMAND}}');
+  });
+
   it('installs Claude skills without OpenAI metadata', async () => {
     const root = await tempProject();
 
@@ -41,14 +66,14 @@ describe('drift skills installer', () => {
       provider: 'claude',
       root,
       driftCommand: 'pnpm --filter next-v1 exec drift-lock',
-      skills: ['drift-cm'],
+      skills: ['drift-tech-writer'],
     });
 
-    await expectExists(path.join(root, '.claude/skills/drift-cm/SKILL.md'));
-    await expectExists(path.join(root, '.claude/skills/drift-cm/references/checklist.md'));
-    await expectMissing(path.join(root, '.claude/skills/drift-cm/agents/openai.yaml'));
+    await expectExists(path.join(root, '.claude/skills/drift-tech-writer/SKILL.md'));
+    await expectExists(path.join(root, '.claude/skills/drift-tech-writer/references/checklist.md'));
+    await expectMissing(path.join(root, '.claude/skills/drift-tech-writer/agents/openai.yaml'));
 
-    const checklist = await readFile(path.join(root, '.claude/skills/drift-cm/references/checklist.md'), 'utf8');
+    const checklist = await readFile(path.join(root, '.claude/skills/drift-tech-writer/references/checklist.md'), 'utf8');
     expect(checklist).toContain('pnpm --filter next-v1 exec drift-lock context --task "<user prompt>"');
     expect(checklist).toContain('pnpm --filter next-v1 exec drift-lock context <file>');
     expect(checklist).toContain('pnpm --filter next-v1 exec drift-lock coverage');
@@ -64,13 +89,13 @@ describe('drift skills installer', () => {
       provider: 'cursor',
       root,
       driftCommand: 'pnpm --filter next-v1 exec drift-lock',
-      skills: ['drift-analyst'],
+      skills: ['drift-architect'],
     });
 
-    const rule = await readFile(path.join(root, '.cursor/rules/drift-analyst.mdc'), 'utf8');
+    const rule = await readFile(path.join(root, '.cursor/rules/drift-architect.mdc'), 'utf8');
     expect(rule).toContain('alwaysApply: false');
-    expect(rule).toContain('Analyze LLM-drift impact');
-    expect(rule).toContain('# Drift Analyst');
+    expect(rule).toContain('Protect system boundaries');
+    expect(rule).toContain('# Drift Architect');
     expect(rule).toContain('pnpm --filter next-v1 exec drift-lock check');
     expect(rule).toContain('pnpm --filter next-v1 exec drift-lock coverage');
     expect(rule).toContain('pnpm --filter next-v1 exec drift-lock diff --summary');
@@ -78,8 +103,8 @@ describe('drift skills installer', () => {
     expect(rule).toContain('pnpm --filter next-v1 exec drift-lock proof --git-base <ref>');
     expect(rule).toContain('## Bundled References');
     expect(rule).toContain('### references/output-format.md');
-    expect(rule).toContain('### references/risk-matrix.md');
-    expect(rule).toContain('CRITICAL -> ask for product/contract confirmation before implementation');
+    expect(rule).toContain('### references/checklist.md');
+    expect(rule).toContain('Current boundaries:');
     expect(rule).not.toContain('{{DRIFT_COMMAND}}');
   });
 
