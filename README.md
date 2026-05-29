@@ -200,6 +200,7 @@ drift-lock proof --git-base origin/main --format json
 drift-lock explain [contract-id]
 drift-lock accept <contract-id> --reason "<reason>"
 drift-lock skills list
+drift-lock skills list --details
 drift-lock skills install --provider openai
 ```
 
@@ -240,10 +241,11 @@ for CI or app integrations.
 `accept <contract-id> --reason "..."` records an intentional locked contract
 change. The reason must be explicit and should describe the product decision.
 
-`skills list` shows bundled DriftLock agent skills. `skills install --provider
-openai|claude|cursor` installs them for your agent environment. Use
-`--drift-command "<command>"` when skills should call a repo-specific wrapper.
-The bundled role skills are `drift-cm`, `drift-dev`, `drift-analyst`,
+`skills list` shows bundled DriftLock agent skill names, and
+`skills list --details` shows role codes and use cases. `skills install
+--provider openai|claude|cursor` installs them for your agent environment.
+Use `--drift-command "<command>"` when skills should call a repo-specific
+wrapper. The bundled role skills are `drift-cm`, `drift-dev`, `drift-analyst`,
 `drift-tech-writer`, `drift-ux-designer`, and `drift-architect`.
 
 Common role workflows:

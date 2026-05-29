@@ -54,6 +54,7 @@ drift-lock proof --git-base origin/main --format json
 drift-lock explain [contract-id]
 drift-lock accept <contract-id> --reason "<reason>"
 drift-lock skills list
+drift-lock skills list --details
 drift-lock skills install --provider openai
 ```
 
@@ -63,9 +64,10 @@ invariants locally or in CI. `coverage` shows adoption and missing required
 contracts. `diff --summary` reviews contract changes in PRs. `explain` prints
 actionable diagnostics after a failed check. `accept` records intentional locked
 contract changes. `proof --git-base <ref>` emits a non-blocking PR proof report
-in Markdown or JSON. `skills list` and `skills install` manage bundled agent
-skills. The bundled role skills are `drift-cm`, `drift-dev`, `drift-analyst`,
-`drift-tech-writer`, `drift-ux-designer`, and `drift-architect`.
+in Markdown or JSON. `skills list`, `skills list --details`, and
+`skills install` manage bundled agent skills. The bundled role skills are
+`drift-cm`, `drift-dev`, `drift-analyst`, `drift-tech-writer`,
+`drift-ux-designer`, and `drift-architect`.
 
 Use `$drift-cm` before unclear tasks, `$drift-analyst` before risky changes,
 `$drift-dev` for scoped implementation, `$drift-tech-writer` for docs,

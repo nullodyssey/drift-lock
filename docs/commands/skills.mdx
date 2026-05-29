@@ -18,7 +18,7 @@ The `skills` namespace has two executable subcommands:
 ## Usage
 
 ```bash
-drift-lock skills list
+drift-lock skills list [--details]
 drift-lock skills install [skills...] [options]
 ```
 
@@ -26,12 +26,16 @@ drift-lock skills install [skills...] [options]
 
 | Command | Description |
 | --- | --- |
-| `drift-lock skills list` | List bundled DriftLock role skill names. |
+| `drift-lock skills list [--details]` | List bundled DriftLock role skill names, or show role codes and use cases. |
 | `drift-lock skills install [skills...]` | Install selected bundled skills, or all bundled skills when none are specified. |
 
 ## Options
 
-`skills list` does not accept command-specific options.
+`skills list` accepts:
+
+| Option | Description | Default |
+| --- | --- | --- |
+| `--details` | Show role codes and use cases instead of names only. | `false` |
 
 `skills install` accepts:
 
@@ -49,6 +53,12 @@ List bundled skills:
 
 ```bash
 drift-lock skills list
+```
+
+List bundled skills with role codes and use cases:
+
+```bash
+drift-lock skills list --details
 ```
 
 Install all OpenAI-compatible skills:
@@ -91,15 +101,16 @@ drift-tech-writer
 drift-ux-designer
 ```
 
-These skills map to DriftLock anti-drift roles:
+`skills list --details` prints role codes and use cases:
 
 ```txt
-drift-cm           Prepare task context, detect conflicts, and route work.
-drift-dev          Implement code while preserving contracts and SSOT provenance.
-drift-analyst      Assess contract impact, risk, proof, and PR readiness.
-drift-tech-writer  Align docs, contracts, diagnostics, and real behavior.
-drift-ux-designer  Formalize critical UX constraints and stable vocabulary.
-drift-architect    Protect system boundaries and structural decisions.
+CODE  SKILL               USE CASE
+CTX   drift-cm            Prepare task context and route work
+DEV   drift-dev           Implement under Drift constraints
+IMP   drift-analyst       Assess impact, risk, and proof
+DOC   drift-tech-writer   Align docs with real behavior
+UX    drift-ux-designer   Formalize critical UX constraints
+ARC   drift-architect     Protect system boundaries
 ```
 
 ## Role workflows
