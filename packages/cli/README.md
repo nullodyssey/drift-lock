@@ -74,6 +74,8 @@ Use `$drift-cm` before unclear tasks, `$drift-analyst` before risky changes,
 `$drift-ux-designer` for critical UX constraints, and `$drift-architect` for
 structural boundaries. Typical proof is `context --task`, `coverage`,
 `diff --summary`, `check --changed`, and `proof --git-base <ref>`.
+Each installed role includes `references/examples.md` with greenfield and
+brownfield examples.
 
 Useful install options:
 

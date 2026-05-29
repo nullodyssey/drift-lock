@@ -58,3 +58,4 @@ Required checks:
 ```
 
 Read `references/checklist.md` for the required context checklist and `references/output-format.md` for the expected response shape.
+Read `references/examples.md` when the user asks for examples, adoption guidance, or greenfield/brownfield workflows.

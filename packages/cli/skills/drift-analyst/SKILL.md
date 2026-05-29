@@ -57,3 +57,4 @@ Recommendation:
 ```
 
 Read `references/risk-matrix.md` for risk classification and `references/output-format.md` for the expected response shape.
+Read `references/examples.md` when the user asks for examples, adoption guidance, or greenfield/brownfield workflows.
