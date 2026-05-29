@@ -22,10 +22,11 @@ implementation.
 ## Documentation Surfaces
 
 - Root product docs: `README.md`.
-- Detailed docs: `docs/*.md`.
+- Detailed docs: `docs/*.{md,mdx}`.
 - Package docs: `packages/core/README.md`, `packages/cli/README.md`,
   `packages/eslint-plugin/README.md`.
-- Demo docs: `apps/*/README.md`.
+- Demo docs: `apps/next-v1/README.md`.
+- Website docs: `apps/web/docs/**/*.{md,mdx}`, excluding `apps/web/docs/next/**`.
 - Agent-facing bundled skills: `packages/cli/skills/**`.
 - Repo-local Codex skills: `.agents/skills/**`.
 
