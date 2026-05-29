@@ -102,6 +102,20 @@ drift-ux-designer  Formalize critical UX constraints and stable vocabulary.
 drift-architect    Protect system boundaries and structural decisions.
 ```
 
+## Role workflows
+
+Use the shortest workflow that gives the agent enough Drift context and proof:
+
+| Workflow | Use when | Roles | Proof |
+| --- | --- | --- | --- |
+| Start a task | Prompt or scope needs Drift context before implementation. | `$drift-cm` -> `$drift-dev` | `context --task`, `check --changed` |
+| Assess risky change | Contract impact, SSOT impact, or safety is uncertain. | `$drift-cm` -> `$drift-analyst` -> `$drift-dev` | `coverage`, `diff --summary`, `explain` when failing |
+| Implement under contracts | Target behavior is clear and protected constraints are known. | `$drift-dev` | `diff --summary`, `check --changed`, `proof --git-base <ref>` |
+| Update docs safely | README, command docs, diagnostics, or agent docs must match behavior. | `$drift-tech-writer` | Implementation, tests, contracts, and relevant checks reviewed |
+| Design critical UX flow | UI states, stable vocabulary, action hierarchy, or accessibility expectations matter. | `$drift-ux-designer` -> `$drift-dev` -> `$drift-tech-writer` | Critical states, stable vocabulary, action hierarchy, `check --changed` |
+| Plan architecture or refactor | Packages, imports, ownership, runtime boundaries, or public APIs may shift. | `$drift-architect` -> `$drift-analyst` -> `$drift-dev` | Boundaries, contract candidates, `coverage`, `check` |
+| Adopt DriftLock in existing codebase | A living codebase needs gradual protection without a big bang. | `$drift-cm` -> `$drift-analyst` -> `$drift-architect` -> `$drift-dev` | `coverage`, missing contracts, staged adoption plan |
+
 `skills install` prints one installed destination per skill:
 
 ```txt

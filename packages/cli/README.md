@@ -67,6 +67,12 @@ in Markdown or JSON. `skills list` and `skills install` manage bundled agent
 skills. The bundled role skills are `drift-cm`, `drift-dev`, `drift-analyst`,
 `drift-tech-writer`, `drift-ux-designer`, and `drift-architect`.
 
+Use `$drift-cm` before unclear tasks, `$drift-analyst` before risky changes,
+`$drift-dev` for scoped implementation, `$drift-tech-writer` for docs,
+`$drift-ux-designer` for critical UX constraints, and `$drift-architect` for
+structural boundaries. Typical proof is `context --task`, `coverage`,
+`diff --summary`, `check --changed`, and `proof --git-base <ref>`.
+
 Useful install options:
 
 ```bash
