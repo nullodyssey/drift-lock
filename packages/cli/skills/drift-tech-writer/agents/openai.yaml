@@ -1,0 +1,4 @@
+interface:
+  display_name: "Drift Tech Writer"
+  short_description: "Align docs with Drift proof"
+  default_prompt: "Use $drift-tech-writer to update this documentation while keeping claims aligned with code, contracts, diagnostics, and checks."

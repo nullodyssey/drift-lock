@@ -243,7 +243,8 @@ change. The reason must be explicit and should describe the product decision.
 `skills list` shows bundled DriftLock agent skills. `skills install --provider
 openai|claude|cursor` installs them for your agent environment. Use
 `--drift-command "<command>"` when skills should call a repo-specific wrapper.
-The bundled role skills are `drift-cm`, `drift-dev`, and `drift-analyst`.
+The bundled role skills are `drift-cm`, `drift-dev`, `drift-analyst`,
+`drift-tech-writer`, `drift-ux-designer`, and `drift-architect`.
 
 For the AI-assisted workflow, run context before planning:
 

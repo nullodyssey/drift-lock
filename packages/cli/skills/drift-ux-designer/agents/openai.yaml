@@ -1,0 +1,4 @@
+interface:
+  display_name: "Drift UX Designer"
+  short_description: "Define contract-ready UX"
+  default_prompt: "Use $drift-ux-designer to identify critical UX states, stable vocabulary, and contract-ready interface guarantees for this flow."

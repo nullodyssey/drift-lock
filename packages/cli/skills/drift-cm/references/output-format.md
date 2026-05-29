@@ -19,7 +19,7 @@ Potential conflicts:
 - <conflict or "none found">
 
 Recommended next role:
-- $drift-analyst for impact analysis, or $drift-dev for implementation
+- $drift-analyst for impact analysis, $drift-dev for implementation, $drift-architect for structural changes, $drift-tech-writer for docs, or $drift-ux-designer for critical UX constraints
 
 Required proof:
 - <command>

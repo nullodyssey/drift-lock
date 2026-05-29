@@ -18,7 +18,7 @@ The goal is to turn DriftLock context into a compact routing decision: what is c
 5. Detect conflicts between the request and locked constraints. Call out missing proof instead of guessing.
 6. If the task may touch uncovered critical files or adoption state matters, run or recommend `{{DRIFT_COMMAND}} coverage`.
 7. If existing failures are mentioned or likely, run or recommend `{{DRIFT_COMMAND}} explain` or `{{DRIFT_COMMAND}} explain <contract-id>`.
-8. Choose the next role: `$drift-dev`, `$drift-analyst`, future `$drift-architect`, future `$drift-tech-writer`, or future `$drift-ux-designer`.
+8. Choose the next role: `$drift-dev`, `$drift-analyst`, `$drift-architect`, `$drift-tech-writer`, or `$drift-ux-designer`.
 9. List the required proof commands for the handoff, including `{{DRIFT_COMMAND}} diff --summary`, `{{DRIFT_COMMAND}} check --changed`, or `{{DRIFT_COMMAND}} proof --git-base <ref>` when relevant.
 
 ## Commands
