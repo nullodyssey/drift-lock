@@ -246,6 +246,19 @@ openai|claude|cursor` installs them for your agent environment. Use
 The bundled role skills are `drift-cm`, `drift-dev`, `drift-analyst`,
 `drift-tech-writer`, `drift-ux-designer`, and `drift-architect`.
 
+Common role workflows:
+
+- Start or scope a task with `$drift-cm` -> `$drift-dev`; prove it with
+  `context --task` and `check --changed`.
+- Assess risky work with `$drift-cm` -> `$drift-analyst` -> `$drift-dev`;
+  prove it with `coverage`, `diff --summary`, and `explain` when failing.
+- Update docs with `$drift-tech-writer`; verify claims against implementation,
+  tests, contracts, and relevant checks.
+- Design critical UX with `$drift-ux-designer` -> `$drift-dev` ->
+  `$drift-tech-writer`; preserve states, vocabulary, and action hierarchy.
+- Plan architecture changes with `$drift-architect` -> `$drift-analyst` ->
+  `$drift-dev`; prove boundaries, contract candidates, coverage, and checks.
+
 For the AI-assisted workflow, run context before planning:
 
 ```bash
