@@ -57,3 +57,4 @@ Remaining doc risks:
 ```
 
 Read `references/checklist.md` before editing documentation and `references/output-format.md` before the final response.
+Read `references/examples.md` when the user asks for examples, adoption guidance, or greenfield/brownfield workflows.

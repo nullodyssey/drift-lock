@@ -127,6 +127,9 @@ Use the shortest workflow that gives the agent enough Drift context and proof:
 | Plan architecture or refactor | Packages, imports, ownership, runtime boundaries, or public APIs may shift. | `$drift-architect` -> `$drift-analyst` -> `$drift-dev` | Boundaries, contract candidates, `coverage`, `check` |
 | Adopt DriftLock in existing codebase | A living codebase needs gradual protection without a big bang. | `$drift-cm` -> `$drift-analyst` -> `$drift-architect` -> `$drift-dev` | `coverage`, missing contracts, staged adoption plan |
 
+Each installed role also includes `references/examples.md` with one greenfield
+and one brownfield example for that role.
+
 `skills install` prints one installed destination per skill:
 
 ```txt

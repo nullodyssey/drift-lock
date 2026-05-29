@@ -59,3 +59,4 @@ Recommended next role:
 ```
 
 Read `references/checklist.md` before recommending architecture constraints and `references/output-format.md` before the final response.
+Read `references/examples.md` when the user asks for examples, adoption guidance, or greenfield/brownfield workflows.

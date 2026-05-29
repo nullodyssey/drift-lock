@@ -72,6 +72,7 @@ describe('drift skills installer', () => {
     await expectExists(path.join(root, '.agents/skills/drift-dev/SKILL.md'));
     await expectExists(path.join(root, '.agents/skills/drift-dev/agents/openai.yaml'));
     await expectExists(path.join(root, '.agents/skills/drift-dev/references/pre-edit-checklist.md'));
+    await expectExists(path.join(root, '.agents/skills/drift-dev/references/examples.md'));
 
     const skill = await readFile(path.join(root, '.agents/skills/drift-dev/SKILL.md'), 'utf8');
     expect(skill).toContain('npx --yes @drift-lock/cli context --task "<user prompt>"');
@@ -82,6 +83,10 @@ describe('drift skills installer', () => {
     expect(skill).toContain('npx --yes @drift-lock/cli explain <contract-id>');
     expect(skill).toContain('npx --yes @drift-lock/cli proof --git-base <ref>');
     expect(skill).not.toContain('{{DRIFT_COMMAND}}');
+
+    const examples = await readFile(path.join(root, '.agents/skills/drift-dev/references/examples.md'), 'utf8');
+    expect(examples).toContain('## Greenfield');
+    expect(examples).toContain('## Brownfield');
   });
 
   it('installs all OpenAI role skills', async () => {
@@ -118,6 +123,7 @@ describe('drift skills installer', () => {
 
     await expectExists(path.join(root, '.claude/skills/drift-tech-writer/SKILL.md'));
     await expectExists(path.join(root, '.claude/skills/drift-tech-writer/references/checklist.md'));
+    await expectExists(path.join(root, '.claude/skills/drift-tech-writer/references/examples.md'));
     await expectMissing(path.join(root, '.claude/skills/drift-tech-writer/agents/openai.yaml'));
 
     const checklist = await readFile(path.join(root, '.claude/skills/drift-tech-writer/references/checklist.md'), 'utf8');
@@ -127,6 +133,9 @@ describe('drift skills installer', () => {
     expect(checklist).toContain('pnpm --filter next-v1 exec drift-lock diff --summary');
     expect(checklist).toContain('pnpm --filter next-v1 exec drift-lock explain <contract-id>');
     expect(checklist).toContain('pnpm --filter next-v1 exec drift-lock proof --git-base <ref>');
+
+    const examples = await readFile(path.join(root, '.claude/skills/drift-tech-writer/references/examples.md'), 'utf8');
+    expect(examples).toContain('Document the first DriftLock setup');
   });
 
   it('generates Cursor rules', async () => {
@@ -150,8 +159,11 @@ describe('drift skills installer', () => {
     expect(rule).toContain('pnpm --filter next-v1 exec drift-lock proof --git-base <ref>');
     expect(rule).toContain('## Bundled References');
     expect(rule).toContain('### references/output-format.md');
+    expect(rule).toContain('### references/examples.md');
     expect(rule).toContain('### references/checklist.md');
     expect(rule).toContain('Current boundaries:');
+    expect(rule).toContain('## Greenfield');
+    expect(rule).toContain('## Brownfield');
     expect(rule).not.toContain('{{DRIFT_COMMAND}}');
   });
 

@@ -261,6 +261,9 @@ Common role workflows:
 - Plan architecture changes with `$drift-architect` -> `$drift-analyst` ->
   `$drift-dev`; prove boundaries, contract candidates, coverage, and checks.
 
+Each installed role includes `references/examples.md` with greenfield and
+brownfield examples.
+
 For the AI-assisted workflow, run context before planning:
 
 ```bash

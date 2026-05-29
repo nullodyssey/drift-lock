@@ -60,3 +60,4 @@ Remaining risks:
 ```
 
 Read `references/pre-edit-checklist.md` before editing and `references/post-edit-checklist.md` before final response.
+Read `references/examples.md` when the user asks for examples, adoption guidance, or greenfield/brownfield workflows.
