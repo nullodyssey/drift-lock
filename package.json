@@ -1,6 +1,6 @@
 {
   "name": "drift-workspace",
-  "version": "0.1.4-alpha",
+  "version": "0.1.5-alpha",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.33.0",
