@@ -159,6 +159,62 @@ describe('drift-lock project installer', () => {
     expect(config.adoption.mode).toBe('warn');
   });
 
+  it('repairs an invalid managed config when force and source are explicit', async () => {
+    const root = await tempProject();
+    await writePackage(root);
+    await writeFile(path.join(root, 'src/index.ts'), 'export const ok = true;\n', 'utf8');
+    await mkdir(path.join(root, '.drift'), { recursive: true });
+    await writeFile(path.join(root, '.drift/config.json'), '{ invalid json\n', 'utf8');
+
+    await installProject({
+      root,
+      source: 'src',
+      packageManager: 'pnpm',
+      force: true,
+      ci: false,
+      installDependencies: false,
+    });
+
+    const config = JSON.parse(await readFile(path.join(root, '.drift/config.json'), 'utf8')) as {
+      source: string;
+      requireContracts: string[];
+      adoption: { mode: string };
+    };
+    expect(config.source).toBe('src');
+    expect(config.requireContracts).toEqual([]);
+    expect(config.adoption.mode).toBe('enforce');
+  });
+
+  it('does not ignore an invalid managed config without force', async () => {
+    const root = await tempProject();
+    await writePackage(root);
+    await mkdir(path.join(root, '.drift'), { recursive: true });
+    await writeFile(path.join(root, '.drift/config.json'), '{ invalid json\n', 'utf8');
+
+    await expect(installProject({
+      root,
+      source: 'src',
+      packageManager: 'pnpm',
+      ci: false,
+      installDependencies: false,
+    })).rejects.toThrow('Invalid DriftLock config');
+  });
+
+  it('does not ignore an invalid managed config when force has no explicit source', async () => {
+    const root = await tempProject();
+    await writePackage(root);
+    await mkdir(path.join(root, '.drift'), { recursive: true });
+    await writeFile(path.join(root, '.drift/config.json'), '{ invalid json\n', 'utf8');
+
+    await expect(installProject({
+      root,
+      packageManager: 'pnpm',
+      force: true,
+      ci: false,
+      installDependencies: false,
+    })).rejects.toThrow('Invalid DriftLock config');
+  });
+
   it('parses repeated install source and require options', async () => {
     const root = await tempProject();
     await writePackage(root);

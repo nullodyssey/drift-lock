@@ -69,7 +69,7 @@ export async function installProject(options: InstallProjectOptions): Promise<In
   const force = Boolean(options.force);
   await ensurePackageJsonExists(root);
   const packageManager = options.packageManager ?? (await detectPackageManager(root));
-  const existingConfig = await readExistingConfig(root);
+  const existingConfig = await readExistingConfig(root, { ignoreInvalid: force && options.source !== undefined });
   const config = resolveInstallConfig(options, existingConfig);
   const summary: InstallProjectSummary = {
     dryRun,
@@ -143,9 +143,14 @@ export async function detectPackageManager(root: string): Promise<PackageManager
   return 'npm';
 }
 
-async function readExistingConfig(root: string): Promise<DriftConfig | undefined> {
+async function readExistingConfig(root: string, options: { ignoreInvalid?: boolean } = {}): Promise<DriftConfig | undefined> {
   if (!(await exists(path.join(root, '.drift/config.json')))) return undefined;
-  return readDriftConfig(root);
+  try {
+    return await readDriftConfig(root);
+  } catch (error) {
+    if (options.ignoreInvalid) return undefined;
+    throw error;
+  }
 }
 
 function resolveInstallConfig(options: InstallProjectOptions, existingConfig: DriftConfig | undefined): DriftConfig {
