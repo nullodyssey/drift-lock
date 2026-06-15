@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { installProject } from '../src/install.js';
-import { expectExists, expectMissing, runCli, tempProject, writePackage } from './helpers/cli-test-utils.js';
+import { expectExists, expectMissing, runCli, tempProject, writeDriftConfigFile, writePackage } from './helpers/cli-test-utils.js';
 
 describe('drift-lock project installer', () => {
   it('prints a dry-run plan without writing files', async () => {
@@ -37,6 +37,7 @@ describe('drift-lock project installer', () => {
 
     const summary = await installProject({
       root,
+      source: 'src',
       packageManager,
       dryRun: true,
       ci: false,
@@ -65,16 +66,130 @@ describe('drift-lock project installer', () => {
     expect(skill).toContain('npm exec drift-lock -- check --changed');
   });
 
-  it('runs install dry-run without prompting in non-TTY execution', async () => {
+  it('runs install dry-run with explicit source without prompting in non-TTY execution', async () => {
     const root = await tempProject();
     await writePackage(root);
 
-    const result = await runCli(['install', '--root', root, '--dry-run']);
+    const result = await runCli(['install', '--root', root, '--source', 'src', '--dry-run']);
 
     expect(result.code).toBe(0);
     expect(result.stdout).toContain('DriftLock install dry run.');
     expect(result.stdout).toContain('npm install -D @drift-lock/cli @drift-lock/eslint-plugin');
     expect(result.stdout).not.toContain('Package manager');
+  });
+
+  it('fails install in non-TTY execution when no source is configured', async () => {
+    const root = await tempProject();
+    await writePackage(root);
+
+    const result = await runCli(['install', '--root', root, '--dry-run']);
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('DriftLock install requires at least one source directory');
+  });
+
+  it('writes multiple manual sources, required globs, and adoption mode', async () => {
+    const root = await tempProject();
+    await writePackage(root);
+    await mkdir(path.join(root, 'packages/core/src'), { recursive: true });
+    await mkdir(path.join(root, 'packages/cli/src'), { recursive: true });
+    await writeFile(path.join(root, 'packages/core/src/index.ts'), 'export const core = true;\n', 'utf8');
+    await writeFile(path.join(root, 'packages/cli/src/index.ts'), 'export const cli = true;\n', 'utf8');
+
+    await installProject({
+      root,
+      source: ['./packages/core/src/', 'packages/cli/src', 'packages/core/src'],
+      requireContracts: ['packages/*/src/**/*.ts'],
+      adoption: 'warn',
+      packageManager: 'pnpm',
+      ci: false,
+      installDependencies: false,
+    });
+
+    const config = JSON.parse(await readFile(path.join(root, '.drift/config.json'), 'utf8')) as {
+      source: string[];
+      requireContracts: string[];
+      adoption: { mode: string };
+    };
+    expect(config.source).toEqual(['packages/core/src', 'packages/cli/src']);
+    expect(config.requireContracts).toEqual(['packages/*/src/**/*.ts']);
+    expect(config.adoption.mode).toBe('warn');
+  });
+
+  it('keeps a single manual source as a string', async () => {
+    const root = await tempProject();
+    await writePackage(root);
+    await writeFile(path.join(root, 'src/index.ts'), 'export const ok = true;\n', 'utf8');
+
+    await installProject({
+      root,
+      source: './src/',
+      packageManager: 'pnpm',
+      ci: false,
+      installDependencies: false,
+    });
+
+    const config = JSON.parse(await readFile(path.join(root, '.drift/config.json'), 'utf8')) as { source: string };
+    expect(config.source).toBe('src');
+  });
+
+  it('reuses an existing config source when no source is passed', async () => {
+    const root = await tempProject();
+    await writePackage(root);
+    await mkdir(path.join(root, 'packages/core/src'), { recursive: true });
+    await mkdir(path.join(root, 'packages/cli/src'), { recursive: true });
+    await writeFile(path.join(root, 'packages/core/src/index.ts'), 'export const core = true;\n', 'utf8');
+    await writeFile(path.join(root, 'packages/cli/src/index.ts'), 'export const cli = true;\n', 'utf8');
+    await writeDriftConfigFile(root, ['packages/*/src/**/*.ts'], ['packages/core/src', 'packages/cli/src'], 'warn');
+
+    await installProject({
+      root,
+      packageManager: 'pnpm',
+      ci: false,
+      installDependencies: false,
+    });
+
+    const config = JSON.parse(await readFile(path.join(root, '.drift/config.json'), 'utf8')) as {
+      source: string[];
+      requireContracts: string[];
+      adoption: { mode: string };
+    };
+    expect(config.source).toEqual(['packages/core/src', 'packages/cli/src']);
+    expect(config.requireContracts).toEqual(['packages/*/src/**/*.ts']);
+    expect(config.adoption.mode).toBe('warn');
+  });
+
+  it('parses repeated install source and require options', async () => {
+    const root = await tempProject();
+    await writePackage(root);
+
+    const result = await runCli([
+      'install',
+      '--root',
+      root,
+      '--source',
+      'packages/core/src',
+      '--source',
+      'packages/cli/src',
+      '--require',
+      'packages/*/src/**/*.ts',
+      '--adoption',
+      'warn',
+      '--dry-run',
+    ]);
+
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain('DriftLock install dry run.');
+  });
+
+  it('rejects invalid install adoption modes', async () => {
+    const root = await tempProject();
+    await writePackage(root);
+
+    const result = await runCli(['install', '--root', root, '--source', 'src', '--adoption', 'relaxed', '--dry-run']);
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('Unsupported adoption mode "relaxed"');
   });
 
   it('installs the billing example with explicit input guards', async () => {

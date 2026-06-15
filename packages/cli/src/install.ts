@@ -5,9 +5,12 @@ import path from 'node:path';
 import {
   defaultDriftConfig,
   extractContracts,
+  readDriftConfig,
   toIndex,
   writeIndexStore,
+  type DriftAdoptionMode,
   type DriftConfig,
+  type DriftSource,
 } from '@drift-lock/core';
 import { installSkills, type SkillProvider } from './skills.js';
 
@@ -25,7 +28,8 @@ llm:
   must_not_change:
     - Dry runs must report planned changes without writing project files.
     - Managed files must not overwrite existing files unless force is enabled.
-    - Installer-generated projects must keep using a simple single-source config.
+    - Installer-generated configs must use source paths provided by the user or an existing config.
+    - Single explicit sources must stay strings; multiple explicit sources must stay arrays.
 */
 export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
 export type CiProvider = 'github';
@@ -33,7 +37,9 @@ export type ProofPolicy = 'report' | 'strict';
 
 export type InstallProjectOptions = {
   root: string;
-  source?: string;
+  source?: DriftSource;
+  requireContracts?: string[];
+  adoption?: DriftAdoptionMode;
   packageManager?: PackageManager;
   eslint?: boolean;
   ci?: CiProvider | false;
@@ -61,9 +67,10 @@ export async function installProject(options: InstallProjectOptions): Promise<In
   const root = path.resolve(options.root);
   const dryRun = Boolean(options.dryRun);
   const force = Boolean(options.force);
+  await ensurePackageJsonExists(root);
   const packageManager = options.packageManager ?? (await detectPackageManager(root));
-  const source = options.source ?? (await detectSource(root));
-  const config: DriftConfig = { ...defaultDriftConfig, source };
+  const existingConfig = await readExistingConfig(root);
+  const config = resolveInstallConfig(options, existingConfig);
   const summary: InstallProjectSummary = {
     dryRun,
     packageManager,
@@ -74,18 +81,17 @@ export async function installProject(options: InstallProjectOptions): Promise<In
     notes: [],
   };
 
-  await ensurePackageJsonExists(root);
   await maybeWriteManagedFile(root, '.drift/config.json', JSON.stringify(config, null, 2), { dryRun, force, summary });
 
   if (await shouldWrite(root, config.index, force)) {
     if (dryRun) {
       summary.created.push(config.index);
     } else {
-      const extracted = await extractContracts({ root, sourceDir: source });
+      const extracted = await extractContracts({ root, sourceDir: config.source });
       if (extracted.errors.length > 0) {
         throw new Error(extracted.errors.map((error) => error.message).join('\n'));
       }
-      await writeIndexStore(root, config.index, toIndex(extracted.contracts), { sourceDir: source });
+      await writeIndexStore(root, config.index, toIndex(extracted.contracts), { sourceDir: config.source });
       summary.created.push(config.index);
     }
   } else {
@@ -137,11 +143,58 @@ export async function detectPackageManager(root: string): Promise<PackageManager
   return 'npm';
 }
 
-export async function detectSource(root: string): Promise<string> {
-  for (const candidate of ['src', 'app', 'pages']) {
-    if (await exists(path.join(root, candidate))) return candidate;
+async function readExistingConfig(root: string): Promise<DriftConfig | undefined> {
+  if (!(await exists(path.join(root, '.drift/config.json')))) return undefined;
+  return readDriftConfig(root);
+}
+
+function resolveInstallConfig(options: InstallProjectOptions, existingConfig: DriftConfig | undefined): DriftConfig {
+  const source = normalizeInstallSource(options.source ?? existingConfig?.source);
+  if (!source) {
+    throw new Error('DriftLock install requires at least one source directory. Pass --source <dir>; repeat --source for monorepos.');
   }
-  return 'src';
+
+  return {
+    ...defaultDriftConfig,
+    index: existingConfig?.index ?? defaultDriftConfig.index,
+    source,
+    requireContracts: options.requireContracts !== undefined
+      ? normalizeRequireContracts(options.requireContracts)
+      : existingConfig?.requireContracts ?? defaultDriftConfig.requireContracts,
+    adoption: {
+      mode: options.adoption ?? existingConfig?.adoption.mode ?? defaultDriftConfig.adoption.mode,
+    },
+  };
+}
+
+function normalizeInstallSource(source: DriftSource | undefined): DriftSource | undefined {
+  if (source === undefined) return undefined;
+  const values = normalizeSourceList(Array.isArray(source) ? source : [source]);
+  return values.length === 1 ? values[0] : values;
+}
+
+function normalizeSourceList(values: string[]): string[] {
+  const normalized = new Set<string>();
+  for (const rawValue of values) {
+    const value = normalizePathInput(rawValue);
+    if (value) normalized.add(value);
+  }
+  if (normalized.size === 0) {
+    throw new Error('DriftLock install requires at least one non-empty --source value.');
+  }
+  return [...normalized];
+}
+
+function normalizePathInput(value: string): string {
+  return value.trim().replace(/\\/g, '/').replace(/^(?:\.\/)+/, '').replace(/\/+$/, '');
+}
+
+function normalizeRequireContracts(values: string[]): string[] {
+  const normalized = new Set(values.map((value) => value.trim()).filter(Boolean));
+  if (values.length > 0 && normalized.size === 0) {
+    throw new Error('DriftLock install requires non-empty --require values.');
+  }
+  return [...normalized];
 }
 
 async function patchPackageJson(

@@ -122,7 +122,7 @@ Smoke test:
 ```bash
 npx --yes @drift-lock/cli@latest --help
 npx --yes @drift-lock/cli@latest skills list
-npx --yes @drift-lock/cli@latest install --dry-run
+npx --yes @drift-lock/cli@latest install --source src --dry-run
 ```
 
 ## P2 - CI Release

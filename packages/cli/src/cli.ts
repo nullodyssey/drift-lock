@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
+import { constants } from 'node:fs';
+import { access } from 'node:fs/promises';
 import path from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import {
@@ -25,10 +27,10 @@ import {
   writeIndexStore,
   type DriftAdoptionMode,
   type DriftProofReport,
+  type DriftSource,
 } from '@drift-lock/core';
 import {
   detectPackageManager,
-  detectSource,
   installProject,
   type CiProvider,
   type InstallProjectSummary,
@@ -62,7 +64,9 @@ program
   .command('install')
   .description('Install DriftLock into the current project')
   .option('--root <dir>', 'project root', process.cwd())
-  .option('--source <dir>', 'source directory to scan')
+  .option('--source <dir>', 'source directory to scan; repeat for monorepos', collectOptionValue)
+  .option('--require <glob>', 'source file glob that must contain a contract; repeatable', collectOptionValue)
+  .option('--adoption <mode>', 'required-contract adoption mode: audit, warn, or enforce')
   .option('--package-manager <pm>', 'package manager: npm, pnpm, yarn, or bun')
   .option('--eslint', 'configure ESLint if possible', true)
   .option('--no-eslint', 'do not configure ESLint')
@@ -79,6 +83,8 @@ program
     const summary = await installProject({
       root: path.resolve(resolved.root),
       source: resolved.source,
+      requireContracts: resolved.requireContracts,
+      adoption: resolved.adoption,
       packageManager: resolved.packageManager,
       eslint: resolved.eslint,
       ci: resolved.ci,
@@ -448,7 +454,9 @@ type ProofCommandOptions = {
 
 type InstallCommandOptions = {
   root: string;
-  source?: string;
+  source?: string[];
+  require?: string[];
+  adoption?: string;
   packageManager?: string;
   eslint: boolean;
   ci?: string | false;
@@ -459,7 +467,10 @@ type InstallCommandOptions = {
   force: boolean;
 };
 
-type ResolvedInstallCommandOptions = Omit<InstallCommandOptions, 'packageManager' | 'ci' | 'agent'> & {
+type ResolvedInstallCommandOptions = Omit<InstallCommandOptions, 'source' | 'require' | 'adoption' | 'packageManager' | 'ci' | 'proofPolicy' | 'agent'> & {
+  source?: DriftSource;
+  requireContracts?: string[];
+  adoption?: DriftAdoptionMode;
   packageManager?: PackageManager;
   ci: CiProvider | false;
   proofPolicy: ProofPolicy;
@@ -471,22 +482,28 @@ async function resolveInstallCommandOptions(
   command: Command,
 ): Promise<ResolvedInstallCommandOptions> {
   let packageManager = options.packageManager ? parsePackageManager(options.packageManager) : undefined;
-  let source = options.source;
+  let source: DriftSource | undefined = normalizeCliSources(options.source);
+  const requireContracts = options.require;
+  const adoption = options.adoption ? parseAdoptionMode(options.adoption) : undefined;
   let eslint = options.eslint;
   let ci = parseCiOption(options.ci);
   let proofPolicy = parseProofPolicy(options.proofPolicy);
   let agent = parseAgentOption(options.agent);
+  const root = path.resolve(options.root);
+
+  if (source === undefined) {
+    const existingConfig = await readExistingInstallConfig(root);
+    source = existingConfig?.source;
+  }
 
   if (shouldPromptInstall(command)) {
-    const root = path.resolve(options.root);
     const defaultPackageManager = packageManager ?? (await detectPackageManager(root));
-    const defaultSource = source ?? (await detectSource(root));
     const prompts = createInterface({ input: process.stdin, output: process.stdout });
     try {
       packageManager ??= parsePackageManager(
         await promptChoice(prompts, 'Package manager', ['npm', 'pnpm', 'yarn', 'bun'], defaultPackageManager),
       );
-      source ??= await promptText(prompts, 'Source directory', defaultSource);
+      source ??= await promptSources(prompts, 'Source directories');
 
       if (command.getOptionValueSource('eslint') !== 'cli') {
         eslint = await promptConfirm(prompts, 'Configure ESLint with @drift-lock/eslint-plugin?', true);
@@ -509,6 +526,8 @@ async function resolveInstallCommandOptions(
   return {
     root: options.root,
     source,
+    requireContracts,
+    adoption,
     packageManager,
     eslint,
     ci,
@@ -518,6 +537,25 @@ async function resolveInstallCommandOptions(
     dryRun: options.dryRun,
     force: options.force,
   };
+}
+
+function collectOptionValue(value: string, previous: string[] | undefined): string[] {
+  return [...(previous ?? []), value];
+}
+
+function normalizeCliSources(source: string[] | undefined): DriftSource | undefined {
+  if (source === undefined) return undefined;
+  return source.length === 1 ? source[0] : source;
+}
+
+async function readExistingInstallConfig(root: string): Promise<{ source: DriftSource } | undefined> {
+  try {
+    await access(path.join(root, '.drift/config.json'), constants.F_OK);
+  } catch {
+    return undefined;
+  }
+  const config = await readDriftConfig(root);
+  return { source: config.source };
 }
 
 function shouldPromptInstall(command: Command): boolean {
@@ -544,13 +582,16 @@ async function promptChoice(
   return promptChoice(prompts, label, values, defaultValue);
 }
 
-async function promptText(
+async function promptSources(
   prompts: ReturnType<typeof createInterface>,
   label: string,
-  defaultValue: string,
-): Promise<string> {
-  const answer = (await prompts.question(`${label} [${defaultValue}]: `)).trim();
-  return answer || defaultValue;
+): Promise<DriftSource> {
+  const answer = (await prompts.question(`${label} (comma-separated): `)).trim();
+  const values = answer.split(',').map((value) => value.trim()).filter(Boolean);
+  if (values.length === 1) return values[0]!;
+  if (values.length > 1) return values;
+  console.log('Enter at least one source directory.');
+  return promptSources(prompts, label);
 }
 
 async function promptConfirm(

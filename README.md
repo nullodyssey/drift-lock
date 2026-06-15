@@ -42,22 +42,24 @@ Run the interactive installer from the package manager you use in the project:
 
 ```bash
 # npm
-npx --yes @drift-lock/cli@latest install
+npx --yes @drift-lock/cli@latest install --source src
 
 # pnpm
-pnpm dlx @drift-lock/cli@latest install
+pnpm dlx @drift-lock/cli@latest install --source src
 
 # bun
-bunx @drift-lock/cli@latest install
+bunx @drift-lock/cli@latest install --source src
 
 # yarn
-yarn dlx -p @drift-lock/cli@latest drift-lock install
+yarn dlx -p @drift-lock/cli@latest drift-lock install --source src
 ```
 
-The installer detects your package manager, creates `.drift/config.json`,
-generates the `.drift/contracts.generated.index` store, adds DriftLock scripts, installs
+The installer detects your package manager, asks for the source directories to
+protect, creates `.drift/config.json`, generates the
+`.drift/contracts.generated.index` store, adds DriftLock scripts, installs
 `@drift-lock/cli` and `@drift-lock/eslint-plugin` as dev dependencies, and can
-configure ESLint, GitHub Actions, and agent skills.
+configure ESLint, GitHub Actions, and agent skills. In non-interactive scripts,
+pass `--source`; DriftLock does not guess `src`, `app`, or `pages`.
 
 If you prefer to install the package first, add the CLI as a dev dependency and
 then run the local command:
@@ -65,19 +67,19 @@ then run the local command:
 ```bash
 # npm
 npm install -D @drift-lock/cli
-npm exec drift-lock -- install
+npm exec drift-lock -- install --source src
 
 # pnpm
 pnpm add -D @drift-lock/cli
-pnpm exec drift-lock install
+pnpm exec drift-lock install --source src
 
 # bun
 bun add -d @drift-lock/cli
-bunx drift-lock install
+bunx drift-lock install --source src
 
 # yarn
 yarn add -D @drift-lock/cli
-yarn drift-lock install
+yarn drift-lock install --source src
 ```
 
 Useful installer options:
@@ -86,22 +88,25 @@ Useful installer options:
 # Scan a specific source directory
 npx --yes @drift-lock/cli@latest install --source src
 
+# Scan multiple monorepo package sources
+npx --yes @drift-lock/cli@latest install --source packages/core/src --source packages/cli/src
+
 # Install bundled agent skills for a provider
-npx --yes @drift-lock/cli@latest install --agent openai
-npx --yes @drift-lock/cli@latest install --agent claude
-npx --yes @drift-lock/cli@latest install --agent cursor
+npx --yes @drift-lock/cli@latest install --source src --agent openai
+npx --yes @drift-lock/cli@latest install --source src --agent claude
+npx --yes @drift-lock/cli@latest install --source src --agent cursor
 
 # Add GitHub Actions CI
-npx --yes @drift-lock/cli@latest install --ci github
+npx --yes @drift-lock/cli@latest install --source src --ci github
 
 # Add the bundled Next billing example
-npx --yes @drift-lock/cli@latest install --example next-billing
+npx --yes @drift-lock/cli@latest install --source src --example next-billing
 
 # Skip ESLint or CI when you do not want them
-npx --yes @drift-lock/cli@latest install --no-eslint --no-ci
+npx --yes @drift-lock/cli@latest install --source src --no-eslint --no-ci
 
 # Preview changes without writing files or installing packages
-npx --yes @drift-lock/cli@latest install --dry-run
+npx --yes @drift-lock/cli@latest install --source src --dry-run
 ```
 
 After install, run DriftLock through your package manager's local binary runner:
@@ -183,7 +188,7 @@ detected in CI.
 ## Commands
 
 ```bash
-drift-lock install
+drift-lock install --source src
 drift-lock context <file>
 drift-lock context --task "<user prompt>"
 drift-lock extract
@@ -377,7 +382,7 @@ drift-lock/ssot-flow
 Generate a GitHub Actions workflow during install:
 
 ```bash
-npx --yes @drift-lock/cli@latest install --ci github
+npx --yes @drift-lock/cli@latest install --source src --ci github
 ```
 
 Or add the checks manually:

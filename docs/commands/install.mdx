@@ -12,8 +12,10 @@ dependencies, and can configure ESLint, GitHub Actions, bundled agent skills,
 and a sample billing contract.
 
 The command is interactive only when it is running in a TTY and one of the
-installer choices was not passed on the command line. In non-TTY or CI
-execution, it uses detected or default values and does not prompt.
+installer choices was not passed on the command line. The source roots are not
+detected from framework conventions: pass `--source` explicitly, answer the TTY
+prompt, or keep an existing `.drift/config.json` with `source` already set. In
+non-TTY or CI execution, install fails when no source is configured.
 
 ## Usage
 
@@ -24,10 +26,10 @@ drift-lock install [options]
 Run the latest published installer without adding the package first:
 
 ```bash
-npx --yes @drift-lock/cli@latest install
-pnpm dlx @drift-lock/cli@latest install
-bunx @drift-lock/cli@latest install
-yarn dlx -p @drift-lock/cli@latest drift-lock install
+npx --yes @drift-lock/cli@latest install --source src
+pnpm dlx @drift-lock/cli@latest install --source src
+bunx @drift-lock/cli@latest install --source src
+yarn dlx -p @drift-lock/cli@latest drift-lock install --source src
 ```
 
 ## Options
@@ -35,7 +37,9 @@ yarn dlx -p @drift-lock/cli@latest drift-lock install
 | Option | Description | Default |
 | --- | --- | --- |
 | `--root <dir>` | Project root. | Current working directory |
-| `--source <dir>` | Source directory to scan. | Detected from `src`, `app`, or `pages`; otherwise `src` |
+| `--source <dir>` | Source directory to scan. Repeat for monorepos. | Existing config source, or TTY prompt |
+| `--require <glob>` | Source file glob that must contain a contract. Repeatable. | Existing config value, or `[]` |
+| `--adoption <mode>` | Required-contract adoption mode: `audit`, `warn`, or `enforce`. | Existing config value, or `enforce` |
 | `--package-manager <pm>` | Package manager: `npm`, `pnpm`, `yarn`, or `bun`. | Detected from lockfiles; otherwise `npm` |
 | `--eslint` | Configure ESLint if possible. | Enabled |
 | `--no-eslint` | Do not configure ESLint. | - |
@@ -56,34 +60,44 @@ Install with explicit non-interactive choices:
 drift-lock install --source src --package-manager pnpm --no-ci --no-agent
 ```
 
+Install a monorepo with manually selected package sources:
+
+```bash
+drift-lock install \
+  --source packages/core/src \
+  --source packages/cli/src \
+  --require "packages/*/src/**/*.ts" \
+  --adoption warn
+```
+
 Preview the installer plan without writing files:
 
 ```bash
-drift-lock install --dry-run
+drift-lock install --source src --dry-run
 ```
 
 Install OpenAI-compatible agent skills during setup:
 
 ```bash
-drift-lock install --agent openai
+drift-lock install --source src --agent openai
 ```
 
 Add the GitHub Actions workflow:
 
 ```bash
-drift-lock install --ci github
+drift-lock install --source src --ci github
 ```
 
 Add a strict GitHub Actions workflow:
 
 ```bash
-drift-lock install --ci github --proof-policy strict
+drift-lock install --source src --ci github --proof-policy strict
 ```
 
 Install the sample billing contract:
 
 ```bash
-drift-lock install --example next-billing
+drift-lock install --source src --example next-billing
 ```
 
 ## Output
@@ -132,7 +146,7 @@ workflow adds `--fail-on-unresolved --fail-on-violations
 | Code | Meaning |
 | --- | --- |
 | `0` | Installation or dry run completed. |
-| `1` | The installer could not complete, for example because `package.json` is missing, an unsupported option value was passed, an agent skill destination exists without `--force`, extraction failed, or dependency installation failed. |
+| `1` | The installer could not complete, for example because `package.json` is missing, no source was configured, an unsupported option value was passed, an agent skill destination exists without `--force`, extraction failed, or dependency installation failed. |
 
 ## Related commands
 

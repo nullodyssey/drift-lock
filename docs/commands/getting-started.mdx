@@ -19,8 +19,7 @@ Before you start, make sure the project has:
 
 - Node.js 22 or newer.
 - A `package.json` at the project root.
-- TypeScript source under `src`, `app`, or `pages`, or a source directory you can
-  pass to `drift-lock install --source`.
+- TypeScript source directory you can pass to `drift-lock install --source`.
 - Git available if you plan to commit the generated baseline.
 
 ## 1. Install DriftLock
@@ -28,10 +27,10 @@ Before you start, make sure the project has:
 Run the installer with your package manager:
 
 ```bash
-npx --yes @drift-lock/cli@latest install
-pnpm dlx @drift-lock/cli@latest install
-bunx @drift-lock/cli@latest install
-yarn dlx -p @drift-lock/cli@latest drift-lock install
+npx --yes @drift-lock/cli@latest install --source src
+pnpm dlx @drift-lock/cli@latest install --source src
+bunx @drift-lock/cli@latest install --source src
+yarn dlx -p @drift-lock/cli@latest drift-lock install --source src
 ```
 
 For a non-interactive install, pass the main choices explicitly:
@@ -46,7 +45,7 @@ skills, and examples.
 
 ## 2. Inspect the generated config
 
-The default config points the CLI at your source directory and the committed
+The generated config points the CLI at your source directory and the committed
 index path:
 
 ```json filename=".drift/config.json"

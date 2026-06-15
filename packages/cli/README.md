@@ -8,21 +8,22 @@ DriftLock requires Node.js 22 or newer.
 
 ```bash
 # npm
-npx --yes @drift-lock/cli@latest install
+npx --yes @drift-lock/cli@latest install --source src
 
 # pnpm
-pnpm dlx @drift-lock/cli@latest install
+pnpm dlx @drift-lock/cli@latest install --source src
 
 # bun
-bunx @drift-lock/cli@latest install
+bunx @drift-lock/cli@latest install --source src
 
 # yarn
-yarn dlx -p @drift-lock/cli@latest drift-lock install
+yarn dlx -p @drift-lock/cli@latest drift-lock install --source src
 ```
 
 The installer creates `.drift`, installs DriftLock as a dev dependency, adds
 package scripts, and can configure ESLint, GitHub Actions, and bundled agent
-skills.
+skills. It never guesses source roots; pass `--source` explicitly or answer the
+interactive prompt.
 
 ## Local commands
 
@@ -86,13 +87,18 @@ Useful install options:
 
 ```bash
 npx --yes @drift-lock/cli@latest install --source src
-npx --yes @drift-lock/cli@latest install --agent openai
-npx --yes @drift-lock/cli@latest install --ci github
-npx --yes @drift-lock/cli@latest install --ci github --proof-policy strict
-npx --yes @drift-lock/cli@latest install --example next-billing
-npx --yes @drift-lock/cli@latest install --no-eslint --no-ci
-npx --yes @drift-lock/cli@latest install --dry-run
+npx --yes @drift-lock/cli@latest install --source packages/core/src --source packages/cli/src
+npx --yes @drift-lock/cli@latest install --source src --agent openai
+npx --yes @drift-lock/cli@latest install --source src --ci github
+npx --yes @drift-lock/cli@latest install --source src --ci github --proof-policy strict
+npx --yes @drift-lock/cli@latest install --source src --example next-billing
+npx --yes @drift-lock/cli@latest install --source src --no-eslint --no-ci
+npx --yes @drift-lock/cli@latest install --source src --dry-run
 ```
+
+`install` never guesses source roots from `src`, `app`, `pages`, or workspace
+layout. Pass `--source` explicitly, repeat it for monorepos, or run the
+interactive prompt.
 
 When installing skills in a repository that exposes DriftLock through a custom
 script, pass the command explicitly:
