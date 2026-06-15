@@ -1,2 +1,3 @@
+{"file":"packages/cli/package.json.ts","impactedContractIds":["cli.version-source"]}
 {"file":"packages/core/src/core/hash.ts","ownedContractIds":["core.hash"],"helperCandidateContractIds":["core.hash"]}
 {"file":"packages/core/src/core/proof.ts","ownedContractIds":["core.proof-report"],"helperCandidateContractIds":["core.proof-report"]}

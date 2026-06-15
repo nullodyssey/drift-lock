@@ -1,2 +1,3 @@
+{"file":"packages/cli/src/version.ts","ownedContractIds":["cli.version-source"],"helperCandidateContractIds":["cli.version-source"]}
 {"file":"packages/core/src/core/context.tsx","ownedContractIds":["core.context-renderer"],"helperCandidateContractIds":["core.context-renderer"]}
 {"file":"packages/core/src/core/invariant-checks.ts","ownedContractIds":["core.invariant-checks"],"helperCandidateContractIds":["core.invariant-checks"]}

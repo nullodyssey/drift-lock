@@ -62,11 +62,15 @@ Run the full checks:
 ```bash
 pnpm install --frozen-lockfile
 pnpm build
+pnpm --filter @drift-lock/cli exec drift-lock --version
 pnpm check
 pnpm test
 pnpm --filter next-v1 lint
 pnpm --filter next-v1 drift-lock:check
 ```
+
+The CLI version printed by `drift-lock --version` must match
+`packages/cli/package.json`.
 
 ### 3. Pack and inspect
 

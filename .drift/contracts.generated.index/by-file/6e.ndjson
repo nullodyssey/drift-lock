@@ -1,1 +1,2 @@
+{"file":"packages/cli/package.json","impactedContractIds":["cli.version-source"]}
 {"file":"packages/core/src/core/rules/ssot-flow/helpers.tsx","ownedContractIds":["core.ssot-flow.helpers"],"helperCandidateContractIds":["core.ssot-flow.helpers"]}

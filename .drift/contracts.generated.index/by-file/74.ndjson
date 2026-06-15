@@ -1,2 +1,3 @@
+{"file":"packages/cli/package.json.tsx","impactedContractIds":["cli.version-source"]}
 {"file":"packages/core/src/core/acceptance-file.jsx","ownedContractIds":["core.acceptance-file"],"helperCandidateContractIds":["core.acceptance-file"]}
 {"file":"packages/core/src/core/coverage","ownedContractIds":["core.coverage"],"impactedContractIds":["core.proof-report","core.required-contracts"],"helperCandidateContractIds":["core.coverage"]}

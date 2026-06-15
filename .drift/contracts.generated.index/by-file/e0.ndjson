@@ -1,3 +1,4 @@
+{"file":"packages/cli/src/version.js","ownedContractIds":["cli.version-source"],"helperCandidateContractIds":["cli.version-source"]}
 {"file":"packages/core/src/core/git-scope.jsx","ownedContractIds":["core.git-scope"],"impactedContractIds":["core.contract-selection","core.proof-report"],"helperCandidateContractIds":["core.git-scope"]}
 {"file":"packages/core/src/core/rules/ssot-flow/imports.jsx","ownedContractIds":["core.ssot-flow.imports"],"impactedContractIds":["core.ssot-flow.rule"],"helperCandidateContractIds":["core.ssot-flow.imports"]}
 {"file":"packages/core/src/core/rules/ssot-usage/index","ownedContractIds":["core.ssot-usage.rule"],"impactedContractIds":["core.invariant-checks"],"helperCandidateContractIds":["core.ssot-usage.rule"]}

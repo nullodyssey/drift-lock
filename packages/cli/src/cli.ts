@@ -36,6 +36,7 @@ import {
   type ProofPolicy,
 } from './install.js';
 import { formatSkillCatalog, installSkills, listBundledSkills, type SkillProvider } from './skills.js';
+import { CLI_VERSION } from './version.js';
 
 /* @drift
 version: 1
@@ -55,7 +56,7 @@ llm:
 */
 const program = new Command();
 
-program.name('drift-lock').description('Contract anti LLM-drift CLI').version('0.1.0');
+program.name('drift-lock').description('Contract anti LLM-drift CLI').version(CLI_VERSION);
 
 program
   .command('install')
