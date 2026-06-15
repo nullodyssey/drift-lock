@@ -128,4 +128,27 @@ describe('drift-lock project installer', () => {
     expect(first.updated).toContain('package.json');
     expect(second.skipped).toContain('package.json');
   });
+
+  it('writes a strict GitHub proof workflow with changed checks and generated index check', async () => {
+    const root = await tempProject();
+    await writePackage(root);
+
+    await installProject({
+      root,
+      source: 'src',
+      packageManager: 'pnpm',
+      ci: 'github',
+      proofPolicy: 'strict',
+      installDependencies: false,
+    });
+
+    const workflow = await readFile(path.join(root, '.github/workflows/drift-lock.yml'), 'utf8');
+    expect(workflow).toContain('fetch-depth: 0');
+    expect(workflow).toContain('DRIFT_GIT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}');
+    expect(workflow).toContain('pnpm exec drift-lock coverage');
+    expect(workflow).toContain('pnpm exec drift-lock diff --summary --git-base "$DRIFT_GIT_BASE"');
+    expect(workflow).toContain('pnpm exec drift-lock check --changed --git-base "$DRIFT_GIT_BASE"');
+    expect(workflow).toContain('pnpm exec drift-lock proof --git-base "$DRIFT_GIT_BASE" --fail-on-unresolved --fail-on-violations --fail-on-dirty-index');
+    expect(workflow).toContain('pnpm exec drift-lock extract --check');
+  });
 });

@@ -41,6 +41,7 @@ Common commands:
 drift-lock context --task "<user prompt>"
 drift-lock context <file>
 drift-lock extract
+drift-lock extract --check
 drift-lock check
 drift-lock check --changed
 drift-lock check --changed --git-base origin/main
@@ -51,6 +52,7 @@ drift-lock diff --summary
 drift-lock diff --summary --json
 drift-lock proof --git-base origin/main
 drift-lock proof --git-base origin/main --format json
+drift-lock proof --git-base origin/main --fail-on-unresolved --fail-on-violations --fail-on-dirty-index
 drift-lock explain [contract-id]
 drift-lock accept <contract-id> --reason "<reason>"
 drift-lock skills list
@@ -59,12 +61,15 @@ drift-lock skills install --provider openai
 ```
 
 `context` gives agents contract-aware context before they plan or edit.
-`extract` writes the committed contract index. `check` validates contracts and
+`extract` writes the committed contract index, and `extract --check` verifies
+that the generated index is current without writing it. `check` validates contracts and
 invariants locally or in CI. `coverage` shows adoption and missing required
 contracts. `diff --summary` reviews contract changes in PRs. `explain` prints
 actionable diagnostics after a failed check. `accept` records intentional locked
-contract changes. `proof --git-base <ref>` emits a non-blocking PR proof report
-in Markdown or JSON. `skills list`, `skills list --details`, and
+contract changes. `proof --git-base <ref>` emits a PR proof report in Markdown
+or JSON; it is report-only by default and becomes blocking when flags such as
+`--fail-on-unresolved`, `--fail-on-violations`, `--fail-on-dirty-index`, or
+`--min-preservation-rate <ratio>` are passed. `skills list`, `skills list --details`, and
 `skills install` manage bundled agent skills. The bundled role skills are
 `drift-cm`, `drift-dev`, `drift-analyst`, `drift-tech-writer`,
 `drift-ux-designer`, and `drift-architect`.
@@ -83,6 +88,7 @@ Useful install options:
 npx --yes @drift-lock/cli@latest install --source src
 npx --yes @drift-lock/cli@latest install --agent openai
 npx --yes @drift-lock/cli@latest install --ci github
+npx --yes @drift-lock/cli@latest install --ci github --proof-policy strict
 npx --yes @drift-lock/cli@latest install --example next-billing
 npx --yes @drift-lock/cli@latest install --no-eslint --no-ci
 npx --yes @drift-lock/cli@latest install --dry-run

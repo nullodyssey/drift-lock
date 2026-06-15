@@ -43,6 +43,9 @@ export async function runAction(options = {}) {
   const jsonOutput = await runProofCommand(runCommand, command.tool, jsonArgs, root, proofEnv);
   const report = parseProofJson(jsonOutput);
   const markdownOutput = await runProofCommand(runCommand, command.tool, markdownArgs, root, proofEnv);
+  const failures = proofPolicyFailures(report, inputs);
+  const generatedAt = (options.now ? options.now() : new Date()).toISOString();
+  const policy = proofPolicyForInputs(inputs);
 
   await fileSystem.mkdir(outputDir, { recursive: true });
   await fileSystem.writeFile(jsonPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
@@ -58,18 +61,19 @@ export async function runAction(options = {}) {
       context,
       token: inputs.githubToken,
       markdown: markdownOutput,
+      metadata: {
+        headSha: context.pullRequestHeadSha || env.GITHUB_SHA || '',
+        baseSha: gitBase,
+        generatedAt,
+        policy,
+        policyResult: failures.length === 0 ? 'passed' : 'failed',
+        runUrl: context.runUrl,
+      },
       fetchImpl,
       warn: (message) => warning(message),
     });
   }
 
-  const failures = [];
-  if (inputs.failOnUnresolved && report.summary.contractChanges.unresolved > 0) {
-    failures.push(`Unresolved DriftLock contract changes: ${report.summary.contractChanges.unresolved}`);
-  }
-  if (inputs.failOnViolations && report.summary.currentViolations > 0) {
-    failures.push(`Current DriftLock violations: ${report.summary.currentViolations}`);
-  }
   if (failures.length > 0) {
     throw new ActionError(failures.join('\n'));
   }
@@ -90,6 +94,8 @@ export function readInputs(env) {
     driftCommandArgs: getInput(env, 'drift-command-args', '--yes @drift-lock/cli@latest'),
     failOnUnresolved: booleanInput(getInput(env, 'fail-on-unresolved', 'false'), 'fail-on-unresolved'),
     failOnViolations: booleanInput(getInput(env, 'fail-on-violations', 'false'), 'fail-on-violations'),
+    minPreservationRate: optionalRatioInput(getInput(env, 'min-preservation-rate'), 'min-preservation-rate'),
+    failOnDirtyIndex: booleanInput(getInput(env, 'fail-on-dirty-index', 'false'), 'fail-on-dirty-index'),
   };
 }
 
@@ -105,6 +111,16 @@ export function booleanInput(value, name) {
   if (['', 'false', '0', 'no', 'off'].includes(normalized)) return false;
   if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
   throw new ActionError(`Invalid boolean input "${name}": ${value}`);
+}
+
+export function optionalRatioInput(value, name) {
+  if (value === '') return undefined;
+  const normalized = value.trim();
+  const ratio = Number(normalized);
+  if (normalized.length === 0 || !Number.isFinite(ratio) || ratio < 0 || ratio > 1) {
+    throw new ActionError(`Invalid ratio input "${name}": ${value}. Expected a number between 0 and 1.`);
+  }
+  return ratio;
 }
 
 export async function readGitHubContext(env, fileSystem = fs) {
@@ -124,7 +140,11 @@ export async function readGitHubContext(env, fileSystem = fs) {
     owner,
     repo,
     pullRequestNumber: payload.pull_request?.number,
+    pullRequestHeadSha: payload.pull_request?.head?.sha,
     pullRequestBaseSha: payload.pull_request?.base?.sha,
+    runUrl: env.GITHUB_SERVER_URL && env.GITHUB_REPOSITORY && env.GITHUB_RUN_ID
+      ? `${env.GITHUB_SERVER_URL}/${env.GITHUB_REPOSITORY}/actions/runs/${env.GITHUB_RUN_ID}`
+      : '',
   };
 }
 
@@ -273,7 +293,9 @@ export function validateProofReport(report) {
     typeof summary.contractChanges?.unresolved !== 'number' ||
     typeof summary.contractChanges?.accepted !== 'number' ||
     typeof summary.currentViolations !== 'number' ||
-    typeof summary.intentPreservationRate !== 'number'
+    typeof summary.intentPreservationRate !== 'number' ||
+    !['current', 'dirty', 'not_checked'].includes(report?.generatedIndex?.status) ||
+    !Array.isArray(report?.generatedIndex?.changedPaths)
   ) {
     throw new ActionError('Invalid DriftLock proof report shape.');
   }
@@ -306,7 +328,7 @@ export async function appendStepSummary(env, markdown) {
   await fs.appendFile(env.GITHUB_STEP_SUMMARY, `${markdown.trimEnd()}\n`, 'utf8');
 }
 
-export async function createOrUpdatePrComment({ env, context, token, markdown, fetchImpl, warn }) {
+export async function createOrUpdatePrComment({ env, context, token, markdown, metadata = {}, fetchImpl, warn }) {
   if (!token) {
     throw new ActionError('comment is enabled but github-token is empty.');
   }
@@ -325,7 +347,7 @@ export async function createOrUpdatePrComment({ env, context, token, markdown, f
     'content-type': 'application/json',
     'x-github-api-version': '2022-11-28',
   };
-  const body = buildCommentBody(markdown);
+  const body = buildCommentBody(markdown, metadata);
   const existing = await findExistingProofComment({ commentsUrl, headers, fetchImpl, warn });
   if (existing === COMMENT_LIST_UNAVAILABLE) return;
 
@@ -368,10 +390,59 @@ export async function findExistingProofComment({ commentsUrl, headers, fetchImpl
   }
 }
 
-export function buildCommentBody(markdown) {
-  const body = `${COMMENT_MARKER}\n${markdown.trimEnd()}`;
+export function buildCommentBody(markdown, metadata = {}) {
+  const body = `${COMMENT_MARKER}\n${buildEnrichedCommentMarkdown(markdown, metadata)}`;
   if (body.length <= COMMENT_MAX_LENGTH) return body;
   return `${body.slice(0, COMMENT_MAX_LENGTH)}\n\n_Report truncated. See the workflow job summary for the full proof report._`;
+}
+
+export function buildEnrichedCommentMarkdown(markdown, metadata = {}) {
+  const lines = markdown.trimEnd().split('\n');
+  const metadataLines = commentMetadataLines(metadata);
+  if (metadataLines.length === 0) return markdown.trimEnd();
+
+  if (lines[0]?.startsWith('## ')) {
+    const rest = lines.slice(1);
+    while (rest[0] === '') rest.shift();
+    return [lines[0], '', ...metadataLines, '', ...rest].join('\n');
+  }
+
+  return [...metadataLines, '', markdown.trimEnd()].join('\n');
+}
+
+function commentMetadataLines(metadata) {
+  const lines = [];
+  if (metadata.headSha) lines.push(`Commit: ${metadata.headSha}`);
+  if (metadata.baseSha) lines.push(`Base: ${metadata.baseSha}`);
+  if (metadata.generatedAt) lines.push(`Generated: ${metadata.generatedAt}`);
+  if (metadata.policy) lines.push(`Policy: ${metadata.policy}`);
+  if (metadata.policyResult === 'passed') lines.push('Policy result: Proof policy passed for this commit.');
+  if (metadata.policyResult === 'failed') lines.push('Policy result: Proof policy failed for this commit.');
+  if (metadata.runUrl) lines.push(`Run: ${metadata.runUrl}`);
+  return lines;
+}
+
+export function proofPolicyForInputs(inputs) {
+  return inputs.failOnUnresolved || inputs.failOnViolations || inputs.failOnDirtyIndex || inputs.minPreservationRate !== undefined
+    ? 'strict'
+    : 'report';
+}
+
+export function proofPolicyFailures(report, inputs) {
+  const failures = [];
+  if (inputs.failOnUnresolved && report.summary.contractChanges.unresolved > 0) {
+    failures.push(`Unresolved DriftLock contract changes: ${report.summary.contractChanges.unresolved}`);
+  }
+  if (inputs.failOnViolations && report.summary.currentViolations > 0) {
+    failures.push(`Current DriftLock violations: ${report.summary.currentViolations}`);
+  }
+  if (inputs.minPreservationRate !== undefined && report.summary.intentPreservationRate < inputs.minPreservationRate) {
+    failures.push(`Intent preservation rate ${report.summary.intentPreservationRate} is below minimum ${inputs.minPreservationRate}`);
+  }
+  if (inputs.failOnDirtyIndex && report.generatedIndex.status === 'dirty') {
+    failures.push(`Generated DriftLock index is dirty: ${report.generatedIndex.changedPaths.join(', ')}`);
+  }
+  return failures;
 }
 
 export function error(message) {

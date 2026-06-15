@@ -188,6 +188,13 @@ export type DriftProofCoverageSnapshot = {
   requiredFilesUncovered: number;
 };
 
+export type DriftGeneratedIndexStatus = 'current' | 'dirty' | 'not_checked';
+
+export type DriftGeneratedIndexSnapshot = {
+  status: DriftGeneratedIndexStatus;
+  changedPaths: string[];
+};
+
 export type DriftProofReport = {
   version: 1;
   gitBase: string;
@@ -196,6 +203,7 @@ export type DriftProofReport = {
   outcomes: DriftProofContractOutcome[];
   diagnostics: DriftDiagnostic[];
   coverage: DriftProofCoverageSnapshot;
+  generatedIndex: DriftGeneratedIndexSnapshot;
 };
 
 export type DriftExplanation = {

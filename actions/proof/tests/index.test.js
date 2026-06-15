@@ -8,8 +8,10 @@ import {
   buildProofArgs,
   COMMENT_MARKER,
   createOrUpdatePrComment,
+  optionalRatioInput,
   outputsForReport,
   parseCommandInvocation,
+  proofPolicyFailures,
   resolveGitBase,
   runAction,
   sanitizeProofEnv,
@@ -37,6 +39,10 @@ const proofReport = {
   coverage: {
     requiredFilesCovered: 1,
     requiredFilesUncovered: 0,
+  },
+  generatedIndex: {
+    status: 'dirty',
+    changedPaths: ['.drift/contracts.generated.index/manifest.json'],
   },
 };
 
@@ -75,6 +81,10 @@ test('builds proof CLI arguments from action inputs', () => {
       index: '.drift/contracts.generated.index',
       gitBase: 'origin/main',
       format: 'json',
+      failOnUnresolved: true,
+      failOnViolations: true,
+      failOnDirtyIndex: true,
+      minPreservationRate: 0.95,
     }),
     [
       'proof',
@@ -90,6 +100,12 @@ test('builds proof CLI arguments from action inputs', () => {
       '.drift/contracts.generated.index',
     ],
   );
+});
+
+test('parses optional preservation rate inputs', () => {
+  assert.equal(optionalRatioInput('', 'min-preservation-rate'), undefined);
+  assert.equal(optionalRatioInput('0.95', 'min-preservation-rate'), 0.95);
+  assert.throws(() => optionalRatioInput('1.5', 'min-preservation-rate'), /Invalid ratio input/);
 });
 
 test('uses explicit git-base before pull request context', () => {
@@ -189,6 +205,42 @@ test('fails after writing reports when unresolved policy is enabled', async () =
   assert.match(await fs.readFile(path.join(tempDir, '.drift/proof-report/proof-report.json'), 'utf8'), /"unresolved": 1/);
 });
 
+test('fails policy on preservation rate and dirty generated index after reports are available', async () => {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'drift-proof-policy-index-'));
+
+  await assert.rejects(
+    runAction({
+      cwd: tempDir,
+      env: {
+        GITHUB_WORKSPACE: tempDir,
+        INPUT_GIT_BASE: 'base-sha',
+        INPUT_MIN_PRESERVATION_RATE: '0.75',
+        INPUT_FAIL_ON_DIRTY_INDEX: 'true',
+      },
+      runCommand: async (_tool, args) => (args.includes('json') ? JSON.stringify(proofReport) : '## Report\n'),
+    }),
+    /Intent preservation rate 0.5 is below minimum 0.75[\s\S]*Generated DriftLock index is dirty/,
+  );
+  assert.match(await fs.readFile(path.join(tempDir, '.drift/proof-report/proof-report.md'), 'utf8'), /## Report/);
+});
+
+test('computes proof policy failures without requiring CLI strict flags', () => {
+  assert.deepEqual(
+    proofPolicyFailures(proofReport, {
+      failOnUnresolved: true,
+      failOnViolations: true,
+      minPreservationRate: 0.75,
+      failOnDirtyIndex: true,
+    }),
+    [
+      'Unresolved DriftLock contract changes: 1',
+      'Current DriftLock violations: 1',
+      'Intent preservation rate 0.5 is below minimum 0.75',
+      'Generated DriftLock index is dirty: .drift/contracts.generated.index/manifest.json',
+    ],
+  );
+});
+
 test('updates an existing pull request proof comment', async () => {
   const requests = [];
   const fetchImpl = async (url, init = {}) => {
@@ -197,7 +249,7 @@ test('updates an existing pull request proof comment', async () => {
       return {
         ok: true,
         status: 200,
-        json: async () => [{ url: 'https://api.github.test/comment/1', body: `${COMMENT_MARKER}\nold` }],
+        json: async () => [{ url: 'https://api.github.test/comment/1', body: `${COMMENT_MARKER}\nCommit: old-sha\nold` }],
       };
     }
     return { ok: true, status: 200 };
@@ -208,12 +260,26 @@ test('updates an existing pull request proof comment', async () => {
     context: { owner: 'nullodyssey', repo: 'drift-lock', pullRequestNumber: 42 },
     token: 'token',
     markdown: '## Report',
+    metadata: {
+      headSha: 'new-sha',
+      baseSha: 'base-sha',
+      generatedAt: '2026-06-15T10:00:00.000Z',
+      policy: 'strict',
+      policyResult: 'passed',
+      runUrl: 'https://github.test/nullodyssey/drift-lock/actions/runs/1',
+    },
     fetchImpl,
     warn: () => {},
   });
 
   assert.equal(requests[1].init.method, 'PATCH');
-  assert.match(JSON.parse(requests[1].init.body).body, /<!-- drift-lock-proof-report -->/);
+  const body = JSON.parse(requests[1].init.body).body;
+  assert.match(body, /<!-- drift-lock-proof-report -->/);
+  assert.match(body, /Commit: new-sha/);
+  assert.match(body, /Base: base-sha/);
+  assert.match(body, /Policy: strict/);
+  assert.match(body, /Proof policy passed for this commit/);
+  assert.doesNotMatch(body, /old-sha/);
 });
 
 test('updates an existing pull request proof comment on later pages', async () => {

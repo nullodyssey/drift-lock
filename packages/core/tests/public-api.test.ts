@@ -5,6 +5,7 @@ describe('core public engine facade', () => {
   it('exports only the stable runtime surface used by official packages', () => {
     expect(Object.keys(core).sort()).toEqual([
       'checkContracts',
+      'checkGeneratedIndex',
       'checkLockedChangesForFile',
       'checkSsotFlow',
       'checkSsotUsage',

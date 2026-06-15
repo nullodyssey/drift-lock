@@ -15,7 +15,7 @@ import { checkContracts } from './checker.js';
 import { diffContracts, diffContractSets } from './contract-diff.js';
 import { getCoverage } from './coverage.js';
 import { resolveGitFileScopeFromStore } from './git-scope.js';
-import { openIndexStore, toIndex } from './index-file.js';
+import { checkGeneratedIndex, openIndexStore, toIndex } from './index-file.js';
 import { getAcceptanceStatus } from './locked-contracts.js';
 
 /* @drift
@@ -99,6 +99,7 @@ export async function getProofReport(options: ProofReportOptions): Promise<{
     sourceDir: options.sourceDir,
     requireContracts: options.requireContracts,
   });
+  const generatedIndex = await checkGeneratedIndex(root, options.indexPath, toIndex(coverage.contracts), { sourceDir: options.sourceDir });
 
   const diagnostics = check.diagnostics;
   const outcomes = buildOutcomes(root, diff.contracts, proofDiff.changes, diagnostics);
@@ -131,6 +132,7 @@ export async function getProofReport(options: ProofReportOptions): Promise<{
         requiredFilesCovered: coverage.coverage.files.requiredCovered,
         requiredFilesUncovered: coverage.coverage.files.requiredUncovered,
       },
+      generatedIndex,
     },
     errors: [],
   };
@@ -147,6 +149,7 @@ export function formatProofReportMarkdown(report: DriftProofReport): string {
     `Contract changes: ${report.summary.contractChanges.accepted} accepted, ${report.summary.contractChanges.unresolved} unresolved`,
     `Current violations: ${report.summary.currentViolations}`,
     `Intent preservation: ${Math.round(report.summary.intentPreservationRate * 100)}%`,
+    `Generated index: ${report.generatedIndex.status}`,
     '',
     'Outcome:',
     `- ${preserved} protected ${plural(preserved, 'zone')} preserved.`,
@@ -164,6 +167,15 @@ export function formatProofReportMarkdown(report: DriftProofReport): string {
     }
   }
 
+  if (report.generatedIndex.status === 'dirty') {
+    lines.push('', 'Generated index changes:');
+    if (report.generatedIndex.changedPaths.length === 0) {
+      lines.push('- unknown');
+    } else {
+      for (const changedPath of report.generatedIndex.changedPaths) lines.push(`- ${changedPath}`);
+    }
+  }
+
   lines.push('', 'Impact:');
   if (unresolved > 0) {
     lines.push('- Unresolved drift remains in final PR state.');
@@ -176,6 +188,11 @@ export function formatProofReportMarkdown(report: DriftProofReport): string {
     lines.push('- Protected intent remained explicit for touched contracts.');
   } else {
     lines.push('- No protected contracts touched by this PR.');
+  }
+  if (report.generatedIndex.status === 'current') {
+    lines.push('- Generated DriftLock index is current for this commit.');
+  } else if (report.generatedIndex.status === 'dirty') {
+    lines.push('- Generated DriftLock index is dirty; run drift-lock extract and commit the updated index.');
   }
 
   return lines.join('\n');

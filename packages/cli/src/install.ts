@@ -29,6 +29,7 @@ llm:
 */
 export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
 export type CiProvider = 'github';
+export type ProofPolicy = 'report' | 'strict';
 
 export type InstallProjectOptions = {
   root: string;
@@ -41,6 +42,7 @@ export type InstallProjectOptions = {
   dryRun?: boolean;
   force?: boolean;
   installDependencies?: boolean;
+  proofPolicy?: ProofPolicy;
 };
 
 export type InstallProjectSummary = {
@@ -101,7 +103,7 @@ export async function installProject(options: InstallProjectOptions): Promise<In
   }
 
   if (options.ci === 'github') {
-    await writeGithubWorkflow(root, packageManager, { dryRun, force, summary });
+    await writeGithubWorkflow(root, packageManager, options.proofPolicy ?? 'report', { dryRun, force, summary });
   }
 
   if (options.agent) {
@@ -211,8 +213,8 @@ async function configureEslint(root: string, context: InstallWriteContext): Prom
   context.summary.updated.push(config);
 }
 
-async function writeGithubWorkflow(root: string, packageManager: PackageManager, context: InstallWriteContext): Promise<void> {
-  await maybeWriteManagedFile(root, '.github/workflows/drift-lock.yml', githubWorkflow(packageManager), context);
+async function writeGithubWorkflow(root: string, packageManager: PackageManager, proofPolicy: ProofPolicy, context: InstallWriteContext): Promise<void> {
+  await maybeWriteManagedFile(root, '.github/workflows/drift-lock.yml', githubWorkflow(packageManager, proofPolicy), context);
 }
 
 async function writeNextBillingExample(root: string, context: InstallWriteContext): Promise<void> {
@@ -364,11 +366,12 @@ function patchFlatEslintConfig(text: string): string | undefined {
 `;
 }
 
-function githubWorkflow(packageManager: PackageManager): string {
+function githubWorkflow(packageManager: PackageManager, proofPolicy: ProofPolicy): string {
   const setup = packageManager === 'pnpm'
     ? `      - uses: pnpm/action-setup@v4
         with:
           version: 10
+          run_install: false
 `
     : '';
   const cache = packageManager === 'bun' ? '' : `          cache: ${packageManager}\n`;
@@ -379,8 +382,8 @@ function githubWorkflow(packageManager: PackageManager): string {
       : packageManager === 'yarn'
         ? 'yarn install --immutable'
         : 'bun install --frozen-lockfile';
-  const check = packageManager === 'npm' ? 'npm run drift-lock:check' : `${packageManager} drift-lock:check`;
-  const lint = packageManager === 'npm' ? 'npx eslint .' : `${packageManager} exec eslint .`;
+  const drift = driftCommand(packageManager);
+  const proofFlags = proofPolicy === 'strict' ? ' --fail-on-unresolved --fail-on-violations --fail-on-dirty-index' : '';
 
   return `name: DriftLock
 
@@ -392,14 +395,21 @@ on:
 jobs:
   drift-lock:
     runs-on: ubuntu-latest
+    env:
+      DRIFT_GIT_BASE: \${{ github.event.pull_request.base.sha || github.event.before }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
 ${cache}${setup}      - run: ${install}
-      - run: ${check}
-      - run: ${lint}
+      - run: ${drift} coverage
+      - run: ${drift} diff --summary --git-base "$DRIFT_GIT_BASE"
+      - run: ${drift} check --changed --git-base "$DRIFT_GIT_BASE"
+      - run: ${drift} proof --git-base "$DRIFT_GIT_BASE"${proofFlags}
+      - run: ${drift} extract --check
 `;
 }
 

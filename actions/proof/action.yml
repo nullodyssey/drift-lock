@@ -44,6 +44,13 @@ inputs:
     description: Fail when the proof report contains current DriftLock violations.
     required: false
     default: "false"
+  min-preservation-rate:
+    description: Fail when the intent preservation rate is below this ratio from 0 to 1.
+    required: false
+  fail-on-dirty-index:
+    description: Fail when the proof report says the generated DriftLock index is dirty.
+    required: false
+    default: "false"
 
 outputs:
   protected-contracts-touched:

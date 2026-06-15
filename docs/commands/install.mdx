@@ -41,6 +41,7 @@ yarn dlx -p @drift-lock/cli@latest drift-lock install
 | `--no-eslint` | Do not configure ESLint. | - |
 | `--ci <provider>` | Add a CI provider. The supported provider is `github`. | Disabled unless selected interactively |
 | `--no-ci` | Do not add CI. | - |
+| `--proof-policy <policy>` | GitHub proof policy for the generated workflow: `report` or `strict`. `strict` fails on unresolved drift, current violations, and dirty generated index. | `report` |
 | `--agent <provider>` | Install agent skills for `openai`, `claude`, or `cursor`. | Disabled unless selected interactively |
 | `--no-agent` | Do not install agent skills. | - |
 | `--example <name>` | Add an example project. The supported example is `next-billing`. | None |
@@ -71,6 +72,12 @@ Add the GitHub Actions workflow:
 
 ```bash
 drift-lock install --ci github
+```
+
+Add a strict GitHub Actions workflow:
+
+```bash
+drift-lock install --ci github --proof-policy strict
 ```
 
 Install the sample billing contract:
@@ -110,6 +117,15 @@ The installer adds these package scripts when they are missing or when
 | `drift-lock:check` | `drift-lock check` |
 | `drift-lock:coverage` | `drift-lock coverage` |
 | `drift-lock:context` | `drift-lock context` |
+
+When `--ci github` is selected, the generated workflow checks out full Git
+history (`fetch-depth: 0`) and runs the PR-oriented DriftLock sequence:
+`coverage`, `diff --summary --git-base "$DRIFT_GIT_BASE"`,
+`check --changed --git-base "$DRIFT_GIT_BASE"`, `proof --git-base
+"$DRIFT_GIT_BASE"`, and `extract --check`. In `report` mode, `proof` prints a
+report and does not fail on proof findings by itself. In `strict` mode, the
+workflow adds `--fail-on-unresolved --fail-on-violations
+--fail-on-dirty-index`.
 
 ## Exit codes
 

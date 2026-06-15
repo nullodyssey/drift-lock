@@ -39,4 +39,4 @@ CRITICAL -> ask for product/contract confirmation before implementation
 When a Drift check is already failing, use `{{DRIFT_COMMAND}} explain` or
 `{{DRIFT_COMMAND}} explain <contract-id>` before classifying the next fix.
 
-For PR readiness, use `{{DRIFT_COMMAND}} proof --git-base <ref>`. Treat it as a report that can contain unresolved drift, not as a blocking check.
+For PR readiness, use `{{DRIFT_COMMAND}} proof --git-base <ref>`. Treat default proof as a report that can contain unresolved drift; it blocks only when policy flags are passed.

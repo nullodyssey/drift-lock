@@ -10,8 +10,14 @@ nav_title: proof
 signals. It composes contract checks, diffs, Git scope, required-contract
 coverage, and accepted locked-contract changes into a single report.
 
-The command is report-oriented. Unresolved drift can appear in the report while
-the command still exits successfully.
+The command is report-oriented by default. Unresolved drift, current
+violations, or a dirty generated index can appear in the report while the
+command still exits successfully. Add policy flags when you want the report to
+be a blocking CI gate.
+
+A green proof report is not the same thing as a green CI run. It covers the
+DriftLock proof signals for the displayed Git base and current checkout; other
+jobs can still fail.
 
 ## Usage
 
@@ -28,6 +34,10 @@ drift-lock proof --git-base <ref> [options]
 | `--index <dir>` | Index store path. | `.drift/config.json` `index`, or `.drift/contracts.generated.index` when config is missing |
 | `--git-base <ref>` | Git ref used as the pull request base. Required. | None |
 | `--format <format>` | Output format: `md` or `json`. | `md` |
+| `--fail-on-unresolved` | Exit `1` when unresolved contract drift remains. | `false` |
+| `--fail-on-violations` | Exit `1` when current DriftLock violations remain. | `false` |
+| `--min-preservation-rate <ratio>` | Exit `1` when intent preservation is below a number from `0` to `1`. | None |
+| `--fail-on-dirty-index` | Exit `1` when `.drift/contracts.generated.index` is not current. | `false` |
 
 ## Examples
 
@@ -49,6 +59,22 @@ Use an explicit source directory and index:
 drift-lock proof --git-base origin/main --source src --index .drift/contracts.generated.index
 ```
 
+Use proof as a strict local or CI gate:
+
+```bash
+drift-lock proof \
+  --git-base origin/main \
+  --fail-on-unresolved \
+  --fail-on-violations \
+  --fail-on-dirty-index
+```
+
+Require a minimum preservation rate:
+
+```bash
+drift-lock proof --git-base origin/main --min-preservation-rate 0.95
+```
+
 ## Output
 
 Markdown output starts with:
@@ -58,7 +84,8 @@ Markdown output starts with:
 ```
 
 The report includes summary counts such as protected contracts touched, current
-violations, accepted changes, and per-contract outcomes.
+violations, accepted changes, generated-index status, and per-contract
+outcomes.
 
 JSON output uses the proof report JSON shape and includes summary and outcome
 data. For example:
@@ -67,6 +94,10 @@ data. For example:
 {
   "summary": {
     "protectedContractsTouched": 1
+  },
+  "generatedIndex": {
+    "status": "current",
+    "changedPaths": []
   },
   "outcomes": [
     {
@@ -84,16 +115,19 @@ Unresolved drift remains in final PR state.
 ```
 
 That finding is part of the report and does not by itself make the command fail.
+The same is true for `Generated index: dirty` unless
+`--fail-on-dirty-index` is passed.
 
 ## Exit codes
 
 | Code | Meaning |
 | --- | --- |
-| `0` | The proof report was generated, even if the report contains unresolved drift. |
-| `1` | Required `--git-base` is missing, `--format` is unsupported, config/index/extraction failed, or Git-base resolution failed. |
+| `0` | The proof report was generated and no requested policy failed. Without policy flags, the report can still contain unresolved drift or a dirty generated index. |
+| `1` | Required `--git-base` is missing, `--format` or a ratio is unsupported, config/index/extraction failed, Git-base resolution failed, or a requested policy failed after the report was printed. |
 
 ## Related commands
 
 - [`check`](./check.mdx) provides the validation signal used by proof.
 - [`diff`](./diff.mdx) provides the contract-change signal used by proof.
+- [`extract --check`](./extract.mdx) checks whether the generated index is current without writing it.
 - [`accept`](./accept.mdx) creates accepted-change records that proof reports.

@@ -1,13 +1,15 @@
 import { createHash } from 'node:crypto';
 import { execFile, spawn } from 'node:child_process';
-import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync, type Dirent } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import type {
   DriftContractSummaries,
   DriftContractsIndex,
   DriftExtractedContract,
+  DriftGeneratedIndexSnapshot,
   DriftIndexedContract,
   DriftSource,
 } from '../types.js';
@@ -162,6 +164,30 @@ export async function writeIndexStore(root: string, output = defaultIndexPath, i
   }
 
   await writeFile(path.join(absoluteOutput, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+}
+
+export async function checkGeneratedIndex(
+  root: string,
+  output = defaultIndexPath,
+  index: DriftContractsIndex,
+  options: DriftIndexWriteOptions = {},
+): Promise<DriftGeneratedIndexSnapshot> {
+  const absoluteRoot = path.resolve(root);
+  const absoluteOutput = path.resolve(absoluteRoot, output);
+  const displayIndexPath = repoRelativeIndexPath(absoluteRoot, absoluteOutput, output);
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'drift-index-check-'));
+
+  try {
+    const expectedOutput = 'expected-index';
+    await writeIndexStore(tempRoot, expectedOutput, index, options);
+    const changedPaths = await compareIndexDirectories(path.join(tempRoot, expectedOutput), absoluteOutput, displayIndexPath);
+    return {
+      status: changedPaths.length === 0 ? 'current' : 'dirty',
+      changedPaths,
+    };
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
 }
 
 export function writeIndexStoreSync(root: string, output = defaultIndexPath, index: DriftContractsIndex, options: DriftIndexWriteOptions = {}): void {
@@ -742,6 +768,66 @@ function normalizeLookupFiles(files: string[]): Set<string> {
     for (const candidate of fileLookupCandidates(file)) values.add(candidate);
   }
   return values;
+}
+
+async function compareIndexDirectories(expectedRoot: string, actualRoot: string, displayIndexPath: string): Promise<string[]> {
+  const expectedFiles = await listIndexFiles(expectedRoot);
+  const actualFiles = await listIndexFiles(actualRoot);
+  const changedPaths: string[] = [];
+
+  for (const relativeFile of [...new Set([...expectedFiles.keys(), ...actualFiles.keys()])].sort()) {
+    const expectedFile = expectedFiles.get(relativeFile);
+    const actualFile = actualFiles.get(relativeFile);
+    if (!expectedFile || !actualFile) {
+      changedPaths.push(indexDisplayPath(displayIndexPath, relativeFile));
+      continue;
+    }
+
+    const [expectedContent, actualContent] = await Promise.all([
+      readFile(expectedFile),
+      readFile(actualFile),
+    ]);
+    if (!expectedContent.equals(actualContent)) changedPaths.push(indexDisplayPath(displayIndexPath, relativeFile));
+  }
+
+  return changedPaths;
+}
+
+async function listIndexFiles(root: string): Promise<Map<string, string>> {
+  const files = new Map<string, string>();
+
+  async function walk(currentDir: string, relativeDir: string): Promise<void> {
+    let entries: Dirent[];
+    try {
+      entries = await readdir(currentDir, { withFileTypes: true });
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
+      throw error;
+    }
+
+    for (const entry of entries) {
+      const absoluteEntry = path.join(currentDir, entry.name);
+      const relativeEntry = normalizePath(path.join(relativeDir, entry.name));
+      if (entry.isDirectory()) {
+        await walk(absoluteEntry, relativeEntry);
+      } else if (entry.isFile()) {
+        files.set(relativeEntry, absoluteEntry);
+      }
+    }
+  }
+
+  await walk(root, '');
+  return files;
+}
+
+function repoRelativeIndexPath(root: string, absoluteOutput: string, configuredOutput: string): string {
+  const relativePath = normalizePath(path.relative(root, absoluteOutput));
+  if (relativePath && !relativePath.startsWith('..') && !path.isAbsolute(relativePath)) return relativePath;
+  return normalizePath(configuredOutput);
+}
+
+function indexDisplayPath(indexPath: string, relativeFile: string): string {
+  return normalizePath(path.join(indexPath, relativeFile));
 }
 
 async function verifyGitRef(root: string, ref: string): Promise<void> {

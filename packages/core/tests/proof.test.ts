@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
@@ -14,6 +14,43 @@ import { validActionsSource } from './helpers/contract-fixtures.js';
 import { validFlowSource } from './helpers/flow-fixtures.js';
 
 describe('drift pull request proof reports', () => {
+  it('reports current generated indexes without modifying the committed index store', async () => {
+    const root = await createProofProject({
+      'src/actions.ts': validFlowSource('billing.changed'),
+    });
+    const before = await snapshotIndexStore(root);
+
+    const result = await getProofReport({ root, sourceDir: 'src', gitBase: 'HEAD' });
+
+    expect(result.errors).toEqual([]);
+    expect(result.report.generatedIndex).toEqual({
+      status: 'current',
+      changedPaths: [],
+    });
+    await expect(snapshotIndexStore(root)).resolves.toEqual(before);
+  });
+
+  it('reports dirty generated indexes with repo-relative changed paths without writing the index store', async () => {
+    const root = await createProofProject({
+      'src/actions.ts': validFlowSource('billing.changed'),
+    });
+    const before = await snapshotIndexStore(root);
+    await writeFile(
+      path.join(root, 'src/actions.ts'),
+      validFlowSource('billing.changed').replace('amount: price.monthlyAmount * payload.seats,', 'amount: price.monthlyAmount * payload.seats * 2,'),
+      'utf8',
+    );
+
+    const result = await getProofReport({ root, sourceDir: 'src', gitBase: 'HEAD' });
+
+    expect(result.report.generatedIndex.status).toBe('dirty');
+    expect(result.report.generatedIndex.changedPaths).toEqual(expect.arrayContaining([
+      '.drift/contracts.generated.index/manifest.json',
+      expect.stringMatching(/^\.drift\/contracts\.generated\.index\/by-contract\/[a-f0-9]{2}\.ndjson$/),
+    ]));
+    await expect(snapshotIndexStore(root)).resolves.toEqual(before);
+  });
+
   it('reports body-only protected contract changes as preserved', async () => {
     const root = await createProofProject({
       'src/actions.ts': validFlowSource('billing.changed'),
@@ -40,6 +77,7 @@ describe('drift pull request proof reports', () => {
       currentViolations: 0,
       intentPreservationRate: 1,
     });
+    expect(result.report.generatedIndex.status).toBe('dirty');
   });
 
   it('reports accepted locked contract text changes as explicit changes', async () => {
@@ -210,26 +248,18 @@ describe('drift pull request proof reports', () => {
 
     const result = await getProofReport({ root, sourceDir: 'src', gitBase: 'HEAD' });
 
-    expect(formatProofReportMarkdown(result.report)).toBe([
+    const markdown = formatProofReportMarkdown(result.report);
+    expect(markdown).toContain([
       '## DriftLock Proof Report',
       '',
       'Protected contracts touched: 1',
       'Contract changes: 0 accepted, 0 unresolved',
       'Current violations: 0',
       'Intent preservation: 100%',
-      '',
-      'Outcome:',
-      '- 1 protected zone preserved.',
-      '- 0 contract changes explicit.',
-      '- 0 unresolved drift before merge.',
-      '',
-      'Touched contracts:',
-      '- billing.changed: preserved',
-      '',
-      'Impact:',
-      '- No unresolved drift detected in final PR state.',
-      '- Protected intent remained explicit for touched contracts.',
+      'Generated index: dirty',
     ].join('\n'));
+    expect(markdown).toContain('Generated index changes:\n- .drift/contracts.generated.index/');
+    expect(markdown).toContain('- Generated DriftLock index is dirty; run drift-lock extract and commit the updated index.');
     expect(formatProofReportJson(result.report)).toMatchObject({
       version: 1,
       gitBase: 'HEAD',
@@ -237,6 +267,9 @@ describe('drift pull request proof reports', () => {
         protectedContractsTouched: 1,
         currentViolations: 0,
         intentPreservationRate: 1,
+      },
+      generatedIndex: {
+        status: 'dirty',
       },
     });
   });
@@ -282,4 +315,25 @@ async function writeAcceptance(root: string, contractId: string): Promise<void> 
     `contract: ${contractId}\nreason: Intentional proof report contract change\n`,
     'utf8',
   );
+}
+
+async function snapshotIndexStore(root: string): Promise<Record<string, string>> {
+  const indexRoot = path.join(root, '.drift/contracts.generated.index');
+  const snapshot: Record<string, string> = {};
+
+  async function walk(currentDir: string, relativeDir: string): Promise<void> {
+    const entries = await readdir(currentDir, { withFileTypes: true });
+    for (const entry of entries) {
+      const absoluteEntry = path.join(currentDir, entry.name);
+      const relativeEntry = path.join(relativeDir, entry.name).split(path.sep).join('/');
+      if (entry.isDirectory()) {
+        await walk(absoluteEntry, relativeEntry);
+      } else if (entry.isFile()) {
+        snapshot[relativeEntry] = await readFile(absoluteEntry, 'utf8');
+      }
+    }
+  }
+
+  await walk(indexRoot, '');
+  return snapshot;
 }

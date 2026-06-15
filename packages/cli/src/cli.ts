@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import path from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import {
+  checkGeneratedIndex,
   checkContracts,
   diffContracts,
   explainContracts,
@@ -23,6 +24,7 @@ import {
   writeAcceptanceFile,
   writeIndexStore,
   type DriftAdoptionMode,
+  type DriftProofReport,
 } from '@drift-lock/core';
 import {
   detectPackageManager,
@@ -31,6 +33,7 @@ import {
   type CiProvider,
   type InstallProjectSummary,
   type PackageManager,
+  type ProofPolicy,
 } from './install.js';
 import { formatSkillCatalog, installSkills, listBundledSkills, type SkillProvider } from './skills.js';
 
@@ -64,6 +67,7 @@ program
   .option('--no-eslint', 'do not configure ESLint')
   .option('--ci <provider>', 'add CI provider: github')
   .option('--no-ci', 'do not add CI')
+  .option('--proof-policy <policy>', 'GitHub proof policy: report or strict', 'report')
   .option('--agent <provider>', 'install agent skills: openai, claude, or cursor')
   .option('--no-agent', 'do not install agent skills')
   .option('--example <name>', 'add an example project')
@@ -77,6 +81,7 @@ program
       packageManager: resolved.packageManager,
       eslint: resolved.eslint,
       ci: resolved.ci,
+      proofPolicy: resolved.proofPolicy,
       agent: resolved.agent,
       example: resolved.example,
       dryRun: resolved.dryRun,
@@ -93,13 +98,26 @@ program
   .option('--root <dir>', 'project root', process.cwd())
   .option('--source <dir>', 'source directory to scan')
   .option('--out <dir>', 'output index store path')
-  .action(async (options: { root: string; source?: string; out?: string }) => {
+  .option('--check', 'check whether the generated index is current without writing it', false)
+  .action(async (options: { root: string; source?: string; out?: string; check: boolean }) => {
     const root = path.resolve(options.root);
     const config = await readDriftConfig(root);
     const source = options.source ?? config.source;
     const out = options.out ?? config.index;
     const result = await extractContracts({ root, sourceDir: source });
     if (result.errors.length > 0) fail(result.errors);
+    if (options.check) {
+      const generatedIndex = await checkGeneratedIndex(root, out, toIndex(result.contracts), { sourceDir: source });
+      if (generatedIndex.status === 'current') {
+        console.log(`Generated DriftLock index is current at ${out}.`);
+        return;
+      }
+
+      console.log(`Generated DriftLock index is dirty at ${out}:`);
+      for (const changedPath of generatedIndex.changedPaths) console.log(`- ${changedPath}`);
+      process.exit(1);
+    }
+
     await writeIndexStore(root, out, toIndex(result.contracts), { sourceDir: source });
     console.log(`Extracted ${result.contracts.length} @drift contract(s) to ${out}.`);
   });
@@ -254,8 +272,13 @@ program
   .option('--index <dir>', 'index store path')
   .requiredOption('--git-base <ref>', 'Git ref used as the pull request base')
   .option('--format <format>', 'output format: md or json', 'md')
-  .action(async (options: { root: string; source?: string; index?: string; gitBase: string; format: string }) => {
+  .option('--fail-on-unresolved', 'exit 1 when unresolved contract drift remains', false)
+  .option('--fail-on-violations', 'exit 1 when current DriftLock violations remain', false)
+  .option('--min-preservation-rate <ratio>', 'exit 1 when intent preservation is below a ratio from 0 to 1')
+  .option('--fail-on-dirty-index', 'exit 1 when the generated DriftLock index is not current', false)
+  .action(async (options: ProofCommandOptions) => {
     const format = parseProofFormat(options.format);
+    const minPreservationRate = parseOptionalRatio(options.minPreservationRate, 'min preservation rate');
     const root = path.resolve(options.root);
     const config = await readDriftConfig(root);
     const result = await getProofReport({
@@ -270,10 +293,20 @@ program
 
     if (format === 'json') {
       console.log(JSON.stringify(formatProofReportJson(result.report), null, 2));
-      return;
+    } else {
+      console.log(formatProofReportMarkdown(result.report));
     }
 
-    console.log(formatProofReportMarkdown(result.report));
+    const failures = proofPolicyFailures(result.report, {
+      failOnUnresolved: options.failOnUnresolved,
+      failOnViolations: options.failOnViolations,
+      minPreservationRate,
+      failOnDirtyIndex: options.failOnDirtyIndex,
+    });
+    if (failures.length > 0) {
+      console.error(failures.join('\n'));
+      process.exit(1);
+    }
   });
 
 program
@@ -355,10 +388,62 @@ function parseProvider(value: string): SkillProvider {
   throw new Error(`Unsupported skills provider "${value}". Expected openai, claude, or cursor.`);
 }
 
+function parseProofPolicy(value: string): ProofPolicy {
+  if (value === 'report' || value === 'strict') return value;
+  throw new Error(`Unsupported proof policy "${value}". Expected report or strict.`);
+}
+
 function parseProofFormat(value: string): 'md' | 'json' {
   if (value === 'md' || value === 'json') return value;
   throw new Error(`Unsupported proof format "${value}". Use "md" or "json".`);
 }
+
+function parseOptionalRatio(value: string | undefined, label: string): number | undefined {
+  if (value === undefined) return undefined;
+  const normalized = value.trim();
+  const ratio = Number(normalized);
+  if (normalized.length === 0 || !Number.isFinite(ratio) || ratio < 0 || ratio > 1) {
+    throw new Error(`Unsupported ${label} "${value}". Expected a number between 0 and 1.`);
+  }
+  return ratio;
+}
+
+function proofPolicyFailures(
+  report: DriftProofReport,
+  policy: {
+    failOnUnresolved?: boolean;
+    failOnViolations?: boolean;
+    minPreservationRate?: number;
+    failOnDirtyIndex?: boolean;
+  },
+): string[] {
+  const failures: string[] = [];
+  if (policy.failOnUnresolved && report.summary.contractChanges.unresolved > 0) {
+    failures.push(`Unresolved DriftLock contract changes: ${report.summary.contractChanges.unresolved}`);
+  }
+  if (policy.failOnViolations && report.summary.currentViolations > 0) {
+    failures.push(`Current DriftLock violations: ${report.summary.currentViolations}`);
+  }
+  if (policy.minPreservationRate !== undefined && report.summary.intentPreservationRate < policy.minPreservationRate) {
+    failures.push(`Intent preservation rate ${report.summary.intentPreservationRate} is below minimum ${policy.minPreservationRate}`);
+  }
+  if (policy.failOnDirtyIndex && report.generatedIndex.status === 'dirty') {
+    failures.push(`Generated DriftLock index is dirty: ${report.generatedIndex.changedPaths.join(', ')}`);
+  }
+  return failures;
+}
+
+type ProofCommandOptions = {
+  root: string;
+  source?: string;
+  index?: string;
+  gitBase: string;
+  format: string;
+  failOnUnresolved: boolean;
+  failOnViolations: boolean;
+  minPreservationRate?: string;
+  failOnDirtyIndex: boolean;
+};
 
 type InstallCommandOptions = {
   root: string;
@@ -366,6 +451,7 @@ type InstallCommandOptions = {
   packageManager?: string;
   eslint: boolean;
   ci?: string | false;
+  proofPolicy: string;
   agent?: string | false;
   example?: string;
   dryRun: boolean;
@@ -375,6 +461,7 @@ type InstallCommandOptions = {
 type ResolvedInstallCommandOptions = Omit<InstallCommandOptions, 'packageManager' | 'ci' | 'agent'> & {
   packageManager?: PackageManager;
   ci: CiProvider | false;
+  proofPolicy: ProofPolicy;
   agent: SkillProvider | false;
 };
 
@@ -386,6 +473,7 @@ async function resolveInstallCommandOptions(
   let source = options.source;
   let eslint = options.eslint;
   let ci = parseCiOption(options.ci);
+  let proofPolicy = parseProofPolicy(options.proofPolicy);
   let agent = parseAgentOption(options.agent);
 
   if (shouldPromptInstall(command)) {
@@ -405,6 +493,9 @@ async function resolveInstallCommandOptions(
       if (command.getOptionValueSource('ci') !== 'cli') {
         ci = (await promptConfirm(prompts, 'Add GitHub Actions CI workflow?', false)) ? 'github' : false;
       }
+      if (ci === 'github' && command.getOptionValueSource('proofPolicy') !== 'cli') {
+        proofPolicy = parseProofPolicy(await promptChoice(prompts, 'Proof policy', ['report', 'strict'], proofPolicy));
+      }
       if (command.getOptionValueSource('agent') !== 'cli') {
         const provider = await promptChoice(prompts, 'Install agent skills', ['none', 'openai', 'claude', 'cursor'], 'none');
         agent = provider === 'none' ? false : parseProvider(provider);
@@ -420,6 +511,7 @@ async function resolveInstallCommandOptions(
     packageManager,
     eslint,
     ci,
+    proofPolicy,
     agent,
     example: options.example,
     dryRun: options.dryRun,

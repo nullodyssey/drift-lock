@@ -52,7 +52,9 @@ drift-lock diff --summary
 
 Run `extract` after adding or changing contracts to update
 `.drift/contracts.generated.index`. Commit that directory so later checks can
-detect locked contract changes and contract diffs.
+detect locked contract changes and contract diffs. In CI, use
+`drift-lock extract --check` to verify that the committed index is current
+without writing the checkout.
 
 For pull requests, add:
 
@@ -60,6 +62,10 @@ For pull requests, add:
 drift-lock check --changed --git-base origin/main
 drift-lock proof --git-base origin/main
 ```
+
+`proof` is report-only by default. Add policy flags such as
+`--fail-on-unresolved`, `--fail-on-violations`, and `--fail-on-dirty-index`
+when the proof report should block CI.
 
 ## Prerequisite knowledge
 

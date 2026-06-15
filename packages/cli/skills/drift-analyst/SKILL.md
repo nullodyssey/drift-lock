@@ -30,7 +30,7 @@ Use the configured Drift command prefix:
 {{DRIFT_COMMAND}}
 ```
 
-For blocking Drift proof, recommend `{{DRIFT_COMMAND}} check` or `{{DRIFT_COMMAND}} check --changed`. For PR-scoped proof, recommend `{{DRIFT_COMMAND}} check --changed --git-base <ref>` and `{{DRIFT_COMMAND}} proof --git-base <ref>`. For adoption reporting, recommend `{{DRIFT_COMMAND}} coverage`. For contract review, recommend `{{DRIFT_COMMAND}} diff --summary`. For failed Drift checks, recommend `{{DRIFT_COMMAND}} explain` or `{{DRIFT_COMMAND}} explain <contract-id>`. For intentional locked-contract changes, recommend `{{DRIFT_COMMAND}} accept <contract-id> --reason "<reason>"` only after the product/engineering decision is explicit.
+For blocking Drift checks, recommend `{{DRIFT_COMMAND}} check` or `{{DRIFT_COMMAND}} check --changed`. For PR-scoped proof, recommend `{{DRIFT_COMMAND}} check --changed --git-base <ref>` and `{{DRIFT_COMMAND}} proof --git-base <ref>`; add proof policy flags only when the team wants proof itself to block. For adoption reporting, recommend `{{DRIFT_COMMAND}} coverage`. For contract review, recommend `{{DRIFT_COMMAND}} diff --summary`. For failed Drift checks, recommend `{{DRIFT_COMMAND}} explain` or `{{DRIFT_COMMAND}} explain <contract-id>`. For intentional locked-contract changes, recommend `{{DRIFT_COMMAND}} accept <contract-id> --reason "<reason>"` only after the product/engineering decision is explicit.
 
 For lint, typecheck, build, and tests, inspect the target project's scripts first and only recommend commands that exist in that project.
 
@@ -38,7 +38,7 @@ For lint, typecheck, build, and tests, inspect the target project's scripts firs
 
 ```txt
 - Do not call a change safe without executable proof or a clearly stated gap.
-- Do not treat `proof` as a blocking check; it is a report that can include unresolved drift.
+- Do not treat default `proof` as blocking; it blocks only when policy flags are passed.
 - Do not recommend `accept` as a fix for accidental drift.
 - Use the highest applicable risk level.
 ```

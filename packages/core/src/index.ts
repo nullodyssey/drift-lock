@@ -25,6 +25,7 @@ export { formatErrors, formatDiagnostics } from './core/errors.js';
 export { explainContracts, formatExplanations } from './core/explain.js';
 export { extractContracts, extractContractsFromSource } from './core/extractor.js';
 export {
+  checkGeneratedIndex,
   openIndexStore,
   readIndexContractsForFileSync,
   readIndexHelperContractsForFileSync,
@@ -48,6 +49,8 @@ export type {
   DriftError,
   DriftExplanation,
   DriftExtractedContract,
+  DriftGeneratedIndexSnapshot,
+  DriftGeneratedIndexStatus,
   DriftIndexedContract,
   DriftInvariant,
   DriftProofContractOutcome,

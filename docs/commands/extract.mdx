@@ -12,7 +12,8 @@ updates the committed baseline used later by `check`, `diff`, `explain`, and
 `proof`.
 
 `extract` is intentionally the only DriftLock command that writes the committed
-contract index.
+contract index. Use `extract --check` in CI when you want to verify that the
+index is current without modifying the checkout.
 
 ## Usage
 
@@ -27,6 +28,7 @@ drift-lock extract [options]
 | `--root <dir>` | Project root. | Current working directory |
 | `--source <dir>` | Source directory to scan. | `.drift/config.json` `source`, or `src` when config is missing |
 | `--out <dir>` | Output index store path. | `.drift/config.json` `index`, or `.drift/contracts.generated.index` when config is missing |
+| `--check` | Compare the expected generated index with the committed index without writing files. | `false` |
 
 ## Examples
 
@@ -54,6 +56,12 @@ Run against a different project root:
 drift-lock extract --root ../my-app
 ```
 
+Check that the generated index is current without writing it:
+
+```bash
+drift-lock extract --check
+```
+
 ## Output
 
 On success, the command prints the number of extracted contracts and the index
@@ -66,12 +74,26 @@ Extracted 12 @drift contract(s) to .drift/contracts.generated.index.
 The index directory should be committed when it is part of the project's
 DriftLock baseline.
 
+With `--check`, a current index prints:
+
+```txt
+Generated DriftLock index is current at .drift/contracts.generated.index.
+```
+
+If the generated index is dirty, the command prints the changed repo-relative
+paths and exits `1`:
+
+```txt
+Generated DriftLock index is dirty at .drift/contracts.generated.index:
+- .drift/contracts.generated.index/manifest.json
+```
+
 ## Exit codes
 
 | Code | Meaning |
 | --- | --- |
-| `0` | Contracts were extracted and the index was written. |
-| `1` | Extraction failed, config was invalid, or the index could not be written. |
+| `0` | Contracts were extracted and the index was written, or `--check` found the index current. |
+| `1` | Extraction failed, config was invalid, the index could not be written, or `--check` found dirty generated index paths. |
 
 ## Related commands
 
