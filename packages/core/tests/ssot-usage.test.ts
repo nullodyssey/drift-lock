@@ -23,6 +23,37 @@ describe('drift ssot usage rule', () => {
     expect(checkSsotUsage(contract!, text)).toEqual([]);
   });
 
+  it('does not count a SSOT literal that starts at the declaration anchor end', () => {
+    const text = `/* @drift
+version: 1
+id: billing.inline-boundary
+scope: declaration
+stability: locked
+
+intent: >
+  Keep the declared value wired to pricing.
+
+ssot:
+  pricing: "@/features/billing/pricing.ts"
+
+invariants:
+  - id: uses-pricing-ssot
+    enforce: drift/ssot-usage
+    ssot: pricing
+*/
+export const price = 'local';'@/features/billing/pricing';
+`;
+    const contract = extractContractsFromSource('src/actions.ts', text).contracts[0];
+
+    expect(checkSsotUsage(contract!, text)).toEqual([
+      expect.objectContaining({
+        code: 'DRIFT010_SSOT_NOT_USED',
+        contractId: 'billing.inline-boundary',
+        details: expect.objectContaining({ ssotKey: 'pricing' }),
+      }),
+    ]);
+  });
+
   it('does not count file-scoped @drift YAML as SSOT usage', () => {
     const text = fileScopedUsageSource()
       .replace(`import { PRO_PRICE_ID } from '@/features/billing/pricing';\n\n`, '')

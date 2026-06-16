@@ -82,7 +82,7 @@ function hasSsotStringLiteralInAnchor(
     if (found) return;
     const start = node.getStart(sourceFile);
     const end = node.end;
-    if (end < contract.bodyStart || start > contract.bodyEnd) return;
+    if (end <= contract.bodyStart || start >= contract.bodyEnd) return;
 
     if ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) && ssotCandidates.has(node.text)) {
       found = true;
