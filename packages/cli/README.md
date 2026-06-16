@@ -83,6 +83,11 @@ structural boundaries. Typical proof is `context --task`, `coverage`,
 Each installed role includes `references/examples.md` with greenfield and
 brownfield examples.
 
+For a concrete dogfood walkthrough, see
+[`docs/commands/10-minutes-to-value.mdx`](../../docs/commands/10-minutes-to-value.mdx).
+It uses real `packages/core` contracts to demonstrate `ssot-flow` and
+`ssot-usage`.
+
 Useful install options:
 
 ```bash

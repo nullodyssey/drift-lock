@@ -34,6 +34,10 @@ See [docs/dogfood.md](./docs/dogfood.md) for the public dogfooding philosophy
 and the target state for making this repository DriftLock's most complete
 practical demo.
 
+For a concrete dogfood walkthrough, see
+[10 Minutes to Value](./docs/commands/10-minutes-to-value.mdx). It uses real
+`packages/core` contracts instead of fixture or app examples.
+
 ## Install
 
 DriftLock requires Node.js 22 or newer.

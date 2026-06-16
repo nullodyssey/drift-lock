@@ -1,0 +1,310 @@
+---
+title: 10 Minutes to Value
+description: See DriftLock catch real drift in its own core package with ssot-flow and ssot-usage.
+related:
+  title: Continue with command reference
+  description: Learn the commands used in this dogfood walkthrough.
+  links:
+    - commands/context
+    - commands/check
+    - commands/explain
+    - commands/proof
+---
+
+This walkthrough uses DriftLock on DriftLock itself. It does not use a demo app
+or fixture contract. The examples below are real contracts from
+`packages/core`, so the same commands exercise the implementation that ships in
+the npm packages.
+
+You will see two protected paths:
+
+- `core.config.default-index-flow`: a small `drift/ssot-flow` contract that
+  proves the default config index comes from the shared index path constant.
+- `core.proof-report`: a broader `drift/ssot-usage` contract that proves the PR
+  proof report composes the existing checker, diff, coverage, Git scope, and
+  locked-contract signals.
+
+## Prerequisites
+
+Use this from a DriftLock repository checkout with Node.js 22 or newer and
+pnpm 10:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm drift-lock:build
+pnpm drift-lock:check
+```
+
+Run the intentional drift edits on a throwaway branch or restore the original
+lines before committing.
+
+## 1. Ask for task context
+
+Before editing the config flow, ask DriftLock which contracts are relevant to
+the task:
+
+```bash
+pnpm exec drift-lock context --task "change default DriftLock index config"
+```
+
+Task mode should surface `core.config.default-index-flow` and its
+`drift/ssot-flow` invariant. This is the useful agent-facing moment: the
+contract is visible before any code is changed.
+
+The protected source of truth lives in
+`packages/core/src/core/index-file.ts`:
+
+```ts filename="packages/core/src/core/index-file.ts"
+export const defaultIndexPath = '.drift/contracts.generated.index';
+```
+
+The sink is the `index` field returned by
+`createDefaultDriftConfig()` in `packages/core/src/core/config.ts`:
+
+```ts filename="packages/core/src/core/config.ts"
+function createDefaultDriftConfig(): DriftConfig {
+  return {
+    version: 1,
+    source: 'src',
+    index: defaultIndexPath,
+    requireContracts: [],
+    adoption: { mode: 'enforce' },
+  };
+}
+```
+
+The contract requires `return.index` to derive from `index-file`:
+
+```yaml
+id: core.config.default-index-flow
+scope: declaration
+stability: locked
+
+ssot:
+  index-file: "./index-file.ts"
+
+invariants:
+  - id: default-index-from-index-file
+    enforce: drift/ssot-flow
+    ssot: index-file
+    sinks:
+      - return.index
+```
+
+## 2. Create a simple drift
+
+Change only the returned `index` value:
+
+```diff
+-    index: defaultIndexPath,
++    index: '.drift/contracts.generated.index',
+```
+
+The runtime value is the same, but the contract is no longer satisfied because
+the returned value stopped deriving from the declared source of truth.
+
+Run the check:
+
+```bash
+pnpm drift-lock:check
+```
+
+Expected diagnostic excerpt:
+
+```txt
+packages/core/src/core/config.ts DRIFT013: Contract "core.config.default-index-flow" requires sink "return.index" to derive from ssot "index-file".
+```
+
+Then ask for the actionable explanation:
+
+```bash
+pnpm exec drift-lock explain core.config.default-index-flow
+```
+
+Expected explanation excerpt:
+
+```txt
+DRIFT013_SSOT_FLOW_NOT_PROVEN core.config.default-index-flow
+Sink: return.index
+SSOT: index-file -> ./index-file.ts
+Reason: untrusted-value
+
+Expected:
+Sink "return.index" should derive from ssot "index-file".
+
+Suggested fix:
+Replace the local or hardcoded value with a value derived from the declared SSOT.
+```
+
+Restore `index: defaultIndexPath` before moving to the next proof.
+
+## 3. Ask for proof report context
+
+Now use a larger, architectural task:
+
+```bash
+pnpm exec drift-lock context --task "change pull request proof report composition"
+```
+
+Task mode should surface `core.proof-report`. This contract is intentionally
+broader: it protects the proof report from becoming a second verifier that
+bypasses DriftLock's existing signals.
+
+The contract is in `packages/core/src/core/proof.ts`:
+
+```yaml
+id: core.proof-report
+scope: file
+stability: draft
+
+ssot:
+  checker: "./checker.ts"
+  contract-diff: "./contract-diff.ts"
+  coverage: "./coverage.ts"
+  git-scope: "./git-scope.ts"
+  locked-contracts: "./locked-contracts.ts"
+
+invariants:
+  - id: proof-runs-checks
+    enforce: drift/ssot-usage
+    ssot: checker
+  - id: proof-uses-contract-diff
+    enforce: drift/ssot-usage
+    ssot: contract-diff
+  - id: proof-uses-coverage
+    enforce: drift/ssot-usage
+    ssot: coverage
+  - id: proof-reuses-git-scope
+    enforce: drift/ssot-usage
+    ssot: git-scope
+  - id: proof-reuses-acceptance-status
+    enforce: drift/ssot-usage
+    ssot: locked-contracts
+```
+
+Even though this contract is `draft`, its executable invariants still fail
+`check` when violated. `draft` only changes locked-contract acceptance behavior.
+
+The current implementation imports and calls those existing modules:
+
+```ts filename="packages/core/src/core/proof.ts"
+import { checkContracts } from './checker.js';
+import { diffContracts, diffContractSets } from './contract-diff.js';
+import { getCoverage } from './coverage.js';
+import { resolveGitFileScopeFromStore } from './git-scope.js';
+import { getAcceptanceStatus } from './locked-contracts.js';
+```
+
+## 4. Create a larger drift
+
+Remove the checker import and replace the check call with an empty local result:
+
+```diff
+-import { checkContracts } from './checker.js';
+ import { diffContracts, diffContractSets } from './contract-diff.js';
+```
+
+```diff
+-  const check = await checkContracts({
+-    root,
+-    sourceDir: options.sourceDir,
+-    indexPath: options.indexPath,
+-    changedOnly: true,
+-    gitBase: options.gitBase,
+-    requireContracts: options.requireContracts,
+-    adoptionMode: options.adoptionMode,
+-  });
++  const check = { diagnostics: [] };
+```
+
+Removing the import matters for this demo. `drift/ssot-usage` is intentionally
+shallow today: an unused import can still count as a reference, so the proof
+should demonstrate a real architectural bypass.
+
+Run the check:
+
+```bash
+pnpm drift-lock:check
+```
+
+Expected diagnostic excerpt:
+
+```txt
+packages/core/src/core/proof.ts DRIFT010: Contract "core.proof-report" requires ssot "checker" but the anchored code does not reference "./checker.ts".
+```
+
+Then ask for the explanation:
+
+```bash
+pnpm exec drift-lock explain core.proof-report
+```
+
+Expected explanation excerpt:
+
+```txt
+DRIFT010_SSOT_NOT_USED core.proof-report
+SSOT: checker -> ./checker.ts
+
+Expected:
+The anchored code should reference ssot "checker" at "./checker.ts".
+
+Found:
+No reference to the declared SSOT was found in the anchored code.
+
+Suggested fix:
+Read the critical value from the declared SSOT or update the contract if this code no longer depends on it.
+```
+
+Restore the `checkContracts` import and call before committing.
+
+## 5. Produce PR proof
+
+After a real change, use the proof report to summarize protected contracts,
+contract changes, current violations, coverage, and generated-index state:
+
+```bash
+pnpm exec drift-lock proof --git-base origin/main
+```
+
+`proof` is report-only by default. Add policy flags when the report should block
+CI:
+
+```bash
+pnpm exec drift-lock proof --git-base origin/main --fail-on-unresolved --fail-on-violations --fail-on-dirty-index
+```
+
+## What this catches
+
+- `drift/ssot-flow` catches hardcoded or locally invented values even when the
+  runtime literal still matches the source of truth.
+- `drift/ssot-usage` catches protected code that stops referencing declared
+  architectural inputs.
+- `context --task` gives humans and agents the relevant contracts before
+  planning a change.
+- `explain` turns a failed check into expected behavior, observed drift, and a
+  suggested fix.
+- `proof` summarizes the final PR state instead of relying on a hidden agent
+  transcript.
+
+## What this does not catch
+
+- DriftLock does not replace unit tests, integration tests, type checks, or code
+  review.
+- `drift/ssot-usage` is a reference check, not deep data-flow analysis. Keeping
+  an unused import can still satisfy it.
+- `drift/ssot-flow` supports conservative local patterns. Unsupported calls,
+  mutations, spreads, and ambiguous control flow may need simpler code or a
+  helper with its own verified contract.
+- `proof` does not block CI unless strict policy flags are enabled.
+
+## Final clean run
+
+With the intentional edits restored, the dogfood path should be clean:
+
+```bash
+pnpm drift-lock:build
+pnpm exec drift-lock context --task "change default DriftLock index config"
+pnpm exec drift-lock context --task "change pull request proof report composition"
+pnpm drift-lock:check
+pnpm --filter @drift-lock/core test
+```
