@@ -214,7 +214,7 @@ Remove the checker import and replace the check call with an empty local result:
 -    requireContracts: options.requireContracts,
 -    adoptionMode: options.adoptionMode,
 -  });
-+  const check = { diagnostics: [] };
++  const check = { diagnostics: [] as DriftDiagnostic[] };
 ```
 
 Removing the import matters for this demo. `drift/ssot-usage` is intentionally

@@ -1,3 +1,3 @@
-{"file":"packages/core/src/core/contract-paths.tsx","ownedContractIds":["core.contract-paths"],"helperCandidateContractIds":["core.contract-paths"]}
+{"file":"packages/core/src/core/contract-paths.tsx","ownedContractIds":["core.contract-paths"],"impactedContractIds":["core.git-scope"],"helperCandidateContractIds":["core.contract-paths"]}
 {"file":"packages/core/src/core/errors","ownedContractIds":["core.errors"],"impactedContractIds":["core.invariant-checks","core.required-contracts","core.ssot-flow.diagnostics","core.ssot-usage.rule","core.validator"],"helperCandidateContractIds":["core.errors"]}
 {"file":"packages/core/src/core/files.tsx","ownedContractIds":["core.files"],"impactedContractIds":["core.contract-paths","core.git-scope","core.required-contracts"],"helperCandidateContractIds":["core.files"]}

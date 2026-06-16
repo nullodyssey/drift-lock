@@ -1,1 +1,1 @@
-{"file":"packages/core/src/core/check-run.js","ownedContractIds":["core.check-run"],"impactedContractIds":["core.checker"],"helperCandidateContractIds":["core.check-run"]}
+{"file":"packages/core/src/core/check-run.js","ownedContractIds":["core.check-run"],"impactedContractIds":["core.checker","core.invariant-checks"],"helperCandidateContractIds":["core.check-run"]}

@@ -1,1 +1,1 @@
-{"file":"packages/core/src/core/module-specifier.tsx","ownedContractIds":["core.module-specifier"],"impactedContractIds":["core.contract-paths","core.git-scope","core.ssot-flow.imports","core.ssot-usage.rule"],"helperCandidateContractIds":["core.module-specifier"]}
+{"file":"packages/core/src/core/module-specifier.tsx","ownedContractIds":["core.module-specifier"],"impactedContractIds":["core.contract-paths","core.ssot-flow.imports","core.ssot-usage.rule"],"helperCandidateContractIds":["core.module-specifier"]}

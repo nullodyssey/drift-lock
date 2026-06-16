@@ -58,15 +58,40 @@ export function checkSsotUsage(contract: DriftExtractedContract, source: SourceI
 }
 
 function usesSsot(source: ParsedSource, contract: DriftExtractedContract, ssotPath: string): boolean {
-  const anchoredText = source.text.slice(contract.bodyStart, contract.bodyEnd);
   const ssotCandidates = moduleSpecifierCandidates(ssotPath);
-  if (ssotCandidates.some((candidate) => anchoredText.includes(candidate))) return true;
+  const ssotCandidateSet = new Set(ssotCandidates);
+  if (hasSsotStringLiteralInAnchor(source.sourceFile, contract, ssotCandidateSet)) return true;
 
   // V1 treats imports as sufficient SSOT usage. This is intentionally shallow:
   // the goal is catching obvious local replacements, not proving data flow.
   return source.sourceFile.statements.some((statement) => {
     if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) return false;
     const importedPath = statement.moduleSpecifier.text;
-    return ssotCandidates.includes(importedPath);
+    return ssotCandidateSet.has(importedPath);
   });
+}
+
+function hasSsotStringLiteralInAnchor(
+  sourceFile: ts.SourceFile,
+  contract: DriftExtractedContract,
+  ssotCandidates: Set<string>,
+): boolean {
+  let found = false;
+
+  function visit(node: ts.Node): void {
+    if (found) return;
+    const start = node.getStart(sourceFile);
+    const end = node.end;
+    if (end < contract.bodyStart || start > contract.bodyEnd) return;
+
+    if ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) && ssotCandidates.has(node.text)) {
+      found = true;
+      return;
+    }
+
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+  return found;
 }

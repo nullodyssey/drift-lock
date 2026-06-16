@@ -15,10 +15,10 @@ intent: >
   while preserving rule-specific diagnostics.
 
 ssot:
+  check-run: "./check-run.ts"
   ssot-usage: "./rules/ssot-usage/index.ts"
   ssot-flow: "./rules/ssot-flow/index.ts"
   errors: "./errors.ts"
-  source-cache: "./source-cache.ts"
 
 invariants:
   - id: invariants-run-ssot-usage
@@ -30,9 +30,9 @@ invariants:
   - id: invariants-use-shared-diagnostics
     enforce: drift/ssot-usage
     ssot: errors
-  - id: invariants-read-through-source-cache
+  - id: invariants-read-through-check-run
     enforce: drift/ssot-usage
-    ssot: source-cache
+    ssot: check-run
 
 llm:
   must_not_change:

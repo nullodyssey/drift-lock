@@ -1,4 +1,4 @@
 {"file":"packages/core/src/core/context.ts","ownedContractIds":["core.context-renderer"],"helperCandidateContractIds":["core.context-renderer"]}
-{"file":"packages/core/src/core/source-cache","ownedContractIds":["core.source-cache"],"impactedContractIds":["core.check-run","core.invariant-checks"],"helperCandidateContractIds":["core.source-cache"]}
+{"file":"packages/core/src/core/source-cache","ownedContractIds":["core.source-cache"],"impactedContractIds":["core.check-run"],"helperCandidateContractIds":["core.source-cache"]}
 {"file":"packages/eslint-plugin/src/rules/ssot-usage.tsx","ownedContractIds":["eslint.ssot-usage-rule"],"helperCandidateContractIds":["eslint.ssot-usage-rule"]}
 {"file":"packages/eslint-plugin/src/rules/valid-contract","ownedContractIds":["eslint.valid-contract-rule"],"helperCandidateContractIds":["eslint.valid-contract-rule"]}

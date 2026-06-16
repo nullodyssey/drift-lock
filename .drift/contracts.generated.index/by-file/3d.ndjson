@@ -1,2 +1,2 @@
-{"file":"packages/core/src/core/check-run","ownedContractIds":["core.check-run"],"impactedContractIds":["core.checker"],"helperCandidateContractIds":["core.check-run"]}
+{"file":"packages/core/src/core/check-run","ownedContractIds":["core.check-run"],"impactedContractIds":["core.checker","core.invariant-checks"],"helperCandidateContractIds":["core.check-run"]}
 {"file":"packages/core/src/core/rules/ssot-flow/index.js","ownedContractIds":["core.ssot-flow.rule"],"impactedContractIds":["core.invariant-checks","core.ssot-flow"],"helperCandidateContractIds":["core.ssot-flow.rule"]}

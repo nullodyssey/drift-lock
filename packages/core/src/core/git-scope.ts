@@ -19,7 +19,7 @@ intent: >
 
 ssot:
   files: "./files.ts"
-  module-specifier: "./module-specifier.ts"
+  contract-paths: "./contract-paths.ts"
 
 invariants:
   - id: git-scope-normalizes-source-files
@@ -27,7 +27,7 @@ invariants:
     ssot: files
   - id: git-scope-expands-ssot-candidates
     enforce: drift/ssot-usage
-    ssot: module-specifier
+    ssot: contract-paths
 
 llm:
   must_not_change:
