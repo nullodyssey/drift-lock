@@ -1,6 +1,6 @@
 # Goal
 
-`drift-lock context --task <prompt>` no longer exists. Contract context is obtained only by the deterministic, file-scoped path (`drift-lock context <file>`), which returns exactly the contracts anchored on the requested file — no prediction, no noise, no misses. Agent skills teach the per-file discipline instead of the task-level prediction, and enforcement (`@drift-lock/eslint-plugin`, `drift-lock check`) remains the real safety net.
+`drift-lock context --task <prompt>` no longer exists. Contract context is obtained only by the deterministic, file-scoped path (`drift-lock context <file>`), which returns the requested file's **contract neighbourhood** — the contracts anchored on it **and** the contracts that declare it as a source of truth. No prediction, no noise, no misses: measured end-to-end over 15 real commits, it returns **exactly the necessary set** (precision 100%, recall 100%, 15/15 exact, median 3 contracts vs 45 with `--task`). Agent skills teach the per-file discipline instead of the task-level prediction, and enforcement (`@drift-lock/eslint-plugin`, `drift-lock check`) remains the real safety net.
 
 Rationale (measured on this repo, 15 commits touching contracted source, task prompt = commit subject; ground truth = contracts anchored on the files each commit actually changed):
 
@@ -28,7 +28,9 @@ The recall is bought by volume, not relevance: the three worst-recall runs (67%,
 - [ ] `grep -rn 'context --task' packages/ README.md CLAUDE.md docs/commands/` returns nothing (source, skills, and the docs that *teach* the command). `docs/v2.md`, `docs/website-prd.md`, `docs/drift-skills-direction.md` and `docs/drift-proof.md` are historical design/PRD records and are deliberately left untouched
 - [ ] `grep -rn 'renderTaskContext\|scoreContractForTask\|RenderTaskContextOptions' packages/` returns nothing
 - [ ] `drift-lock context --task "x"` exits non-zero with an unknown-option error (the flag is gone from the CLI surface)
-- [ ] `drift-lock context <file>` still returns exactly the contracts anchored on that file (behaviour unchanged)
+- [ ] `drift-lock context <file>` returns the file's **contract neighbourhood**: the contracts anchored on it **and** the contracts that declare it as an SSOT (with the ssot key and the invariants enforcing it)
+- [ ] Measured over the 15 evaluation commits, the union of `drift-lock context <file>` over each task's touched files returns **exactly the necessary set**: precision 100%, recall 100%, 15/15 exact (necessary = contracts anchored on the changed files ∪ contracts declaring one of them as an SSOT)
+- [ ] SSOT candidate resolution reuses `contract-paths` (`moduleFileCandidates`) — the same rule `buildFileRecords` and the git scope apply — with no local re-implementation
 - [ ] The `core.context-renderer` contract no longer carries the task-ranking invariant nor the planning-notes invariant, and its `intent` is narrowed to file context
 - [ ] Every locked contract that `pnpm drift-lock:diff` reports as changed has a justified entry under `.drift/accepted-contract-changes/` (expected: `core.context-renderer` only — `cli.command-surface` does not pin `--task`, and `core.public-api`'s contract block is unchanged by dropping an export), and `pnpm drift-lock:check` is green with those entries committed
 - [ ] The five bundled skill families instruct agents to pull `context <file>` before editing each file they touch, and no longer mention a task-level prediction
@@ -41,7 +43,7 @@ The recall is bought by volume, not relevance: the three worst-recall runs (67%,
 - `.github/workflows/release.yml` and the npm publish path
 - `drift-lock check`, `diff`, `explain`, `coverage`, `proof`, `accept`, `install`, `skills` — command behaviour is out of scope
 - The `@drift-lock/eslint-plugin` rules and `drift-lock check` semantics — enforcement must keep working exactly as today (it is the safety net that makes this removal safe)
-- `renderContext` (the file-scoped path) and the `core.context-renderer` invariant "File context must stay scoped to the requested file" — it stays
+- ~~`renderContext` (the file-scoped path) and the `core.context-renderer` invariant "File context must stay scoped to the requested file" — it stays~~ — **guardrail deliberately lifted by owner decision (2026-07-14), on evidence.** Measuring the replacement showed anchored-only context had 100% precision but only **67% recall** (28 ssot-impacted contracts missed over the same 15 commits; 7/15 tasks complete): a contract anchored elsewhere can be broken by editing the file it declares as its SSOT, and nothing warned the agent. Shipping the removal while leaving that hole would have reproduced the very defect being removed — false confidence. `renderContext` therefore now returns the file's **contract neighbourhood** (anchored ∪ SSOT-consumers), still derived from the file and never predicted. The invariant is restated accordingly and re-accepted. See the extra Done-when below.
 - The `@drift` contract format itself (`.drift/config.json` schema, contract syntax)
 - Hand-editing any file under `.drift/contracts.generated.index/` — it is regenerated via `drift-lock extract`, never patched
 
