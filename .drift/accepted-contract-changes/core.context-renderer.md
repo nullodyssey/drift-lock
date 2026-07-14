@@ -1,0 +1,2 @@
+contract: core.context-renderer
+reason: Task context is removed: predicting the relevant contracts from a prompt is structurally inexact (measured over 15 real commits: 10% precision, 89% recall, never the exact set) and manufactured false confidence while costing 6-8k tokens per task. Context is now file-scoped only, which is exact by construction; enforcement (eslint plugin + drift-lock check) remains the safety net.

@@ -18,7 +18,6 @@
 Useful commands:
 
 ```bash
-{{DRIFT_COMMAND}} context --task "<user prompt>"
 {{DRIFT_COMMAND}} context <file>
 {{DRIFT_COMMAND}} coverage
 {{DRIFT_COMMAND}} diff --summary

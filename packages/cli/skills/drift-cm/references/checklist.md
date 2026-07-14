@@ -3,7 +3,6 @@
 Use this checklist before routing work to another role or starting implementation. The goal is to prevent cadrage drift before the agent plans or edits.
 
 ```txt
-- [ ] If starting from a product/user prompt, run or request: {{DRIFT_COMMAND}} context --task "<user prompt>"
 - [ ] Identify target file(s)
 - [ ] Check whether each target has a Drift Contract
 - [ ] Run or request: {{DRIFT_COMMAND}} context <file>
@@ -24,7 +23,7 @@ Use this checklist before routing work to another role or starting implementatio
 Default Drift commands:
 
 ```bash
-{{DRIFT_COMMAND}} context --task "<user prompt>"
+{{DRIFT_COMMAND}} context <file>
 {{DRIFT_COMMAND}} coverage
 {{DRIFT_COMMAND}} check
 {{DRIFT_COMMAND}} check --changed

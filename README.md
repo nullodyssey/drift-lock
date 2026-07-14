@@ -14,7 +14,7 @@ comes from the intended source.
 DriftLock makes those rules explicit and checkable:
 
 - `@drift` contracts describe local intent and sources of truth.
-- `drift-lock context --task` gives agents relevant constraints before they plan.
+- `drift-lock context <file>` gives agents the exact constraints on the code they are about to change.
 - `drift-lock check` validates supported invariants in CI.
 - `drift-lock explain` turns violations into actionable diagnostics.
 - `@drift-lock/eslint-plugin` brings the same feedback into the developer loop.
@@ -194,7 +194,6 @@ detected in CI.
 ```bash
 drift-lock install --source src
 drift-lock context <file>
-drift-lock context --task "<user prompt>"
 drift-lock extract
 drift-lock check
 drift-lock check --changed
@@ -221,9 +220,9 @@ agent skills.
 editing risky code so an agent sees the local intent, sources of truth, and
 invariants.
 
-`context --task "<prompt>"` prepares contract-aware context for a planned AI
-change. It is the best starting point before asking an agent to implement a
-feature.
+`context <file>` returns exactly the contracts anchored on that file — nothing
+predicted, nothing missed. Pull it for every file a change touches before asking
+an agent to implement a feature.
 
 `extract` scans the source directory and writes the `.drift/contracts.generated.index` store.
 Commit this directory so locked contract changes can be detected later.
@@ -260,7 +259,7 @@ wrapper. The bundled role skills are `drift-cm`, `drift-dev`, `drift-analyst`,
 Common role workflows:
 
 - Start or scope a task with `$drift-cm` -> `$drift-dev`; prove it with
-  `context --task` and `check --changed`.
+  `context <file>` and `check --changed`.
 - Assess risky work with `$drift-cm` -> `$drift-analyst` -> `$drift-dev`;
   prove it with `coverage`, `diff --summary`, and `explain` when failing.
 - Update docs with `$drift-tech-writer`; verify claims against implementation,
@@ -276,7 +275,7 @@ brownfield examples.
 For the AI-assisted workflow, run context before planning:
 
 ```bash
-drift-lock context --task "add yearly billing plan"
+drift-lock context src/features/billing/pricing.ts
 ```
 
 Then plan and implement against the listed constraints, and finish with

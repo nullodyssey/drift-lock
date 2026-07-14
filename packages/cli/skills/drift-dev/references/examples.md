@@ -17,7 +17,7 @@ Read task context, implement the smallest working feature, keep pricing values s
 Drift commands:
 
 ```bash
-{{DRIFT_COMMAND}} context --task "add checkout action"
+{{DRIFT_COMMAND}} context src/features/billing/actions.ts
 {{DRIFT_COMMAND}} diff --summary
 {{DRIFT_COMMAND}} check --changed
 ```

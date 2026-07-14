@@ -75,8 +75,9 @@ describe('drift skills installer', () => {
     await expectExists(path.join(root, '.agents/skills/drift-dev/references/examples.md'));
 
     const skill = await readFile(path.join(root, '.agents/skills/drift-dev/SKILL.md'), 'utf8');
-    expect(skill).toContain('npx --yes @drift-lock/cli context --task "<user prompt>"');
+    // Contract context is file-scoped only — task prediction was removed.
     expect(skill).toContain('npx --yes @drift-lock/cli context <file>');
+    expect(skill).not.toContain('--task');
     expect(skill).toContain('npx --yes @drift-lock/cli coverage');
     expect(skill).toContain('npx --yes @drift-lock/cli diff --summary');
     expect(skill).toContain('npx --yes @drift-lock/cli check --changed');
@@ -107,7 +108,8 @@ describe('drift skills installer', () => {
     await expectExists(path.join(root, '.agents/skills/drift-ux-designer/references/output-format.md'));
 
     const skill = await readFile(path.join(root, '.agents/skills/drift-architect/SKILL.md'), 'utf8');
-    expect(skill).toContain('npx --yes @drift-lock/cli context --task "<user prompt>"');
+    expect(skill).toContain('npx --yes @drift-lock/cli context <file>');
+    expect(skill).not.toContain('--task');
     expect(skill).not.toContain('{{DRIFT_COMMAND}}');
   });
 
@@ -127,8 +129,8 @@ describe('drift skills installer', () => {
     await expectMissing(path.join(root, '.claude/skills/drift-tech-writer/agents/openai.yaml'));
 
     const checklist = await readFile(path.join(root, '.claude/skills/drift-tech-writer/references/checklist.md'), 'utf8');
-    expect(checklist).toContain('pnpm --filter next-v1 exec drift-lock context --task "<user prompt>"');
     expect(checklist).toContain('pnpm --filter next-v1 exec drift-lock context <file>');
+    expect(checklist).not.toContain('--task');
     expect(checklist).toContain('pnpm --filter next-v1 exec drift-lock coverage');
     expect(checklist).toContain('pnpm --filter next-v1 exec drift-lock diff --summary');
     expect(checklist).toContain('pnpm --filter next-v1 exec drift-lock explain <contract-id>');

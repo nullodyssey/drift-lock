@@ -18,7 +18,7 @@ llm:
 export { checkContracts, checkLockedChangesForFile, checkSsotUsage, type CheckOptions } from './core/checker.js';
 export { checkSsotFlow, type CheckSsotFlowOptions } from './core/ssot-flow.js';
 export { defaultDriftConfig, readDriftConfig, type DriftConfig } from './core/config.js';
-export { renderContext, renderTaskContext } from './core/context.js';
+export { renderContext } from './core/context.js';
 export { diffContracts, formatContractDiffSummary, writeAcceptanceFile } from './core/contract-diff.js';
 export { getCoverage, formatCoverageSummary, type DriftCoverage } from './core/coverage.js';
 export { formatErrors, formatDiagnostics } from './core/errors.js';

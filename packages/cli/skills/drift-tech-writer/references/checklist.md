@@ -5,8 +5,7 @@ Use this checklist before changing DriftLock documentation, README files, comman
 ```txt
 - [ ] Identify the documentation files in scope
 - [ ] Read the implementation, tests, contracts, diagnostics, or scripts behind each claim
-- [ ] Run or request: {{DRIFT_COMMAND}} context --task "<user prompt>" when starting from a product prompt
-- [ ] Run or request: {{DRIFT_COMMAND}} context <file> for critical documented files
+- [ ] Run or request: {{DRIFT_COMMAND}} context <file> for every documented file
 - [ ] Mark verified guarantees separately from context, limitations, and future direction
 - [ ] Check command examples against actual scripts and CLI options
 - [ ] Check diagnostics and error names against source or tests
@@ -19,7 +18,6 @@ Use this checklist before changing DriftLock documentation, README files, comman
 Useful commands:
 
 ```bash
-{{DRIFT_COMMAND}} context --task "<user prompt>"
 {{DRIFT_COMMAND}} context <file>
 {{DRIFT_COMMAND}} check
 {{DRIFT_COMMAND}} coverage

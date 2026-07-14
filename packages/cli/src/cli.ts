@@ -21,7 +21,6 @@ import {
   getCoverage,
   readDriftConfig,
   renderContext,
-  renderTaskContext,
   toIndex,
   writeAcceptanceFile,
   writeIndexStore,
@@ -131,31 +130,12 @@ program
 
 program
   .command('context')
-  .description('Render @drift context for a file or task')
-  .argument('[file]', 'target file')
+  .description('Render @drift context for a file')
+  .argument('<file>', 'target file')
   .option('--root <dir>', 'project root', process.cwd())
-  .option('--source <dir>', 'source directory to scan')
-  .option('--task <prompt>', 'user task prompt to prepare context for')
-  .action(async (file: string | undefined, options: { root: string; source?: string; task?: string }) => {
-    if (!file && !options.task) {
-      throw new Error('Provide a target file or --task "<prompt>".');
-    }
-    if (file && options.task) {
-      throw new Error('Use either a target file or --task, not both.');
-    }
-
+  .action(async (file: string, options: { root: string }) => {
     const root = path.resolve(options.root);
-    if (options.task) {
-      const config = await readDriftConfig(root);
-      const result = await renderTaskContext({ root, sourceDir: options.source ?? config.source, task: options.task });
-      if (result.errors.length > 0) fail(result.errors);
-      console.log(result.output);
-      return;
-    }
-
-    const targetFile = file;
-    if (!targetFile) throw new Error('Provide a target file or --task "<prompt>".');
-    const result = await renderContext(root, targetFile);
+    const result = await renderContext(root, file);
     if (result.errors.length > 0) fail(result.errors);
     console.log(result.output);
   });

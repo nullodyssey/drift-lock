@@ -12,8 +12,8 @@ The goal is to separate UX preferences from UX guarantees and produce a contract
 ## Workflow
 
 1. Read the local product context, existing UI code, and relevant Drift contracts before proposing constraints.
-2. If the work starts from a user prompt, run or recommend `{{DRIFT_COMMAND}} context --task "<user prompt>"`.
-3. For known critical UI files, run or recommend `{{DRIFT_COMMAND}} context <file>`.
+2. Identify the UI files the work will touch.
+3. For every one of them, run or recommend `{{DRIFT_COMMAND}} context <file>` — exactly the contracts anchored on that file, nothing predicted.
 4. Identify critical states: empty, loading, error, success, disabled, confirmation, and destructive flows.
 5. Separate stable product vocabulary, action hierarchy, accessibility expectations, and SSOT-backed display rules from non-contract design preferences.
 6. Propose only constraints that are specific enough to verify or review.
@@ -29,7 +29,7 @@ Use the configured Drift command prefix:
 {{DRIFT_COMMAND}}
 ```
 
-Build concrete Drift commands by appending the subcommand, for example `{{DRIFT_COMMAND}} context --task "<user prompt>"`, `{{DRIFT_COMMAND}} context <file>`, `{{DRIFT_COMMAND}} coverage`, `{{DRIFT_COMMAND}} diff --summary`, `{{DRIFT_COMMAND}} check --changed`, or `{{DRIFT_COMMAND}} proof --git-base <ref>`.
+Build concrete Drift commands by appending the subcommand, for example `{{DRIFT_COMMAND}} context <file>`, `{{DRIFT_COMMAND}} coverage`, `{{DRIFT_COMMAND}} diff --summary`, `{{DRIFT_COMMAND}} check --changed`, or `{{DRIFT_COMMAND}} proof --git-base <ref>`.
 
 For non-Drift checks, inspect the target project's scripts first and only recommend commands that exist in that project.
 

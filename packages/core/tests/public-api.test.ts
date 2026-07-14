@@ -28,7 +28,6 @@ describe('core public engine facade', () => {
       'readIndexContractsForFileSync',
       'readIndexHelperContractsForFileSync',
       'renderContext',
-      'renderTaskContext',
       'toIndex',
       'writeAcceptanceFile',
       'writeIndexStore',

@@ -17,7 +17,7 @@ Prepare task context, identify likely source files and SSOT candidates, route ar
 Drift commands:
 
 ```bash
-{{DRIFT_COMMAND}} context --task "add yearly billing plan"
+{{DRIFT_COMMAND}} context src/features/billing/pricing.ts
 {{DRIFT_COMMAND}} coverage
 ```
 

@@ -11,8 +11,8 @@ The goal is to make the smallest correct code change while preserving local cont
 
 ## Workflow
 
-1. If the change starts from a product/user prompt, read `{{DRIFT_COMMAND}} context --task "<user prompt>"` before planning or ask `$drift-cm` for it.
-2. Read `{{DRIFT_COMMAND}} context <file>` before editing known target files.
+1. Identify the files the change will touch; ask `$drift-cm` for cadrage when the request is a raw product prompt.
+2. Read `{{DRIFT_COMMAND}} context <file>` for every file you are about to edit — it returns exactly the contracts anchored on that file. Never edit a file whose context you have not pulled.
 3. Identify locked contracts, SSOTs, and invariants that constrain the change.
 4. If the request conflicts with a locked contract, stop and report the conflict before editing.
 5. Edit code without changing locked contracts unless the user explicitly requested an intentional contract change.
@@ -31,7 +31,7 @@ Use the configured Drift command prefix:
 {{DRIFT_COMMAND}}
 ```
 
-Build concrete Drift commands by appending the subcommand, for example `{{DRIFT_COMMAND}} context --task "<user prompt>"`, `{{DRIFT_COMMAND}} context <file>`, `{{DRIFT_COMMAND}} coverage`, `{{DRIFT_COMMAND}} diff --summary`, `{{DRIFT_COMMAND}} check --changed`, `{{DRIFT_COMMAND}} explain <contract-id>`, `{{DRIFT_COMMAND}} proof --git-base <ref>`, or `{{DRIFT_COMMAND}} accept <contract-id> --reason "<reason>"`.
+Build concrete Drift commands by appending the subcommand, for example `{{DRIFT_COMMAND}} context <file>`, `{{DRIFT_COMMAND}} coverage`, `{{DRIFT_COMMAND}} diff --summary`, `{{DRIFT_COMMAND}} check --changed`, `{{DRIFT_COMMAND}} explain <contract-id>`, `{{DRIFT_COMMAND}} proof --git-base <ref>`, or `{{DRIFT_COMMAND}} accept <contract-id> --reason "<reason>"`.
 
 For non-Drift checks, inspect the target project's scripts first and only run commands that exist in that project.
 

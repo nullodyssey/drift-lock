@@ -39,7 +39,6 @@ yarn drift-lock check
 Common commands:
 
 ```bash
-drift-lock context --task "<user prompt>"
 drift-lock context <file>
 drift-lock extract
 drift-lock extract --check
@@ -78,7 +77,7 @@ or JSON; it is report-only by default and becomes blocking when flags such as
 Use `$drift-cm` before unclear tasks, `$drift-analyst` before risky changes,
 `$drift-dev` for scoped implementation, `$drift-tech-writer` for docs,
 `$drift-ux-designer` for critical UX constraints, and `$drift-architect` for
-structural boundaries. Typical proof is `context --task`, `coverage`,
+structural boundaries. Typical proof is `context <file>`, `coverage`,
 `diff --summary`, `check --changed`, and `proof --git-base <ref>`.
 Each installed role includes `references/examples.md` with greenfield and
 brownfield examples.

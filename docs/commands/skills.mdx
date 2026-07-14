@@ -119,7 +119,7 @@ Use the shortest workflow that gives the agent enough Drift context and proof:
 
 | Workflow | Use when | Roles | Proof |
 | --- | --- | --- | --- |
-| Start a task | Prompt or scope needs Drift context before implementation. | `$drift-cm` -> `$drift-dev` | `context --task`, `check --changed` |
+| Start a task | Prompt or scope needs Drift context before implementation. | `$drift-cm` -> `$drift-dev` | `context <file>`, `check --changed` |
 | Assess risky change | Contract impact, SSOT impact, or safety is uncertain. | `$drift-cm` -> `$drift-analyst` -> `$drift-dev` | `coverage`, `diff --summary`, `explain` when failing |
 | Implement under contracts | Target behavior is clear and protected constraints are known. | `$drift-dev` | `diff --summary`, `check --changed`, `proof --git-base <ref>` |
 | Update docs safely | README, command docs, diagnostics, or agent docs must match behavior. | `$drift-tech-writer` | Implementation, tests, contracts, and relevant checks reviewed |

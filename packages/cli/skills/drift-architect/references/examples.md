@@ -17,7 +17,7 @@ Identify minimal package and runtime boundaries, recommend contract candidates, 
 Drift commands:
 
 ```bash
-{{DRIFT_COMMAND}} context --task "define package boundaries"
+{{DRIFT_COMMAND}} context src/index.ts
 {{DRIFT_COMMAND}} coverage
 ```
 

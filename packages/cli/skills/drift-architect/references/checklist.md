@@ -5,8 +5,7 @@ Use this checklist before proposing or approving structural changes.
 ```txt
 - [ ] Identify packages, modules, layers, or runtime boundaries in scope
 - [ ] Read package manifests, existing contracts, and relevant source files
-- [ ] Run or request: {{DRIFT_COMMAND}} context --task "<user prompt>" when starting from a product prompt
-- [ ] Run or request: {{DRIFT_COMMAND}} context <file> for critical files
+- [ ] Run or request: {{DRIFT_COMMAND}} context <file> for every file in scope
 - [ ] List current import, ownership, runtime, package, API, and SSOT boundaries
 - [ ] List implicit boundaries that matter but are not protected
 - [ ] Check whether required-contract coverage matters for the touched area
@@ -20,7 +19,6 @@ Use this checklist before proposing or approving structural changes.
 Useful commands:
 
 ```bash
-{{DRIFT_COMMAND}} context --task "<user prompt>"
 {{DRIFT_COMMAND}} context <file>
 {{DRIFT_COMMAND}} coverage
 {{DRIFT_COMMAND}} diff --summary

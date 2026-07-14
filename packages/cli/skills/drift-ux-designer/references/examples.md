@@ -17,7 +17,7 @@ Identify critical states, stable product vocabulary, action priority, accessibil
 Drift commands:
 
 ```bash
-{{DRIFT_COMMAND}} context --task "design billing settings UX"
+{{DRIFT_COMMAND}} context src/features/billing/settings.tsx
 {{DRIFT_COMMAND}} coverage
 ```
 

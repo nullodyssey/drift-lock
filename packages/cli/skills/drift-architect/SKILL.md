@@ -12,8 +12,8 @@ The goal is to identify existing boundaries, expose dangerous implicit boundarie
 ## Workflow
 
 1. Read the repository structure, package manifests, existing contracts, and relevant source files before proposing architecture changes.
-2. If the work starts from a user prompt, run or recommend `{{DRIFT_COMMAND}} context --task "<user prompt>"`.
-3. For known critical files or packages, run or recommend `{{DRIFT_COMMAND}} context <file>`.
+2. Identify the files and packages the work will touch.
+3. For every one of them, run or recommend `{{DRIFT_COMMAND}} context <file>` — exactly the contracts anchored on that file, nothing predicted.
 4. Identify current boundaries: imports, ownership, runtime, packages, public APIs, and SSOT locations.
 5. Identify implicit boundaries that are dangerous because they are important but not protected.
 6. Propose minimal contracts, policies, or coverage requirements that preserve the intended structure.
@@ -30,7 +30,7 @@ Use the configured Drift command prefix:
 {{DRIFT_COMMAND}}
 ```
 
-Build concrete Drift commands by appending the subcommand, for example `{{DRIFT_COMMAND}} context --task "<user prompt>"`, `{{DRIFT_COMMAND}} context <file>`, `{{DRIFT_COMMAND}} coverage`, `{{DRIFT_COMMAND}} diff --summary`, `{{DRIFT_COMMAND}} check`, `{{DRIFT_COMMAND}} explain <contract-id>`, or `{{DRIFT_COMMAND}} proof --git-base <ref>`.
+Build concrete Drift commands by appending the subcommand, for example `{{DRIFT_COMMAND}} context <file>`, `{{DRIFT_COMMAND}} coverage`, `{{DRIFT_COMMAND}} diff --summary`, `{{DRIFT_COMMAND}} check`, `{{DRIFT_COMMAND}} explain <contract-id>`, or `{{DRIFT_COMMAND}} proof --git-base <ref>`.
 
 For non-Drift checks, inspect the target project's scripts first and only recommend commands that exist in that project.
 

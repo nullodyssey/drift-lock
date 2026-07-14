@@ -12,8 +12,8 @@ The goal is to document only what can be verified from code, tests, Drift contra
 ## Workflow
 
 1. Read the implementation, tests, contracts, diagnostics, or package scripts before editing documentation.
-2. If documentation starts from a product/user prompt, run or recommend `{{DRIFT_COMMAND}} context --task "<user prompt>"` before deciding what can be claimed.
-3. For documented critical files or commands, run or recommend `{{DRIFT_COMMAND}} context <file>` and inspect the relevant source.
+2. Identify the files behind each claim; documentation is verified against code, never against a predicted context.
+3. For every documented file or command, run or recommend `{{DRIFT_COMMAND}} context <file>` — exactly the contracts anchored on it — and inspect the relevant source.
 4. Separate verified guarantees from contextual intent, future direction, and unsupported assumptions.
 5. Update documentation with factual wording that does not overpromise enforcement.
 6. Link or mention Drift commands that prove the claim, such as `{{DRIFT_COMMAND}} check`, `{{DRIFT_COMMAND}} coverage`, `{{DRIFT_COMMAND}} diff --summary`, or `{{DRIFT_COMMAND}} explain <contract-id>`.
@@ -29,7 +29,7 @@ Use the configured Drift command prefix:
 {{DRIFT_COMMAND}}
 ```
 
-Build concrete Drift commands by appending the subcommand, for example `{{DRIFT_COMMAND}} context --task "<user prompt>"`, `{{DRIFT_COMMAND}} context <file>`, `{{DRIFT_COMMAND}} check`, `{{DRIFT_COMMAND}} coverage`, `{{DRIFT_COMMAND}} diff --summary`, `{{DRIFT_COMMAND}} explain <contract-id>`, or `{{DRIFT_COMMAND}} proof --git-base <ref>`.
+Build concrete Drift commands by appending the subcommand, for example `{{DRIFT_COMMAND}} context <file>`, `{{DRIFT_COMMAND}} check`, `{{DRIFT_COMMAND}} coverage`, `{{DRIFT_COMMAND}} diff --summary`, `{{DRIFT_COMMAND}} explain <contract-id>`, or `{{DRIFT_COMMAND}} proof --git-base <ref>`.
 
 For non-Drift checks, inspect the target project's scripts first and only run commands that exist in that project.
 

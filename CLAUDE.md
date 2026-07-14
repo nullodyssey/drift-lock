@@ -46,7 +46,7 @@ pnpm drift-lock:check       # validate contracts
 pnpm drift-lock:coverage    # contract coverage report
 pnpm drift-lock:extract     # regenerate the committed .drift index (see below)
 pnpm drift-lock:diff        # summarize contract changes vs the committed index
-pnpm drift-lock:context     # render agent context
+pnpm drift-lock:context <file>   # contracts anchored on <file> (file-scoped, exact)
 ```
 
 ## How the engine works (the big picture)
@@ -57,7 +57,7 @@ The pipeline (all in `packages/core/src/core/`):
 
 1. **extractor** parses `@drift` blocks into contracts.
 2. **index-file** writes/reads `.drift/contracts.generated.index` — the committed, machine-readable baseline (sharded ndjson `by-contract/` + `by-file/`). This index is the source of truth for diffs and agent context; it is checked into git.
-3. **checker** validates the invariants; **contract-diff** + **accept** manage *intentional* contract changes via `.drift/accepted-contract-changes/`; **context** builds `drift-lock context --task` output; **proof** produces the PR proof report.
+3. **checker** validates the invariants; **contract-diff** + **accept** manage *intentional* contract changes via `.drift/accepted-contract-changes/`; **context** renders the contracts anchored on a file (`drift-lock context <file>` — file-scoped, exact by construction); **proof** produces the PR proof report.
 4. The same engine backs both enforcement points: the **ESLint plugin** (dev loop) and **CI** (`drift-lock check` + index-freshness + coverage + proof).
 
 `.drift/config.json` declares the protected `source` dirs, the `index` path, and `requireContracts` globs — files that **must** carry a contract.

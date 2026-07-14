@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { renderContext, renderTaskContext } from '@drift-lock/core';
+import { renderContext } from '@drift-lock/core';
 import { createProject } from './helpers/core-test-utils.js';
-import { schemaOnlySource, validActionsSource } from './helpers/contract-fixtures.js';
-import { validFlowSource } from './helpers/flow-fixtures.js';
+import { validActionsSource } from './helpers/contract-fixtures.js';
 
+// Task context was removed: predicting the relevant contracts from a prompt is
+// structurally inexact (measured 10% precision / 89% recall over real commits, never
+// the exact set). Context is file-scoped only — exact by construction.
 describe('drift context rendering', () => {
   it('renders context for a target file', async () => {
     const root = await createProject({ 'src/actions.ts': validActionsSource() });
@@ -30,88 +32,15 @@ describe('drift context rendering', () => {
     ].join('\n'));
   });
 
-  it('renders pre-plan task context from relevant contracts', async () => {
+  it('stays scoped to the requested file when it carries no contracts', async () => {
     const root = await createProject({
-      'src/actions.ts': validFlowSource('billing.create-checkout-session'),
-      'src/other.ts': validActionsSource('support.unrelated-ticket')
-        .replaceAll('billing', 'support')
-        .replaceAll('pricing', 'queue')
-        .replaceAll('Pricing', 'Queue')
-        .replace('Create a Stripe Checkout session for the Pro subscription.', 'Send support ticket notifications.'),
+      'src/actions.ts': validActionsSource(),
+      'src/plain.ts': 'export const answer = 42;\n',
     });
-    const result = await renderTaskContext({ root, task: 'add yearly billing pricing plan' });
+    const result = await renderContext(root, 'src/plain.ts');
 
     expect(result.errors).toEqual([]);
-    expect(result.output).toContain('Drift Context For Task');
-    expect(result.output).toContain('Task:\nadd yearly billing pricing plan');
-    expect(result.output).toContain('- billing.create-checkout-session');
-    expect(result.output).toContain('  stability: locked');
-    expect(result.output).toContain('  ssot:');
-    expect(result.output).toContain('    pricing: @/features/billing/pricing.ts');
-    expect(result.output).toContain('    - checkout-price-from-pricing: drift/ssot-flow ssot=pricing sinks=return.priceId, return.amount');
-    expect(result.output).toContain('Relevant Files:');
-    expect(result.output).toContain('- @/features/billing/pricing.ts');
-    expect(result.output).toContain('- src/actions.ts');
-    expect(result.output).not.toContain('support.unrelated-ticket');
-    expect(result.output).toContain('Planning Notes:');
-    expect(result.output).toContain('- Run drift-lock diff --summary after implementation.');
-    expect(result.output).toBe([
-      'Drift Context For Task',
-      '',
-      'Task:',
-      'add yearly billing pricing plan',
-      '',
-      'Relevant Drift Contracts:',
-      '- billing.create-checkout-session',
-      '  file: src/actions.ts',
-      '  stability: locked',
-      '  intent: Create a Stripe Checkout session for the Pro subscription.',
-      '  ssot:',
-      '    pricing: @/features/billing/pricing.ts',
-      '    schema: @/features/billing/billing.schema.ts',
-      '  invariants:',
-      '    - checkout-price-from-pricing: drift/ssot-flow ssot=pricing sinks=return.priceId, return.amount, return.currency',
-      '  must_not_change:',
-      '    - pricing source',
-      '    - accepted input shape',
-      '    - checkout flow',
-      '',
-      'Relevant Files:',
-      '- @/features/billing/billing.schema.ts',
-      '- @/features/billing/pricing.ts',
-      '- src/actions.ts',
-      '',
-      'Planning Notes:',
-      '- Update declared SSOT files before changing derived behavior.',
-      '- Respect locked contracts and listed invariants while planning.',
-      '- Run drift-lock diff --summary after implementation.',
-      '- Run drift-lock check after implementation.',
-    ].join('\n'));
-  });
-
-  it('resolves relative ssot paths in task context relevant files', async () => {
-    const root = await createProject({
-      'src/features/billing/actions.ts': validFlowSource('billing.create-checkout-session').replace(
-        'pricing: "@/features/billing/pricing.ts"',
-        'pricing: "./pricing.ts"',
-      ),
-    });
-    const result = await renderTaskContext({ root, task: 'change billing pricing' });
-
-    expect(result.errors).toEqual([]);
-    expect(result.output).toContain('    pricing: ./pricing.ts');
-    expect(result.output).toContain('- src/features/billing/actions.ts');
-    expect(result.output).toContain('- src/features/billing/pricing.ts');
-    expect(result.output).not.toContain('- ./pricing.ts');
-  });
-
-  it('renders explicit empty task context when no contracts match', async () => {
-    const root = await createProject({ 'src/actions.ts': validActionsSource() });
-    const result = await renderTaskContext({ root, task: 'rename dashboard navigation labels' });
-
-    expect(result.errors).toEqual([]);
-    expect(result.output).toContain('No relevant @drift contracts found for this task.');
-    expect(result.output).toContain('No relevant files found.');
-    expect(result.output).toContain('Planning Notes:');
+    expect(result.output).toContain('No @drift contracts found for src/plain.ts.');
+    expect(result.output).not.toContain('billing.create-checkout-session');
   });
 });

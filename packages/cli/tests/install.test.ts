@@ -62,7 +62,7 @@ describe('drift-lock project installer', () => {
     });
 
     const skill = await readFile(path.join(root, '.agents/skills/drift-dev/SKILL.md'), 'utf8');
-    expect(skill).toContain('npm exec drift-lock -- context --task "<user prompt>"');
+    expect(skill).toContain('npm exec drift-lock -- context <file>');
     expect(skill).toContain('npm exec drift-lock -- check --changed');
   });
 

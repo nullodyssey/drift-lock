@@ -44,7 +44,7 @@ Read the implementation and command docs, correct stale claims, and link proof c
 Drift commands:
 
 ```bash
-{{DRIFT_COMMAND}} context --task "update CLI docs"
+{{DRIFT_COMMAND}} context src/cli.ts
 {{DRIFT_COMMAND}} check --changed
 {{DRIFT_COMMAND}} explain <contract-id>
 ```

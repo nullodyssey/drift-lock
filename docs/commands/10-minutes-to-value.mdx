@@ -38,16 +38,15 @@ pnpm drift-lock:check
 Run the intentional drift edits on a throwaway branch or restore the original
 lines before committing.
 
-## 1. Ask for task context
+## 1. Pull the context of the file you are about to edit
 
-Before editing the config flow, ask DriftLock which contracts are relevant to
-the task:
+Before editing the config flow, ask DriftLock which contracts govern that file:
 
 ```bash
-pnpm exec drift-lock context --task "change default DriftLock index config"
+pnpm exec drift-lock context packages/core/src/core/config.ts
 ```
 
-Task mode should surface `core.config.default-index-flow` and its
+It returns `core.config.default-index-flow` and its
 `drift/ssot-flow` invariant. This is the useful agent-facing moment: the
 contract is visible before any code is changed.
 
@@ -138,15 +137,15 @@ Replace the local or hardcoded value with a value derived from the declared SSOT
 
 Restore `index: defaultIndexPath` before moving to the next proof.
 
-## 3. Ask for proof report context
+## 3. Pull the context of the proof report
 
-Now use a larger, architectural task:
+Now a larger, architectural surface:
 
 ```bash
-pnpm exec drift-lock context --task "change pull request proof report composition"
+pnpm exec drift-lock context packages/core/src/core/proof.ts
 ```
 
-Task mode should surface `core.proof-report`. This contract is intentionally
+It returns `core.proof-report`. This contract is intentionally
 broader: it protects the proof report from becoming a second verifier that
 bypasses DriftLock's existing signals.
 
@@ -279,8 +278,8 @@ pnpm exec drift-lock proof --git-base origin/main --fail-on-unresolved --fail-on
   runtime literal still matches the source of truth.
 - `drift/ssot-usage` catches protected code that stops referencing declared
   architectural inputs.
-- `context --task` gives humans and agents the relevant contracts before
-  planning a change.
+- `context <file>` gives humans and agents the exact contracts on a file before
+  they change it.
 - `explain` turns a failed check into expected behavior, observed drift, and a
   suggested fix.
 - `proof` summarizes the final PR state instead of relying on a hidden agent
@@ -303,8 +302,8 @@ With the intentional edits restored, the dogfood path should be clean:
 
 ```bash
 pnpm drift-lock:build
-pnpm exec drift-lock context --task "change default DriftLock index config"
-pnpm exec drift-lock context --task "change pull request proof report composition"
+pnpm exec drift-lock context packages/core/src/core/config.ts
+pnpm exec drift-lock context packages/core/src/core/proof.ts
 pnpm drift-lock:check
 pnpm --filter @drift-lock/core test
 ```
