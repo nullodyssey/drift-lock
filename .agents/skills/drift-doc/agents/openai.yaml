@@ -1,4 +1,0 @@
-interface:
-  display_name: "Drift Doc"
-  short_description: "Audit Drift docs alignment"
-  default_prompt: "Use $drift-doc to verify DriftLock docs and READMEs against the latest implementation changes."

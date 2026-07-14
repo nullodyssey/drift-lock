@@ -1,4 +1,0 @@
-interface:
-  display_name: "Drift Dogfood"
-  short_description: "Apply Drift dogfood contracts"
-  default_prompt: "Use $drift-dogfood to add, modify, or fix @drift contracts according to the repo dogfood philosophy."

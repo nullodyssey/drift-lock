@@ -1,4 +1,0 @@
-interface:
-  display_name: "Drift SEO"
-  short_description: "Create DriftLock SEO/GEO content"
-  default_prompt: "Use $drift-seo to create search-ready DriftLock content for SEO, GEO, and AI answer visibility."
