@@ -1,0 +1,34 @@
+# nullodyssey/drift-lock — Automator execution contract (SPEC §4.6 / D19).
+#
+# The pnpm-monorepo pilot. `commands:` values are SCOPED prefixes only: each one
+# becomes a Bash allowlist entry `Bash(<value>:*)` for the phase agents. Bare
+# `pnpm` is never exposed — it would allow `pnpm dlx` (arbitrary exec), `pnpm add`
+# or `pnpm publish`. npm publishing stays entirely in CI
+# (.github/workflows/release.yml) and is never reachable from an agent.
+
+runtime:
+    # Must match the compose service name (compose.yaml).
+    service: agent
+    workdir: /app
+
+setup:
+    # Run on the host after a clean `compose down`. The orchestrator does not bring
+    # the stack up itself, so `up` is the first step. `-T` disables TTY allocation
+    # for the headless exec. npm_config_store_dir (compose.yaml) makes this install
+    # populate the shared D19 pnpm store.
+    - docker compose up -d
+    - docker compose exec -T agent corepack enable
+    - docker compose exec -T agent pnpm install --frozen-lockfile
+
+# Read from origin/{base} only (§4.6 rule 6), injected via --append-system-prompt.
+agent_context: .automator/CLAUDE.md
+
+commands:
+    # Each maps to one CI gate; together they mirror the release checks (build,
+    # typecheck, tests, lint, DriftLock contract validation) so an agent can
+    # self-verify before the orchestrator commits and pushes.
+    build: pnpm run build
+    check: pnpm run check
+    test: pnpm test
+    lint: pnpm run lint
+    drift-check: pnpm run drift-lock:check

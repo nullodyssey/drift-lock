@@ -1,0 +1,29 @@
+---
+# Automator execution stack (SPEC §4.6 / D19) — the single container agents run in.
+#
+# Deliberately minimal: one glibc Node service, no host ports, no database. The
+# Automator orchestrator layers a generated override on top (read-only claude CLI
+# at /opt/claude, the /automator/cache/* mounts, an ephemeral HOME tmpfs) and
+# drives lifecycle through COMPOSE_PROJECT_NAME + COMPOSE_FILE. Nothing here may
+# bind a host port or persist a repo-scoped named volume: a project-scoped volume
+# is wiped by the per-task `compose down --volumes`, so the pnpm store instead
+# lives on the orchestrator's /automator/cache bind mount, which survives.
+services:
+  agent:
+    # glibc REQUIRED — the bind-mounted claude CLI is a glibc binary; an
+    # alpine/musl base would fail to exec it. Node 22 matches .nvmrc and the
+    # package.json engines constraint.
+    image: node:22-bookworm-slim
+    working_dir: /app
+    # The orchestrator execs each phase into a long-lived container; the container
+    # itself runs no foreground process.
+    command: sleep infinity
+    environment:
+      # pnpm 10 ignores PNPM_STORE_DIR; npm_config_store_dir is the honored key.
+      # Point the content-addressable store at the D19 npm cache mount so package
+      # downloads are shared across tasks (the orchestrator override bind-mounts
+      # /automator/cache/npm from the host, out of reach of `down --volumes`).
+      # Overridable for local runs that lack that mount.
+      npm_config_store_dir: ${npm_config_store_dir:-/automator/cache/npm/pnpm-store}
+    volumes:
+      - ./:/app
