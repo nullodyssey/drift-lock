@@ -133,9 +133,11 @@ program
   .description('Render @drift context for a file')
   .argument('<file>', 'target file')
   .option('--root <dir>', 'project root', process.cwd())
-  .action(async (file: string, options: { root: string }) => {
+  .option('--source <dir>', 'source directory to scan for contracts that declare the file as an SSOT')
+  .action(async (file: string, options: { root: string; source?: string }) => {
     const root = path.resolve(options.root);
-    const result = await renderContext(root, file);
+    const config = await readDriftConfig(root);
+    const result = await renderContext(root, file, options.source ?? config.source);
     if (result.errors.length > 0) fail(result.errors);
     console.log(result.output);
   });

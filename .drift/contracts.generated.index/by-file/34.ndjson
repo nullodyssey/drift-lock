@@ -1,1 +1,1 @@
-{"file":"packages/core/src/core/contract-paths.ts","ownedContractIds":["core.contract-paths"],"impactedContractIds":["core.git-scope"],"helperCandidateContractIds":["core.contract-paths"]}
+{"file":"packages/core/src/core/contract-paths.ts","ownedContractIds":["core.contract-paths"],"impactedContractIds":["core.context-renderer","core.git-scope"],"helperCandidateContractIds":["core.contract-paths"]}
