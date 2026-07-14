@@ -1,33 +1,76 @@
-# Repository Guidelines
+# CLAUDE.md
 
-## Project Structure & Module Organization
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-This is a pnpm TypeScript monorepo. Core source lives in `packages/core/src`, the CLI in `packages/cli/src`, and the ESLint rules in `packages/eslint-plugin/src`. Tests sit beside each package in `packages/*/tests`. The Next.js demo app is in `apps/next-v1`, with routes in `app/` and feature code in `src/features`. DriftLock bundled skills are stored under `packages/cli/skills`, and documentation lives in `docs/`.
+## What this project is
 
-## Build, Test, and Development Commands
+**DriftLock** turns local engineering intent into agent context, ESLint feedback, and CI checks so AI-assisted TypeScript changes cannot silently drift away from critical sources of truth. `@drift` contracts pin local rules (a pricing source, an input schema, a checkout flow); the engine validates them deterministically. It ships on npm with real users, and it **dogfoods itself** — this repo's own source is contract-protected, so `pnpm drift-lock:check` here validates real `packages/core` contracts, not fixtures.
 
-Use Node 22+ (`.nvmrc`) and pnpm 10.
+DriftLock does not replace tests or review; it adds a checkable layer for the local intent agents tend to miss.
 
-- `pnpm install --frozen-lockfile`: install workspace dependencies.
-- `pnpm build`: build all packages via each package's `tsup` or Next build script.
-- `pnpm check`: run TypeScript checks across the workspace.
-- `pnpm test`: build `@drift-lock/core`, then run all Vitest suites.
-- `pnpm --filter next-v1 dev`: start the demo app locally.
-- `pnpm --filter next-v1 lint`: run ESLint for the demo app.
-- `pnpm --filter next-v1 drift-lock:extract` and `drift-lock:check`: refresh and validate demo contracts.
+## Monorepo layout
 
-## Coding Style & Naming Conventions
+pnpm 10 workspace, Node 22+ (`.nvmrc`), ESM TypeScript, strict, NodeNext resolution.
 
-Use ESM TypeScript with strict checking and NodeNext module resolution. Prefer named exports for shared package APIs. Follow existing two-space indentation and single-quoted imports. Source files use kebab-case names such as `contract-diff.ts`; exported types and classes use PascalCase; functions and variables use camelCase. Keep DriftLock contract IDs stable and dotted, for example `billing.create-checkout-session`.
+- `packages/core` (`@drift-lock/core`) — the contract engine. All logic lives in `src/core/*`; `src/index.ts` is the stable facade re-exported to the CLI and plugin. Nothing else should import engine internals directly.
+- `packages/cli` (`@drift-lock/cli`) — the `drift-lock` binary (`bin/drift-lock.js`). Command surface (see `src/cli.ts`): `install`, `extract`, `context`, `check`, `coverage`, `explain`, `diff`, `proof`, `accept`, and `skills`. Bundled agent skills live under `packages/cli/skills`.
+- `packages/eslint-plugin` (`@drift-lock/eslint-plugin`) — editor-loop enforcement. Rules (`src/rules/`): `valid-contract`, `no-locked-contract-change`, `ssot-flow`, `ssot-usage` — the same invariants the CLI checks, surfaced live.
+- `apps/next-v1`, `apps/web` — Next.js demo apps (dogfood surface; `next-v1` carries its own `.drift/` index).
+- `actions/proof` — GitHub Action wrapping the proof report.
 
-## Testing Guidelines
+## Commands
 
-Vitest is the test framework. Name test files `*.test.ts` and place them in the relevant package's `tests` directory. Add focused tests for parser, CLI, rule, or contract behavior changes. Run the package-level command while iterating, for example `pnpm --filter @drift-lock/core test`, then run `pnpm test` before submitting.
+Run from the repo root unless noted. `pnpm test` builds `@drift-lock/core` first because the other packages consume its build output.
 
-## Commit & Pull Request Guidelines
+```bash
+pnpm install --frozen-lockfile     # install workspace deps
+pnpm build                         # pnpm -r run build (tsup / Next per package)
+pnpm check                         # typecheck across the workspace
+pnpm test                          # build core, then run all Vitest suites
+pnpm lint                          # build core + plugin, then ESLint the package sources (self-applies the plugin)
+pnpm --filter next-v1 dev          # run the demo app
+```
 
-Recent history uses Conventional Commit style: `feat(cli): ...`, `fix: ...`, and `chore: ...`. Keep commits scoped and imperative. Pull requests should include a concise summary, test results, linked issues when applicable, and screenshots only for visible `apps/next-v1` UI changes. If contracts change, include the updated `.drift/contracts.generated.index` directory and explain why the contract update is intentional.
+Single-package / single-test iteration:
 
-## Security & Configuration Tips
+```bash
+pnpm --filter @drift-lock/core test                        # one package
+pnpm --filter @drift-lock/core exec vitest run <file>      # one test file
+pnpm --filter @drift-lock/cli test:with-build              # cli/eslint tests need core's build first
+```
 
-Do not commit local secrets, `.env` files, or generated build output. CI runs build, typecheck, tests, demo lint, package dry-runs, and DriftLock validation, so keep those commands passing locally when possible.
+DriftLock self-checks (the engine run against this repo — these mirror the CI gates):
+
+```bash
+pnpm drift-lock:check       # validate contracts
+pnpm drift-lock:coverage    # contract coverage report
+pnpm drift-lock:extract     # regenerate the committed .drift index (see below)
+pnpm drift-lock:diff        # summarize contract changes vs the committed index
+pnpm drift-lock:context     # render agent context
+```
+
+## How the engine works (the big picture)
+
+A `@drift` contract is a block comment above a declaration or file. It carries a **stable dotted `id`** (`billing.create-checkout-session`), a `scope` (`file` | `declaration`), a `stability` (e.g. `locked`), an `intent`, an `ssot:` map (named source-of-truth files), and `invariants:` — each with an `enforce:` rule such as `drift/ssot-flow` (a value must flow from a named ssot into declared sinks) or `drift/ssot-usage` (input must be validated through the schema ssot). `llm.must_not_change` lists human-readable guardrails for agents.
+
+The pipeline (all in `packages/core/src/core/`):
+
+1. **extractor** parses `@drift` blocks into contracts.
+2. **index-file** writes/reads `.drift/contracts.generated.index` — the committed, machine-readable baseline (sharded ndjson `by-contract/` + `by-file/`). This index is the source of truth for diffs and agent context; it is checked into git.
+3. **checker** validates the invariants; **contract-diff** + **accept** manage *intentional* contract changes via `.drift/accepted-contract-changes/`; **context** builds `drift-lock context --task` output; **proof** produces the PR proof report.
+4. The same engine backs both enforcement points: the **ESLint plugin** (dev loop) and **CI** (`drift-lock check` + index-freshness + coverage + proof).
+
+`.drift/config.json` declares the protected `source` dirs, the `index` path, and `requireContracts` globs — files that **must** carry a contract.
+
+## Conventions that matter here
+
+- **Contract IDs are stable and dotted** — renaming one is a breaking change to the committed index.
+- **If a change alters contracts, regenerate and commit `.drift/contracts.generated.index`** (`pnpm drift-lock:extract`) and explain why in the PR. CI fails when the committed index is stale; **never hand-edit generated files** to force a pass. The same applies to `apps/next-v1/.drift/`.
+- Named exports for package APIs; two-space indent; single-quoted imports. Filenames kebab-case (`contract-diff.ts`), types/classes PascalCase, functions/vars camelCase.
+- Vitest only; `*.test.ts` in each package's `tests/`. Add focused tests for parser, CLI, rule, or contract-behavior changes.
+- Conventional Commits (`feat(cli): …`, `fix: …`, `chore: …`).
+- **Do not touch `.github/workflows/release.yml` or the npm publish path** — releases are human/CI-gated.
+
+## Automator-managed repo
+
+This repo is driven by the Automator pipeline. `automator.yaml` + `compose.yaml` are its execution contract and `.automator/CLAUDE.md` is the injected agent context — treat them as infrastructure, not casual edits (they are read from the base branch only). Automator phase agents never run `git`; the orchestrator owns commits and pushes.
